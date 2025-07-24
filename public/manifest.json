@@ -1,0 +1,19 @@
+{
+    "name": "Epilux Water",
+    "short_name": "Epilux",
+    "icons": [
+        {
+            "src": "/icon.png",
+            "sizes": "538x463",
+            "type": "image/png"
+        },
+        {
+            "src": "/icon.png",
+            "sizes": "538x463",
+            "type": "image/png"
+        }
+    ],
+    "theme_color": "#ffffff",
+    "background_color": "#ffffff",
+    "display": "standalone"
+}
