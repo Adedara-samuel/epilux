@@ -10,7 +10,6 @@ const Header: React.FC = () => {
         <header className="bg-white text-blue-700 p-4 shadow-lg sticky top-0 z-50">
             <div className="container mx-auto flex justify-between items-center">
                 <Link href="/" className="flex items-center gap-2 group">
-                    {/* Placeholder for your actual logo image */}
                     <img
                         src="/images/logo.png"
                         alt="Epilux Water Logo"
@@ -21,7 +20,7 @@ const Header: React.FC = () => {
                         Epilux <span className="text-blue-300">Water</span>
                     </span>
                 </Link>
-                <Button asChild variant="secondary" className="bg-blue-700 text-white hover:bg-gray-100 px-6 py-2 rounded-full shadow-md transition-all duration-300 transform hover:scale-105">
+                <Button asChild variant="secondary" className="bg-blue-700 hover:bg-blue-800 text-white px-6 py-2 rounded-full shadow-md">
                     <Link href="/login">
                     <LogIn/>
                     Login

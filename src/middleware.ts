@@ -9,7 +9,7 @@ export async function middleware(request: NextRequest) {
     const path = request.nextUrl.pathname;
     const authToken = request.cookies.get('authToken')?.value;
 
-    if (path.startsWith('/admin') || path.startsWith('/affiliate')) {
+    if (path.startsWith('/admin')) {
         if (!authToken) {
             console.log('No authToken cookie found');
             return NextResponse.redirect(new URL('/login', request.url));
@@ -28,5 +28,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-    matcher: ['/admin/:path*', '/affiliate/:path*'],
+    matcher: ['/admin/:path*'],
 };

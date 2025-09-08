@@ -1,7 +1,6 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable react/no-unescaped-entities */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @next/next/no-img-element */
-/* eslint-disable react/no-unescaped-entities */
 // app/login/page.tsx
 'use client';
 
@@ -22,7 +21,7 @@ export default function LoginPage() {
     const [password, setPassword] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
+    const [, setIsLoading] = useState(false);
 
     // State to hold the redirect path, initialized to a default
     const [redirectTo, setRedirectTo] = useState('/account'); // Default for general users
@@ -31,37 +30,32 @@ export default function LoginPage() {
     useEffect(() => {
         if (typeof window !== 'undefined') {
             const params = new URLSearchParams(window.location.search);
-            // Set redirectTo based on query param, default to /account or homepage for general login
-            setRedirectTo(params.get('redirect') || '/'); // Default to homepage if no specific redirect
+            setRedirectTo(params.get('redirect') || '/');
         }
-    }, []); // Run only once on component mount
+    }, []);
 
     // Redirect if already logged in (after redirectTo is set and user data is available)
     useEffect(() => {
         if (!authLoading && user) {
             if (!user.emailVerified) {
-                // If email is not verified, send them to verify-email page
                 router.push('/verify-email');
             } else {
-                // If email is verified, determine redirection based on role
-                user.getIdTokenResult().then((token) => {
+                user.getIdTokenResult(true).then((token) => { // Force token refresh here
                     const role = token.claims.role;
                     if (role === 'admin') {
                         router.push('/admin/dashboard');
                     } else if (role === 'affiliate') {
                         router.push('/affiliate/dashboard');
                     } else {
-                        // Default redirection for regular users or if no specific role is set
-                        router.push(redirectTo); // redirectTo will be '/' by default if not specified
+                        router.push(redirectTo);
                     }
                 }).catch(err => {
                     console.error("Error getting ID token result:", err);
-                    router.push(redirectTo); // Fallback if token claims can't be read
+                    router.push(redirectTo);
                 });
             }
         }
-        // If user is null (not logged in), stay on this page.
-    }, [user, authLoading, router, redirectTo]); // Dependencies ensure this runs when user, loading, or redirectTo changes
+    }, [user, authLoading, router, redirectTo]);
 
     // Form validation
     const isFormValid = email && password && email.includes('@') && password.length >= 6;
@@ -70,42 +64,43 @@ export default function LoginPage() {
         e.preventDefault();
         setError('');
         setIsLoading(true);
+        setIsSubmitting(true); // Added this to prevent double-submitting
 
         try {
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
 
-            // Force refresh of the ID token to get the latest custom claims
             const idTokenResult = await user.getIdTokenResult(true);
             const role = idTokenResult.claims.role;
 
-            // Debugging: Log claims to console
             console.log('User logged in:', user);
             console.log('Custom claims:', idTokenResult.claims);
             console.log('User role:', role);
 
-            // Redirect based on role
+            // Determine redirect path based on role, overriding the redirectTo param if a role is found
+            let finalRedirectPath = redirectTo;
             if (role === 'admin') {
-                router.push('/dashboard/admin'); // Or your admin dashboard path
+                finalRedirectPath = '/admin/dashboard';
             } else if (role === 'affiliate') {
-                router.push('/dashboard/affiliate'); // Or your affiliate dashboard path
+                finalRedirectPath = '/affiliate/dashboard';
             } else {
-                // Default redirect for regular customers or users without specific roles
-                router.push('/products'); // Redirect to the general products page
+                finalRedirectPath = redirectTo;
             }
 
             toast.success('Login successful!');
+            router.push(finalRedirectPath);
+
         } catch (err: any) {
             console.error("Login error:", err);
             setError(err.message || "Login failed. Please check your credentials.");
+            toast.error(err.message || "Login failed. Please check your credentials.");
         } finally {
             setIsLoading(false);
+            setIsSubmitting(false); // Ensure this is reset
         }
     };
 
-    if (authLoading || user) {
-        // If auth is loading, or if a user is already present, show loading.
-        // The useEffect above will handle the actual redirection once user data is resolved.
+    if (authLoading || (user && !error)) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-white">
                 <motion.div
@@ -117,7 +112,6 @@ export default function LoginPage() {
         );
     }
 
-    // If user is null (not logged in) and authLoading is false, render the login form.
     return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-white p-4">
             <motion.div
@@ -126,7 +120,6 @@ export default function LoginPage() {
                 transition={{ duration: 0.5 }}
                 className="w-full max-w-6xl bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col lg:flex-row"
             >
-                {/* Left Column - Form */}
                 <div className="w-full lg:w-1/2 p-8 sm:p-12">
                     <div className="text-center mb-10">
                         <Link href="/" className="inline-block mb-6">
@@ -149,7 +142,6 @@ export default function LoginPage() {
                     )}
 
                     <div className="space-y-6">
-                        {/* Ensure GoogleSignInButton also respects redirectTo */}
                         <GoogleSignInButton redirectTo={redirectTo} />
 
                         <div className="relative flex items-center my-6">
@@ -241,7 +233,6 @@ export default function LoginPage() {
                     </div>
                 </div>
 
-                {/* Right Column - Image */}
                 <div className="hidden lg:block w-1/2 relative bg-gradient-to-br from-blue-600 to-blue-800">
                     <img
                         src="/images/auth-bg.jpg"

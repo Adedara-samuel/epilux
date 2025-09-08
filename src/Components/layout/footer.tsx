@@ -1,7 +1,7 @@
 // components/layout/Footer.tsx
+import { Facebook, Instagram, Mail, Phone, Twitter } from 'lucide-react'; // Import icons
 import Link from 'next/link';
 import React from 'react';
-import { Facebook, Twitter, Instagram, Mail, Phone } from 'lucide-react'; // Import icons
 
 const Footer: React.FC = () => {
     return (
@@ -32,7 +32,7 @@ const Footer: React.FC = () => {
                     <h4 className="font-bold text-lg text-blue-400 mb-5">Partnership</h4>
                     <ul className="space-y-3">
                         <li>
-                            <Link href="/affiliate-registration" className="hover:text-white transition-colors text-sm">
+                            <Link href="/affiliate" className="hover:text-white transition-colors text-sm">
                                 Become an Affiliate
                             </Link>
                         </li>

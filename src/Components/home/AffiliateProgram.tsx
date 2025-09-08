@@ -2,8 +2,8 @@
 /* eslint-disable @next/next/no-img-element */
 import { productImages } from '@/constants/images'; // Assuming this exists
 import Link from 'next/link';
-import { Button } from '../ui/button';
 import React from 'react';
+import { Button } from '../ui/button';
 
 const AffiliateProgram: React.FC = () => {
     return (
@@ -43,7 +43,7 @@ const AffiliateProgram: React.FC = () => {
                             </li>
                         </ul>
                         <Button asChild className="bg-white text-blue-700 hover:bg-gray-100 px-8 py-3 text-lg rounded-full shadow-lg transition-transform transform hover:scale-105">
-                            <Link href="/affiliate-registration">Learn More & Register</Link>
+                            <Link href="/affiliate">Learn More & Register</Link>
                         </Button>
                     </div>
                 </div>
