@@ -1,0 +1,40 @@
+{
+  "name": "server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "setup": "node scripts/setup-env.js",
+    "setup:env": "node scripts/setup-env.js",
+    "start:smart": "node scripts/start.js",
+    "config:validate": "node -e \"const config = require('./config/environment'); const { validateConfig } = require('./config/validation'); const errors = validateConfig(); if (errors.length > 0) { console.error('Configuration errors:', errors); process.exit(1); } else { console.log('Configuration is valid'); } \"",
+    "config:status": "node -e \"const config = require('./config/environment'); const { getConfigStatus } = require('./config/validation'); console.log(JSON.stringify(getConfigStatus(), null, 2)); \"",
+    "logs:clear": "rimraf logs/*.log",
+    "logs:view": "tail -f logs/app.log",
+    "db:seed": "node scripts/seed.js",
+    "db:reset": "node scripts/reset-db.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.2",
+    "express": "^5.1.0",
+    "express-validator": "^7.2.1",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.18.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10",
+    "rimraf": "^5.0.1"
+  },
+  "engines": {
+    "node": ">=14.0.0",
+    "npm": ">=6.0.0"
+  }
+}

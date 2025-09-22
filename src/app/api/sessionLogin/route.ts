@@ -1,42 +1,45 @@
 // app/api/sessionLogin/route.ts
 // This API route will be called from the client after a successful sign-in
 import { NextRequest, NextResponse } from 'next/server';
-import { adminAuth } from '@/lib/firebase-admin';
+import jwt from 'jsonwebtoken';
 
-// Make sure you have a private environment variable like this
-// FIREBASE_SESSION_COOKIE_DURATION_SECONDS=604800 // 7 days
-const COOKIE_DURATION_SECONDS = parseInt(process.env.FIREBASE_SESSION_COOKIE_DURATION_SECONDS || '604800');
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+const COOKIE_DURATION_SECONDS = parseInt(process.env.JWT_COOKIE_DURATION_SECONDS || '604800'); // 7 days
 
 export async function POST(request: NextRequest) {
-    // Get the ID token from the client request
-    const { idToken } = await request.json();
-
-    if (!idToken) {
-        return NextResponse.json({ error: 'Unauthorized: No ID token provided' }, { status: 401 });
-    }
-
     try {
-        // Use the Firebase Admin SDK to create a session cookie
-        const sessionCookie = await adminAuth.createSessionCookie(idToken, {
-            expiresIn: COOKIE_DURATION_SECONDS * 1000
-        });
+        const { token, user } = await request.json();
 
-        const response = NextResponse.json({ status: 'success' }, { status: 200 });
+        if (!token || !user) {
+            return NextResponse.json({ error: 'Unauthorized: No token or user provided' }, { status: 401 });
+        }
 
-        // Set the session cookie as an HTTP-only cookie on the response
-        // This makes it secure and inaccessible to client-side JavaScript
+        // Verify the JWT token
+        const decoded = jwt.verify(token, JWT_SECRET);
+        
+        if (!decoded || typeof decoded !== 'object') {
+            return NextResponse.json({ error: 'Unauthorized: Invalid token' }, { status: 401 });
+        }
+
+        const response = NextResponse.json({ 
+            status: 'success',
+            user: user
+        }, { status: 200 });
+
+        // Set the JWT token as an HTTP-only cookie
         response.cookies.set({
-            name: 'session',
-            value: sessionCookie,
+            name: 'authToken',
+            value: token,
             maxAge: COOKIE_DURATION_SECONDS,
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             path: '/',
+            sameSite: 'strict'
         });
 
         return response;
     } catch (error) {
         console.error('Error creating session cookie:', error);
-        return NextResponse.json({ error: 'Unauthorized: Invalid ID token' }, { status: 401 });
+        return NextResponse.json({ error: 'Unauthorized: Invalid token' }, { status: 401 });
     }
 }

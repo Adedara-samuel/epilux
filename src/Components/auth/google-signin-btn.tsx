@@ -2,11 +2,11 @@
 // Components/auth/google-signin-btn.tsx
 'use client';
 
-import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { handleGoogleAuth } from '@/lib/auth-utils';
+import { tokenManager } from '@/lib/api';
 
 export function GoogleSignInButton({ redirectTo = '/admin' }: { redirectTo?: string }) {
     const [isLoading, setIsLoading] = useState(false);
@@ -14,21 +14,62 @@ export function GoogleSignInButton({ redirectTo = '/admin' }: { redirectTo?: str
 
     const handleGoogleSignIn = async () => {
         setIsLoading(true);
-        const provider = new GoogleAuthProvider();
 
         try {
-            const result = await signInWithPopup(auth, provider);
-            const token = await result.user.getIdTokenResult();
+            // Use Google's OAuth popup to get ID token
+            const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+            if (!googleClientId) {
+                throw new Error('Google client ID not configured');
+            }
 
-            if (token.claims.role === 'admin') {
-                router.push('/admin/dashboard');
-            } else if (token.claims.role === 'affiliate') {
-                router.push('/affiliate/dashboard');
+            // Initialize Google OAuth
+            const googleAuth = (window as any).gapi.auth2.getAuthInstance();
+            if (!googleAuth) {
+                // Load Google Auth API if not already loaded
+                await new Promise((resolve, reject) => {
+                    const script = document.createElement('script');
+                    script.src = 'https://apis.google.com/js/platform.js';
+                    script.onload = resolve;
+                    script.onerror = reject;
+                    document.head.appendChild(script);
+                });
+
+                await new Promise((resolve, reject) => {
+                    (window as any).gapi.load('auth2', () => {
+                        (window as any).gapi.auth2.init({
+                            client_id: googleClientId,
+                        }).then(resolve, reject);
+                    });
+                });
+            }
+
+            // Sign in with Google
+            const googleUser = await (window as any).gapi.auth2.getAuthInstance().signIn();
+            const idToken = googleUser.getAuthResponse().id_token;
+
+            // Send token to backend for verification
+            const result = await handleGoogleAuth(idToken);
+            
+            if (result.success && result.token && result.user) {
+                // Store JWT token
+                tokenManager.setToken(result.token);
+                tokenManager.setUser(result.user);
+
+                // Redirect based on user role
+                if (result.user.role === 'admin') {
+                    router.push('/admin/dashboard');
+                } else if (result.user.role === 'affiliate') {
+                    router.push('/affiliate/dashboard');
+                } else {
+                    router.push(redirectTo);
+                }
             } else {
-                router.push(redirectTo);
+                console.error('Authentication failed:', result.message);
+                alert(result.message || 'Authentication failed');
             }
         } catch (error) {
             console.error('Error signing in with Google:', error);
+            alert('Google sign-in failed. Please try again.');
         } finally {
             setIsLoading(false);
         }

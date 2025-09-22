@@ -4,18 +4,15 @@
 // app/login/page.tsx
 'use client';
 
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
-import { useRouter } from 'next/navigation';
 import { useAuth } from '@/app/context/auth-context';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { GoogleSignInButton } from '@/Components/auth/google-signin-btn';
 import { toast } from 'sonner';
 
 export default function LoginPage() {
-    const { user, loading: authLoading } = useAuth();
+    const { user, loading: authLoading, login } = useAuth();
     const router = useRouter();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -40,19 +37,14 @@ export default function LoginPage() {
             if (!user.emailVerified) {
                 router.push('/verify-email');
             } else {
-                user.getIdTokenResult(true).then((token) => { // Force token refresh here
-                    const role = token.claims.role;
-                    if (role === 'admin') {
-                        router.push('/admin/dashboard');
-                    } else if (role === 'affiliate') {
-                        router.push('/affiliate/dashboard');
-                    } else {
-                        router.push(redirectTo);
-                    }
-                }).catch(err => {
-                    console.error("Error getting ID token result:", err);
+                const role = user.role;
+                if (role === 'admin') {
+                    router.push('/admin/dashboard');
+                } else if (role === 'affiliate') {
+                    router.push('/affiliate/dashboard');
+                } else {
                     router.push(redirectTo);
-                });
+                }
             }
         }
     }, [user, authLoading, router, redirectTo]);
@@ -67,29 +59,16 @@ export default function LoginPage() {
         setIsSubmitting(true); // Added this to prevent double-submitting
 
         try {
-            const userCredential = await signInWithEmailAndPassword(auth, email, password);
-            const user = userCredential.user;
-
-            const idTokenResult = await user.getIdTokenResult(true);
-            const role = idTokenResult.claims.role;
-
-            console.log('User logged in:', user);
-            console.log('Custom claims:', idTokenResult.claims);
-            console.log('User role:', role);
-
-            // Determine redirect path based on role, overriding the redirectTo param if a role is found
-            let finalRedirectPath = redirectTo;
-            if (role === 'admin') {
-                finalRedirectPath = '/admin/dashboard';
-            } else if (role === 'affiliate') {
-                finalRedirectPath = '/affiliate/dashboard';
+            const result = await login({ email, password });
+            
+            if (result.success) {
+                console.log('User logged in successfully');
+                toast.success('Login successful!');
+                // The redirect will be handled by the useEffect above
             } else {
-                finalRedirectPath = redirectTo;
+                setError(result.message);
+                toast.error(result.message);
             }
-
-            toast.success('Login successful!');
-            router.push(finalRedirectPath);
-
         } catch (err: any) {
             console.error("Login error:", err);
             setError(err.message || "Login failed. Please check your credentials.");
@@ -142,14 +121,6 @@ export default function LoginPage() {
                     )}
 
                     <div className="space-y-6">
-                        <GoogleSignInButton redirectTo={redirectTo} />
-
-                        <div className="relative flex items-center my-6">
-                            <div className="flex-grow border-t border-gray-200"></div>
-                            <span className="flex-shrink mx-4 text-gray-400 text-sm">or</span>
-                            <div className="flex-grow border-t border-gray-200"></div>
-                        </div>
-
                         <form onSubmit={handleLogin} className="space-y-5">
                             <div>
                                 <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
