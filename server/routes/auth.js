@@ -1,14 +1,14 @@
-import express from 'express';
+const express = require('express');
 const router = express.Router();
-import User from '../models/User.js';
-import { generateToken, verifyToken } from '../middleware/auth.js';
-import { 
+const User = require('../models/User');
+const { generateToken, verifyToken } = require('../middleware/auth');
+const { 
     validateRegistration, 
     validateLogin, 
     validatePasswordUpdate,
     validateProfileUpdate,
     handleValidationErrors 
-} from '../middleware/validation.js';
+} = require('../middleware/validation');
 
 // Register new user
 router.post('/register', validateRegistration, handleValidationErrors, async (req, res) => {
