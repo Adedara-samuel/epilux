@@ -1,46 +1,41 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-// pages/api/set-user-role.ts (or app/api/set-user-role/route.ts for App Router)
-import type { NextApiRequest, NextApiResponse } from 'next';
-import { adminAuth } from '@/lib/firebase-admin'; // Adjust path if necessary
+// app/api/set-user-role/route.ts
+import { NextRequest, NextResponse } from 'next/server';
+import { authAPI } from '@/lib/api';
 
-type Data = {
-    message?: string;
-    error?: string;
-};
-
-export default async function handler(
-    req: NextApiRequest,
-    res: NextApiResponse<Data>
-) {
-    if (req.method !== 'POST') {
-        return res.status(405).json({ error: 'Method Not Allowed' });
-    }
-
-    const { email, role } = req.body;
-
-    if (!email || !role) {
-        return res.status(400).json({ error: 'Email and role are required.' });
-    }
-
+export async function POST(request: NextRequest) {
     try {
-        // 1. Get the user by email
-        const user = await adminAuth.getUserByEmail(email);
+        const { email, role } = await request.json();
 
-        // 2. Set custom claims for the user
-        await adminAuth.setCustomUserClaims(user.uid, { role });
+        if (!email || !role) {
+            return NextResponse.json({ error: 'Email and role are required.' }, { status: 400 });
+        }
 
-        // 3. Optionally, revoke existing refresh tokens to force the user to re-authenticate
-        // This ensures the new claims are picked up immediately on next login
-        await adminAuth.revokeRefreshTokens(user.uid);
+        // Validate role
+        const validRoles = ['user', 'admin', 'affiliate'];
+        if (!validRoles.includes(role)) {
+            return NextResponse.json({ error: 'Invalid role.' }, { status: 400 });
+        }
 
-        console.log(`Successfully set role '${role}' for user ${email} (UID: ${user.uid})`);
-        res.status(200).json({ message: `Role '${role}' set for ${email}. User needs to re-login.` });
+        // Call backend API to update user role
+        const response = await authAPI.updateUserRole(email, role);
+        
+        if (response.success) {
+            console.log(`Successfully set role '${role}' for user ${email}`);
+            return NextResponse.json({ 
+                message: `Role '${role}' set for ${email}. User needs to re-login.` 
+            });
+        } else {
+            return NextResponse.json({ error: response.message || 'Failed to set user role.' }, { status: 400 });
+        }
 
     } catch (error: any) {
-        console.error('Error setting custom user claim:', error);
-        if (error.code === 'auth/user-not-found') {
-            return res.status(404).json({ error: 'User not found.' });
+        console.error('Error setting user role:', error);
+        
+        if (error.response?.status === 404) {
+            return NextResponse.json({ error: 'User not found.' }, { status: 404 });
         }
-        res.status(500).json({ error: 'Failed to set user role.' });
+        
+        return NextResponse.json({ error: 'Failed to set user role.' }, { status: 500 });
     }
 }

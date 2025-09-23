@@ -3,21 +3,18 @@
 // app/register/page.tsx
 'use client';
 
-import { createUserWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
-import { auth, db } from '@/lib/firebase';
-import { doc, setDoc } from 'firebase/firestore';
-import { useRouter } from 'next/navigation';
 import { useAuth } from '@/app/context/auth-context';
+import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { GoogleSignInButton } from '@/Components/auth/google-signin-btn';
 
 export default function RegisterPage() {
     const router = useRouter();
-    const { user, loading: authLoading } = useAuth();
+    const { user, loading: authLoading, register } = useAuth();
     const [formData, setFormData] = useState({
-        name: '',
+        firstName: '',
+        lastName: '',
         email: '',
         password: '',
         confirmPassword: ''
@@ -58,51 +55,21 @@ export default function RegisterPage() {
         setIsSubmitting(true); // Disable the form to prevent multiple submissions
 
         try {
-            // --- Firebase Authentication Initialization Check ---
-            // This is a great defensive check! Ensure 'auth' is ready to go.
-            if (!auth) {
-                throw new Error('Firebase Authentication service is not available. Please try refreshing the page.');
-            }
-
-            // --- 1. Create the User Account ---
-            // This automatically signs the user in upon successful creation.
-            const userCredential = await createUserWithEmailAndPassword(
-                auth,
-                formData.email,
-                formData.password
-            );
-
-            // --- 2. Send the Email Verification ---
-            // This is the core of your question! We'll try to send it and handle potential issues.
-            try {
-                await sendEmailVerification(userCredential.user);
-                console.log('Verification email send initiated for:', userCredential.user.email);
-                // Crucial user feedback: let them know what just happened and what to do next.
-                alert('Registration successful! Please check your email inbox (and don\'t forget your spam or junk folder!) to verify your account.');
-            } catch (emailSendError: any) {
-                console.warn('Failed to send verification email immediately after user creation:', emailSendError);
-                // Even if the email fails to send, the user account IS created.
-                // Inform the user, but don't block their registration flow.
-                // They can always request a re-send later after logging in.
-                alert('Registration successful, but we encountered an issue sending the verification email. Please check your inbox, and if you don\'t receive it, you can request a new one after logging in.');
-                // Note: This error usually indicates a temporary issue or a configuration problem
-                // with Firebase email templates, not an auth/error code like email-already-in-use.
-            }
-
-            // --- 3. Store Additional User Data in Firestore ---
-            // Good practice to store a custom profile.
-            await setDoc(doc(db, 'users', userCredential.user.uid), {
-                name: formData.name,
+            // Register user with new API
+            const result = await register({
                 email: formData.email,
-                createdAt: new Date().toISOString(),
-                emailVerified: false,
-                role: 'customer' // Default role - change this if needed
-                // Or determine role based on some logic
+                password: formData.password,
+                firstName: formData.firstName,
+                lastName: formData.lastName
             });
 
-            // --- 4. Redirect User ---
-            // Direct them to a page that clearly explains the next steps (checking email).
-            router.push('/verify-email');
+            if (result.success) {
+                console.log('User registered successfully');
+                alert('Registration successful! You can now log in with your credentials.');
+                router.push('/login');
+            } else {
+                setError(result.message);
+            }
 
         } catch (err: any) {
             // --- Centralized Error Handling for Registration Issues ---
@@ -168,14 +135,6 @@ export default function RegisterPage() {
                     </div>
 
                     <div className="space-y-6">
-                        <GoogleSignInButton />
-
-                        <div className="relative flex items-center my-6">
-                            <div className="flex-grow border-t border-gray-200"></div>
-                            <span className="flex-shrink mx-4 text-gray-400 text-sm">or</span>
-                            <div className="flex-grow border-t border-gray-200"></div>
-                        </div>
-
                         {error && (
                             <motion.div
                                 initial={{ opacity: 0, y: -10 }}
@@ -187,20 +146,37 @@ export default function RegisterPage() {
                         )}
 
                         <form onSubmit={handleSubmit} className="space-y-5">
-                            <div>
-                                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                                    Full Name
-                                </label>
-                                <input
-                                    id="name"
-                                    name="name"
-                                    type="text"
-                                    required
-                                    value={formData.name}
-                                    onChange={handleChange}
-                                    className="w-full px-4 text-black py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-                                    placeholder="John Doe"
-                                />
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
+                                        First Name
+                                    </label>
+                                    <input
+                                        id="firstName"
+                                        name="firstName"
+                                        type="text"
+                                        required
+                                        value={formData.firstName}
+                                        onChange={handleChange}
+                                        className="w-full px-4 text-black py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                                        placeholder="John"
+                                    />
+                                </div>
+                                <div>
+                                    <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
+                                        Last Name
+                                    </label>
+                                    <input
+                                        id="lastName"
+                                        name="lastName"
+                                        type="text"
+                                        required
+                                        value={formData.lastName}
+                                        onChange={handleChange}
+                                        className="w-full px-4 text-black py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                                        placeholder="Doe"
+                                    />
+                                </div>
                             </div>
 
                             <div>
