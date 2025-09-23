@@ -1,15 +1,15 @@
-import express from 'express';
+const express = require('express');
 const router = express.Router();
-import Product from '../models/Product.js';
-import { catchAsync, NotFoundError } from '../middleware/errorHandler.js';
-import {
+const Product = require('../models/Product');
+const { catchAsync, NotFoundError } = require('../middleware/errorHandler');
+const {
     validateProductCreation,
     validateProductUpdate,
     validateMongoId,
     validatePagination,
     handleValidationErrors
-} from '../middleware/validation.js';
-import { authenticate, authorize } from '../middleware/auth.js';
+} = require('../middleware/validation');
+const { authenticate, authorize } = require('../middleware/auth');
 
 // Get all products (public)
 router.get('/', validatePagination, handleValidationErrors, catchAsync(async (req, res) => {
@@ -84,7 +84,18 @@ router.get('/:id', validateMongoId, handleValidationErrors, catchAsync(async (re
 
 // Create new product (admin only)
 router.post('/', authenticate, authorize('admin'), validateProductCreation, handleValidationErrors, catchAsync(async (req, res) => {
-    const product = new Product(req.body);
+    // const product = new Product(req.body);
+    const { name, description, price, sku, category, brand, inventory } = req.body;
+const product = new Product({
+  name,
+  description,
+  price,
+  sku,
+  category,
+  brand,
+  inventory,
+});
+
     await product.save();
     
     res.status(201).json({

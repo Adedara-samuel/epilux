@@ -40,6 +40,7 @@ const validateLogin = [
         .withMessage('Password is required')
 ];
 
+
 // Validation rules for password update
 const validatePasswordUpdate = [
     body('currentPassword')
@@ -269,7 +270,31 @@ const validateOrderCreation = [
         .withMessage('Invalid payment method')
 ];
 
+// Validation rules for payment status update
+const validatePaymentStatusUpdate = [
+    param('id')
+        .isMongoId()
+        .withMessage('Invalid order ID'),
+    
+    body('paymentStatus')
+        .trim()
+        .isIn(['pending', 'paid', 'failed', 'refunded'])
+        .withMessage('Invalid payment status')
+];
+
 // Validation rules for order status update
+const validateIdParam = [
+    param('id')
+        .isMongoId()
+        .withMessage('Invalid ID format')
+];
+
+const validateMongoId = [
+    param('id')
+        .isMongoId()
+        .withMessage('Invalid ID format')
+];
+
 const validateOrderStatusUpdate = [
     param('id')
         .isMongoId()
@@ -281,12 +306,6 @@ const validateOrderStatusUpdate = [
         .withMessage('Invalid order status')
 ];
 
-// Validation for MongoDB ID in params
-const validateMongoId = [
-    param('id')
-        .isMongoId()
-        .withMessage('Invalid ID format')
-];
 
 // Validation for pagination query parameters
 const validatePagination = [
@@ -322,6 +341,8 @@ module.exports = {
     validateProductUpdate,
     validateOrderCreation,
     validateOrderStatusUpdate,
+    validatePaymentStatusUpdate,
+    validateIdParam,
     validateMongoId,
     validatePagination,
     handleValidationErrors
