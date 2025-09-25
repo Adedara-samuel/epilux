@@ -5,7 +5,7 @@ import { useAuth } from '@/app/context/auth-context';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import Link from 'next/link';
-import { User, ShoppingBag, Mail, HelpCircle, Phone, Settings, LogOut } from 'lucide-react';
+import { ShoppingBag, Mail, HelpCircle, Phone, Settings, LogOut } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
 
 export default function AccountPage() {
@@ -50,9 +50,9 @@ export default function AccountPage() {
                 <div className="lg:col-span-1 bg-white rounded-lg shadow-md p-6 border border-gray-200">
                     <div className="flex flex-col items-center mb-6">
                         <div className="w-24 h-24 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-5xl font-bold mb-4">
-                            {user.displayName ? user.displayName.charAt(0).toUpperCase() : user.email?.charAt(0).toUpperCase() || <User size={48} />}
+                            {user.firstName.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || 'U'}
                         </div>
-                        <h2 className="text-xl font-semibold text-gray-800">{user.displayName || 'User Name'}</h2>
+                        <h2 className="text-xl font-semibold text-gray-800">{`${user.firstName} ${user.lastName}`}</h2>
                         <p className="text-gray-600 text-sm">{user.email}</p>
                         {user.emailVerified ? (
                             <span className="text-green-600 text-xs mt-2 flex items-center gap-1">

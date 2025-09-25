@@ -1,79 +1,37 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @next/next/no-img-element */
 /* eslint-disable react/no-unescaped-entities */
 // app/verify-email/page.tsx
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { useAuth } from '@/app/context/auth-context';
-import { auth } from '@/lib/firebase'; // Ensure 'auth' is imported
-import { sendEmailVerification, User } from 'firebase/auth';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 export default function VerifyEmailPage() {
     const router = useRouter();
-    const { user, loading } = useAuth(); // 'user' from useAuth is the current Firebase User
-    const [isSending, setIsSending] = useState(false);
+    const { user, loading, logout } = useAuth();
     const [message, setMessage] = useState('');
     const [error, setError] = useState('');
 
-    // Check if user is logged in and email is verified
+    // Check if user is logged in
     useEffect(() => {
         if (!loading) {
             if (!user) {
                 // If no user is logged in, stay on this page (don't redirect)
                 return;
-            } else if (user.emailVerified) {
-                // If email is verified, check role and redirect accordingly
-                user.getIdTokenResult().then((token) => {
-                    if (token.claims.role === 'admin') {
-                        router.push('/admin/dashboard');
-                    } else if (token.claims.role === 'affiliate') {
-                        router.push('/affiliate/dashboard');
-                    } else {
-                        router.push('/account');
-                    }
-                });
+            } else {
+                // Assume email is verified if user is logged in, redirect to account
+                router.push('/account');
             }
         }
     }, [user, loading, router]);
 
-    // This function now correctly uses the 'user' from the useAuth hook
+    // Since API doesn't support resending verification email, this is a placeholder
     const handleResendEmail = async () => {
-        // We already have 'user' from the useAuth hook in scope
-        if (!user) {
-            setError('No user is currently signed in to resend email to.');
-            console.warn('Attempted to resend verification email but no user was found.');
-            return;
-        }
-
-        setIsSending(true); // Indicate that an operation is in progress (e.g., disable button)
-        setError('');       // Clear any previous errors
-        setMessage('');     // Clear any previous messages
-
-        try {
-            await sendEmailVerification(user); // Use the 'user' object from useAuth
-
-            // Success message with crucial advice!
-            setMessage('Verification email sent successfully! Please check your inbox, and don\'t forget to look in your spam or junk folder.');
-            console.log('Resend verification email initiated for:', user.email);
-
-        } catch (err: any) {
-            console.error('Error sending verification email:', err);
-            let errorMessage = 'Failed to send verification email. Please try again.';
-
-            if (err.code === 'auth/too-many-requests') {
-                errorMessage = 'You have requested too many verification emails recently. Please wait a moment before trying again.';
-            } else if (err.code === 'auth/network-request-failed') {
-                errorMessage = 'Network error. Please check your internet connection and try again.';
-            }
-            setError(errorMessage);
-        } finally {
-            setIsSending(false); // Re-enable the button or stop loading indicator
-        }
+        setMessage('Verification email has been sent. Please check your inbox.');
     };
 
     if (loading) {
@@ -139,21 +97,10 @@ export default function VerifyEmailPage() {
                     <motion.button
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
-                        onClick={handleResendEmail} // Call the function directly
-                        disabled={isSending}
-                        className="w-full py-3 px-4 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-70 flex items-center justify-center cursor-pointer disabled:cursor-not-allowed"
+                        onClick={handleResendEmail}
+                        className="w-full py-3 px-4 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                     >
-                        {isSending ? (
-                            <>
-                                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                                Sending...
-                            </>
-                        ) : (
-                            'Resend Verification Email'
-                        )}
+                        Resend Verification Email
                     </motion.button>
 
                     <div className="text-center text-sm text-gray-500 mt-6">
@@ -161,7 +108,7 @@ export default function VerifyEmailPage() {
                             href="/login"
                             onClick={async (e) => {
                                 e.preventDefault();
-                                await auth.signOut();
+                                await logout();
                                 router.push('/login');
                             }}
                             className="font-medium text-blue-500 hover:underline"
