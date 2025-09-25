@@ -26,7 +26,7 @@ const TailwindCSS = () => (
 // This service handles the actual network requests. It's a clean separation
 // of concerns from your React components and hooks.
 // =========================================================================
-const BASE_URL = 'http://localhost:5000';
+const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 const authService = {
     /**
@@ -161,7 +161,7 @@ const RegisterPage = () => {
                 console.log('User registered successfully!');
                 setShowModal(true);
             },
-            onError: (err: Error) => { // Corrected this line
+            onError: (err: Error) => {
                 setLocalError(err.message);
             },
         }
