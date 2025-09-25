@@ -4,8 +4,7 @@
 // app/forgot-password/page.tsx
 'use client';
 
-import { sendPasswordResetEmail } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import axios from 'axios';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
@@ -27,11 +26,14 @@ export default function ForgotPasswordPage() {
         setMessage('');
 
         try {
-            await sendPasswordResetEmail(auth, email);
-            setMessage('Password reset email sent. Please check your inbox.');
+            const response = await axios.post('/api/auth/forgot-password', {
+                email
+            });
+
+            setMessage(response.data.message);
         } catch (err: any) {
             console.error('Error sending password reset email:', err);
-            setError('Failed to send password reset email. Please try again.');
+            setError(err.response?.data?.message || 'Failed to send password reset email. Please try again.');
         } finally {
             setIsSubmitting(false);
         }
