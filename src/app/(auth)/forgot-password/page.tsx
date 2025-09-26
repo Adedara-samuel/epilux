@@ -5,25 +5,28 @@
 'use client';
 
 import axios from 'axios';
+
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
+import { useForgotPassword } from '@/hooks';
 
 export default function ForgotPasswordPage() {
     const [email, setEmail] = useState('');
-    const [isSubmitting, setIsSubmitting] = useState(false);
     const [message, setMessage] = useState('');
     const [error, setError] = useState('');
     const router = useRouter();
+
+    const forgotPasswordMutation = useForgotPassword();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!email) return;
 
-        setIsSubmitting(true);
         setError('');
         setMessage('');
+
 
         try {
             const response = await axios.post('/api/auth/forgot-password', {
@@ -37,6 +40,17 @@ export default function ForgotPasswordPage() {
         } finally {
             setIsSubmitting(false);
         }
+
+        forgotPasswordMutation.mutate(email, {
+            onSuccess: () => {
+                setMessage('Password reset email sent. Please check your inbox.');
+            },
+            onError: (err: any) => {
+                console.error('Error sending password reset email:', err);
+                setError('Failed to send password reset email. Please try again.');
+            },
+        });
+
     };
 
     return (
@@ -104,10 +118,10 @@ export default function ForgotPasswordPage() {
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
                             type="submit"
-                            disabled={isSubmitting || !email}
+                            disabled={forgotPasswordMutation.isPending || !email}
                             className="w-full py-3 px-4 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-70 flex items-center justify-center cursor-pointer disabled:cursor-not-allowed"
                         >
-                            {isSubmitting ? (
+                            {forgotPasswordMutation.isPending ? (
                                 <>
                                     <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>

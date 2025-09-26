@@ -1,9 +1,10 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // app/context/auth-context.tsx
 'use client';
 
 import { createContext, useContext, useEffect, useState } from 'react';
 import { User } from '@/types/user';
-import { authAPI, tokenManager } from '@/lib/api';
+import { authAPI, tokenManager } from '@/services';
 import { useRouter } from 'next/navigation';
 
 interface AuthContextType {
