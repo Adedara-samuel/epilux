@@ -9,7 +9,7 @@ const authAPI = {
      * @returns {Promise<object>} - A promise that resolves with the API response.
      */
     register: async (userData: { firstName: string; lastName: string; email: string; password: string }) => {
-        const response = await fetch(`${BASE_URL}/api/register`, {
+                const response = await fetch(`${BASE_URL}/api/auth/register`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
