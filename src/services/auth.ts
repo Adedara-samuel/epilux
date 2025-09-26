@@ -86,6 +86,27 @@ const authAPI = {
         }
         return response.json();
     },
+
+    /**
+     * Sends a forgot password request.
+     * @param {object} data - The data including email.
+     * @returns {Promise<object>} - A promise that resolves with the API response.
+     */
+    forgotPassword: async (data: { email: string }) => {
+        const response = await fetch(`${BASE_URL}/api/auth/forgot-password`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Forgot password failed');
+        }
+        return response.json();
+    },
 };
 
 export { authAPI };

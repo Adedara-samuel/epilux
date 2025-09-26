@@ -11,9 +11,7 @@ import { Input } from '@/Components/ui/input';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage, Form } from '@/Components/ui/form';
 import { Button } from '@/Components/ui/button';
 import PaystackButton from '@/Components/payment/paystackbutton';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { toast } from 'sonner';
-import { db } from '@/lib/firebase'; // Import db directly from firebase config
 import { useEffect } from 'react'; // Import useEffect
 import { Loader2 } from 'lucide-react';
 
@@ -38,7 +36,7 @@ export default function CheckoutPage() {
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            fullName: user?.displayName || '',
+            fullName: user ? `${user.firstName} ${user.lastName}` : '',
             phone: '',
             address: '',
             city: '',
@@ -65,57 +63,18 @@ export default function CheckoutPage() {
         if (user && !form.formState.isDirty) {
             form.reset({
                 ...form.getValues(),
-                fullName: user.displayName || form.getValues().fullName,
+                fullName: user ? `${user.firstName} ${user.lastName}` : form.getValues().fullName,
             });
         }
 
     }, [user, authLoading, cart.length, router, form]);
 
-    const saveOrderToFirestore = async (paymentMethod: string, paystackRef?: string) => {
-        const currentUserId = user?.uid;
-
-        if (!db || !currentUserId) {
-            toast.error("Database not initialized or user ID is missing. Cannot place order.");
-            return;
-        }
-
-        const deliveryInfo = form.getValues();
-
-        const orderData = {
-            userId: currentUserId,
-            items: cart.map(item => ({
-                id: item.id,
-                name: item.name,
-                price: item.price,
-                quantity: item.quantity,
-                image: item.image,
-            })),
-            deliveryInfo: deliveryInfo,
-            paymentMethod: paymentMethod,
-            totalAmount: totalAmount,
-            subtotal: subtotal,
-            deliveryFee: deliveryFee,
-            status: 'Pending',
-            timestamp: serverTimestamp(),
-            paystackReference: paystackRef || null,
-        };
-
-        try {
-            const appId = typeof __app_id !== 'undefined' ? __app_id : process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'default-app-id';
-
-            await addDoc(collection(db, "artifacts", appId, "users", currentUserId, "orders"), orderData);
-            toast.success("Order placed successfully!");
-            clearCart();
-            router.push(`/order/success?reference=${paystackRef || 'cod'}`);
-        } catch (error) {
-            console.error("Error saving order to Firestore:", error);
-            toast.error("Failed to place order. Please try again.");
-        }
-    };
 
     const handlePaymentSuccess = (reference: any) => {
         console.log('Payment successful:', reference);
-        saveOrderToFirestore('Paystack', reference.reference);
+        toast.success("Order placed successfully!");
+        clearCart();
+        router.push(`/order/success?reference=${reference.reference}`);
     };
 
     const handleCashOnDelivery = async () => {
@@ -123,7 +82,9 @@ export default function CheckoutPage() {
         const isValid = await form.trigger();
         if (isValid) {
             // If the form is valid, then proceed to save the order
-            saveOrderToFirestore('Cash on Delivery');
+            toast.success("Order placed successfully!");
+            clearCart();
+            router.push(`/order/success?reference=cod`);
         } else {
             // If validation fails, show an error toast
             toast.error("Please fill in all required delivery details.");
@@ -284,7 +245,7 @@ export default function CheckoutPage() {
                                             amount={totalAmount}
                                             metadata={{
                                                 cart: JSON.stringify(cart),
-                                                userId: user.uid,
+                                                userId: user.id,
                                                 deliveryInfo: form.getValues(),
                                             }}
                                             onSuccess={handlePaymentSuccess}

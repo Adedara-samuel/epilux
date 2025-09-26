@@ -11,10 +11,8 @@ import { Input } from '@/Components/ui/input';
 import { Textarea } from '@/Components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/Components/ui/form';
 import { Mail, Phone, MapPin, Loader2 } from 'lucide-react';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useAuth } from '@/app/context/auth-context';
 import { toast } from 'sonner';
-import { db } from '@/lib/firebase'; // Import db directly from firebase config
 
 const contactFormSchema = z.object({
     name: z.string().min(2, 'Name is required').max(100, 'Name is too long'),
@@ -28,7 +26,7 @@ export default function ContactPage() {
     const form = useForm<z.infer<typeof contactFormSchema>>({
         resolver: zodResolver(contactFormSchema),
         defaultValues: {
-            name: user?.displayName || '', // Pre-fill name if user is logged in
+            name: user ? `${user.firstName} ${user.lastName}` : '', // Pre-fill name if user is logged in
             email: user?.email || '', // Pre-fill email if user is logged in
             subject: '',
             message: '',
@@ -37,26 +35,13 @@ export default function ContactPage() {
 
     const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-    const onSubmit = async (values: z.infer<typeof contactFormSchema>) => {
+    const onSubmit = async () => {
         setIsSubmitting(true);
-        if (!db) {
-            toast.error("Database not initialized. Cannot send message.");
-            setIsSubmitting(false);
-            return;
-        }
 
-        // Use user.uid for userId if logged in, otherwise generate a random UUID for anonymous messages
-        const currentUserId = user?.uid || crypto.randomUUID();
-
+        // Simulate sending message (Firebase removed)
         try {
-            // Determine appId based on environment
-            const appId = typeof __app_id !== 'undefined' ? __app_id : process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'default-app-id';
-
-            await addDoc(collection(db, "artifacts", appId, "public", "contactMessages"), {
-                ...values,
-                timestamp: serverTimestamp(),
-                userId: currentUserId,
-            });
+            // Simulate async operation
+            await new Promise(resolve => setTimeout(resolve, 1000));
             toast.success("Your message has been sent successfully!");
             form.reset();
         } catch (error) {
