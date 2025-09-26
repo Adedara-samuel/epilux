@@ -40,6 +40,37 @@ const validateLogin = [
         .withMessage('Password is required')
 ];
 
+// Validation rules for forgot password
+const validateForgotPassword = [
+    body('email')
+        .isEmail()
+        .withMessage('Please provide a valid email')
+        .normalizeEmail()
+];
+
+// Validation rules for reset password
+const validateResetPassword = [
+    body('token')
+        .notEmpty()
+        .withMessage('Reset token is required'),
+    
+    body('newPassword')
+        .isLength({ min: 6 })
+        .withMessage('New password must be at least 6 characters long')
+        .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
+        .withMessage('New password must contain at least one uppercase letter, one lowercase letter, and one number'),
+    
+    body('confirmPassword')
+        .notEmpty()
+        .withMessage('Please confirm your password')
+        .custom((value, { req }) => {
+            if (value !== req.body.newPassword) {
+                throw new Error('Passwords do not match');
+            }
+            return true;
+        })
+];
+
 
 // Validation rules for password update
 const validatePasswordUpdate = [
@@ -335,6 +366,8 @@ const validatePagination = [
 module.exports = {
     validateRegistration,
     validateLogin,
+    validateForgotPassword,
+    validateResetPassword,
     validatePasswordUpdate,
     validateProfileUpdate,
     validateProductCreation,

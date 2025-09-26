@@ -20,7 +20,22 @@ const config = {
     // CORS configuration
     CORS_ORIGIN: process.env.CORS_ORIGIN || 'http://localhost:3000',
     
-    // Email configuration (for future email services)
+    // Frontend URL for password reset links
+    FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:3000',
+    
+    // App configuration
+    APP_NAME: process.env.APP_NAME || 'Epilux',
+    LOGO_URL: process.env.LOGO_URL || '',
+    
+    // Email configuration
+    SMTP_HOST: process.env.SMTP_HOST || 'smtp.gmail.com',
+    SMTP_PORT: process.env.SMTP_PORT || 587,
+    SMTP_SECURE: process.env.SMTP_SECURE || 'false',
+    SMTP_USER: process.env.SMTP_USER || '',
+    SMTP_PASS: process.env.SMTP_PASS || '',
+    EMAIL_FROM: process.env.EMAIL_FROM || '',
+    
+    // Legacy email configuration (for backward compatibility)
     EMAIL_SERVICE: process.env.EMAIL_SERVICE || 'gmail',
     EMAIL_HOST: process.env.EMAIL_HOST || 'smtp.gmail.com',
     EMAIL_PORT: process.env.EMAIL_PORT || 587,

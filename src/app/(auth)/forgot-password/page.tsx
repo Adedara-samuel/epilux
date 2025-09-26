@@ -4,6 +4,8 @@
 // app/forgot-password/page.tsx
 'use client';
 
+import axios from 'axios';
+
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
@@ -25,6 +27,20 @@ export default function ForgotPasswordPage() {
         setError('');
         setMessage('');
 
+
+        try {
+            const response = await axios.post('/api/auth/forgot-password', {
+                email
+            });
+
+            setMessage(response.data.message);
+        } catch (err: any) {
+            console.error('Error sending password reset email:', err);
+            setError(err.response?.data?.message || 'Failed to send password reset email. Please try again.');
+        } finally {
+            setIsSubmitting(false);
+        }
+
         forgotPasswordMutation.mutate(email, {
             onSuccess: () => {
                 setMessage('Password reset email sent. Please check your inbox.');
@@ -34,6 +50,7 @@ export default function ForgotPasswordPage() {
                 setError('Failed to send password reset email. Please try again.');
             },
         });
+
     };
 
     return (

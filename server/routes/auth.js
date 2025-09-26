@@ -2,12 +2,16 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
+const PasswordResetToken = require('../models/PasswordResetToken');
 const { generateToken, verifyToken } = require('../middleware/auth');
+const emailService = require('../services/emailService');
 const { 
     validateRegistration, 
     validateLogin, 
     validatePasswordUpdate,
     validateProfileUpdate,
+    validateForgotPassword,
+    validateResetPassword,
     handleValidationErrors 
 } = require('../middleware/validation');
 
@@ -315,6 +319,86 @@ router.post('/verify-email', async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Internal server error during email verification'
+        });
+    }
+});
+
+// Forgot password - send reset email
+router.post('/forgot-password', validateForgotPassword, handleValidationErrors, async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        // Find user by email
+        const user = await User.findOne({ email });
+        if (!user) {
+            // Don't reveal that user doesn't exist for security reasons
+            return res.json({
+                success: true,
+                message: 'If an account with that email exists, we sent a password reset link.'
+            });
+        }
+
+        // Create password reset token
+        const resetToken = await PasswordResetToken.createToken(user._id);
+
+        // Send password reset email
+        try {
+            await emailService.sendPasswordResetEmail(user, resetToken);
+        } catch (emailError) {
+            console.error('Failed to send password reset email:', emailError);
+            return res.status(500).json({
+                success: false,
+                message: 'Failed to send password reset email. Please try again.'
+            });
+        }
+
+        res.json({
+            success: true,
+            message: 'If an account with that email exists, we sent a password reset link.'
+        });
+
+    } catch (error) {
+        console.error('Forgot password error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error during password reset request'
+        });
+    }
+});
+
+// Reset password - verify token and update password
+router.post('/reset-password', validateResetPassword, handleValidationErrors, async (req, res) => {
+    try {
+        const { token, newPassword } = req.body;
+
+        // Find valid reset token
+        const resetToken = await PasswordResetToken.findValidToken(token);
+        if (!resetToken) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid or expired reset token. Please request a new password reset.'
+            });
+        }
+
+        const user = resetToken.userId;
+
+        // Update user password
+        user.password = newPassword;
+        await user.save();
+
+        // Mark token as used
+        await PasswordResetToken.markAsUsed(token);
+
+        res.json({
+            success: true,
+            message: 'Password reset successfully. You can now log in with your new password.'
+        });
+
+    } catch (error) {
+        console.error('Reset password error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Internal server error during password reset'
         });
     }
 });
