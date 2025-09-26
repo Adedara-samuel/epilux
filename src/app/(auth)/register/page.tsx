@@ -1,130 +1,13 @@
 /* eslint-disable @next/next/no-img-element */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
-import React, { createContext, useContext, useState } from 'react';
-import { useMutation, QueryClient, QueryClientProvider, UseMutationResult } from '@tanstack/react-query';
-import { createPortal } from 'react-dom';
-import Script from 'next/script';
+import React, { useState } from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import { AuthProvider } from '@/Components/auth/AuthProvider';
+import { useAuth } from '@/hooks/useAuth';
 
-// Define the type for the AuthContext value
-interface AuthContextType {
-    user: any;
-    loading: boolean;
-    register: UseMutationResult<{ user: any; token: any; }, Error, { firstName: string; lastName: string; email: string; password: string; }, unknown>;
-    error: string | undefined;
-    token: any;
-}
-
-// Tailwind CSS is loaded via CDN for single-file deployment.
-// This should be removed if you are using a build process.
-const TailwindCSS = () => (
-    <Script src="https://cdn.tailwindcss.com" strategy="beforeInteractive" />
-);
-
-// =========================================================================
-// 1. API Service (AuthService) - This would typically be in src/services/AuthService.js
-// This service handles the actual network requests. It's a clean separation
-// of concerns from your React components and hooks.
-// =========================================================================
-const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
-
-const authService = {
-    /**
-     * Registers a new user with the backend API.
-     * @param {object} userData - The user data including firstName, lastName, email, and password.
-     * @returns {Promise<object>} - A promise that resolves with the API response.
-     */
-    register: async (userData: { firstName: string; lastName: string; email: string; password: string }) => {
-        const response = await fetch(`${BASE_URL}/api/auth/register`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(userData),
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || 'Registration failed');
-        }
-        return response.json();
-    },
-};
-
-// =========================================================================
-// 2. Custom React Hook and Context (useAuth) - This would be in src/hooks/useAuth.js
-// This hook provides a user-friendly interface to the auth service and
-// manages the authentication state using React Context and Tanstack Query.
-// =========================================================================
-const AuthContext = createContext<AuthContextType | null>(null);
-
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [user, setUser] = useState(null);
-    const [token, setToken] = useState(null);
-
-    const registerMutation = useMutation({
-        mutationFn: authService.register,
-        onSuccess: (data: { user: any; token: any }) => {
-            // Assuming your API returns a user object and a token on success
-            setUser(data.user);
-            setToken(data.token);
-        },
-        onError: (error: Error) => {
-            console.error('Registration error:', error.message);
-        },
-    });
-
-    const value = {
-        user,
-        loading: registerMutation.isPending,
-        register: registerMutation,
-        error: registerMutation.error?.message,
-        token
-    };
-
-    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-};
-
-export const useAuth = (): AuthContextType => {
-    const context = useContext(AuthContext);
-    if (!context) {
-        throw new Error('useAuth must be used within an AuthProvider');
-    }
-    return context;
-};
-
-// =========================================================================
-// 3. Simple Modal/Alert Component
-// This is a replacement for the alert() function.
-// =========================================================================
-const Modal: React.FC<{ message: string; onClose: () => void }> = ({ message, onClose }) => {
-    return createPortal(
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-lg shadow-xl p-6 max-w-sm w-full">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Notification</h3>
-                <p className="text-sm text-gray-600 mb-6">{message}</p>
-                <div className="flex justify-end">
-                    <button
-                        onClick={onClose}
-                        className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md transition-colors"
-                    >
-                        OK
-                    </button>
-                </div>
-            </div>
-        </div>,
-        document.body
-    );
-};
-
-
-// =========================================================================
-// 4. Updated Register Page Component - This would be in src/app/register/page.jsx
-// This component shows how to use the new useAuth hook with Tanstack Query's
-// mutation states.
-// =========================================================================
 const RegisterPage = () => {
-    const { register: registerMutation, loading, error } = useAuth();
+    const { register: registerMutation, loading } = useAuth();
     const [formData, setFormData] = useState({
         firstName: '',
         lastName: '',
@@ -132,8 +15,6 @@ const RegisterPage = () => {
         password: '',
         confirmPassword: ''
     });
-    const [localError, setLocalError] = useState('');
-    const [showModal, setShowModal] = useState(false);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
@@ -142,30 +23,18 @@ const RegisterPage = () => {
 
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setLocalError('');
 
     if (formData.password !== formData.confirmPassword) {
-        setLocalError('Passwords do not match.');
+        toast.error('Passwords do not match.');
         return;
     }
 
-    registerMutation.mutate(
-        {
-            email: formData.email,
-            password: formData.password,
-            firstName: formData.firstName,
-            lastName: formData.lastName
-        },
-        {
-            onSuccess: () => {
-                console.log('User registered successfully!');
-                setShowModal(true);
-            },
-            onError: (err: Error) => {
-                setLocalError(err.message);
-            },
-        }
-    );
+    registerMutation.mutate({
+        email: formData.email,
+        password: formData.password,
+        firstName: formData.firstName,
+        lastName: formData.lastName
+    });
 };
 
     return (
@@ -180,11 +49,6 @@ const RegisterPage = () => {
                         </div>
 
                         <div className="space-y-6">
-                            {(localError || error) && (
-                                <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm">
-                                    {localError || error}
-                                </div>
-                            )}
 
                             <form onSubmit={handleSubmit} className="space-y-5">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -328,35 +192,18 @@ const RegisterPage = () => {
                 </div>
                 </div>
             </div>
-            {showModal && (
-                <Modal
-                    message="Registration successful! You will be redirected to the login page."
-                    onClose={() => {
-                        setShowModal(false);
-                        // In a real app, you would use a router here.
-                        window.location.href = '/login';
-                    }}
-                />
-            )}
         </>
     );
 };
 
-// =========================================================================
-// 5. Main App Wrapper
-// This wraps your application with the necessary providers.
-// =========================================================================
 const queryClient = new QueryClient();
 
 export default function App() {
     return (
-        <>
-            <TailwindCSS />
-            <QueryClientProvider client={queryClient}>
-                <AuthProvider>
-                    <RegisterPage />
-                </AuthProvider>
-            </QueryClientProvider>
-        </>
+        <QueryClientProvider client={queryClient}>
+            <AuthProvider>
+                <RegisterPage />
+            </AuthProvider>
+        </QueryClientProvider>
     );
 }

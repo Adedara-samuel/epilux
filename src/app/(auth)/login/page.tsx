@@ -1,24 +1,26 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable react/no-unescaped-entities */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @next/next/no-img-element */
 // app/login/page.tsx
 'use client';
 
-import { useAuth } from '@/app/context/auth-context';
+import { useAuth } from '@/hooks/useAuth';
+import { AuthProvider } from '@/Components/auth/AuthProvider';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { toast } from 'sonner';
 
-export default function LoginPage() {
-    const { user, loading: authLoading, login } = useAuth();
+function LoginPage() {
+    const { user, loading: authLoading, login: loginMutation } = useAuth();
     const router = useRouter();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState('');
-    const [, setIsLoading] = useState(false);
 
     // State to hold the redirect path, initialized to a default
     const [redirectTo, setRedirectTo] = useState('/account'); // Default for general users
@@ -52,31 +54,19 @@ export default function LoginPage() {
     // Form validation
     const isFormValid = email && password && email.includes('@') && password.length >= 6;
 
-    const handleLogin = async (e: React.FormEvent) => {
+    const handleLogin = (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
-        setIsLoading(true);
-        setIsSubmitting(true); // Added this to prevent double-submitting
+        setIsSubmitting(true);
 
-        try {
-            const result = await login({ email, password });
-            
-            if (result.success) {
-                console.log('User logged in successfully');
-                toast.success('Login successful!');
-                // The redirect will be handled by the useEffect above
-            } else {
-                setError(result.message);
-                toast.error(result.message);
-            }
-        } catch (err: any) {
-            console.error("Login error:", err);
-            setError(err.message || "Login failed. Please check your credentials.");
-            toast.error(err.message || "Login failed. Please check your credentials.");
-        } finally {
-            setIsLoading(false);
-            setIsSubmitting(false); // Ensure this is reset
-        }
+        loginMutation.mutate({ email, password }, {
+            onSuccess: () => {
+                
+            },
+            onError: (err: any) => {
+                setError(err.message || "Login failed. Please check your credentials.");
+            },
+        });
     };
 
     if (authLoading || (user && !error)) {
@@ -221,5 +211,17 @@ export default function LoginPage() {
                 </div>
             </motion.div>
         </div>
+    );
+}
+
+const queryClient = new QueryClient();
+
+export default function App() {
+    return (
+        <QueryClientProvider client={queryClient}>
+            <AuthProvider>
+                <LoginPage />
+            </AuthProvider>
+        </QueryClientProvider>
     );
 }

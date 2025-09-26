@@ -1,82 +1,25 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-// src/hooks/useAuth.ts
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { authAPI } from '@/services';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { createContext, useContext } from 'react';
+import { UseMutationResult } from '@tanstack/react-query';
 
-// Hook for login
-export const useLogin = () => {
-  const queryClient = useQueryClient();
+// Define the type for the AuthContext value
+interface AuthContextType {
+    user: any;
+    loading: boolean;
+    register: UseMutationResult<{ user: any; token: any; }, Error, { firstName: string; lastName: string; email: string; password: string; }, unknown>;
+    login: UseMutationResult<{ user: any; token: any; }, Error, { email: string; password: string; }, unknown>;
+    error: string | undefined;
+    token: any;
+}
 
-  return useMutation({
-    mutationFn: authAPI.login,
-    onSuccess: (data) => {
-      // Optionally invalidate queries or update cache
-      queryClient.invalidateQueries({ queryKey: ['profile'] });
-    },
-  });
+const AuthContext = createContext<AuthContextType | null>(null);
+
+export const useAuth = (): AuthContextType => {
+    const context = useContext(AuthContext);
+    if (!context) {
+        throw new Error('useAuth must be used within an AuthProvider');
+    }
+    return context;
 };
 
-// Hook for register
-export const useRegister = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: authAPI.register,
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['profile'] });
-    },
-  });
-};
-
-// Hook for logout
-export const useLogout = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: authAPI.logout,
-    onSuccess: () => {
-      queryClient.clear();
-    },
-  });
-};
-
-// Hook for getting profile
-export const useProfile = () => {
-  return useQuery({
-    queryKey: ['profile'],
-    queryFn: authAPI.getProfile,
-  });
-};
-
-// Hook for updating profile
-export const useUpdateProfile = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: authAPI.updateProfile,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['profile'] });
-    },
-  });
-};
-
-// Hook for changing password
-export const useChangePassword = () => {
-  return useMutation({
-    mutationFn: authAPI.changePassword,
-  });
-};
-
-// Hook for forgot password
-export const useForgotPassword = () => {
-  return useMutation({
-    mutationFn: authAPI.forgotPassword,
-  });
-};
-
-// Hook for verifying email
-export const useVerifyEmail = () => {
-  return useMutation({
-    mutationFn: authAPI.verifyEmail,
-  });
-};
+export { AuthContext };
