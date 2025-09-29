@@ -36,17 +36,13 @@ function LoginPage() {
     // Redirect if already logged in (after redirectTo is set and user data is available)
     useEffect(() => {
         if (!authLoading && user) {
-            if (!user.emailVerified) {
-                router.push('/verify-email');
+            const role = user.role;
+            if (role === 'admin') {
+                router.push('/admin/dashboard');
+            } else if (role === 'affiliate') {
+                router.push('/affiliate/dashboard');
             } else {
-                const role = user.role;
-                if (role === 'admin') {
-                    router.push('/admin/dashboard');
-                } else if (role === 'affiliate') {
-                    router.push('/affiliate/dashboard');
-                } else {
-                    router.push(redirectTo);
-                }
+                router.push(redirectTo);
             }
         }
     }, [user, authLoading, router, redirectTo]);

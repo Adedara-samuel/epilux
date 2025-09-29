@@ -1,22 +1,923 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @next/next/no-img-element */
-/* eslint-disable react/no-unescaped-entities */
-// /* eslint-disable @typescript-eslint/no-unused-vars */
-// /* eslint-disable react-hooks/exhaustive-deps */
-// /* eslint-disable @typescript-eslint/no-explicit-any */
-
 "use client"
 import React, { useState, useEffect, createContext, useContext } from 'react';
-import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getAuth, signInWithCustomToken, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, Auth, User, signInAnonymously, sendPasswordResetEmail } from 'firebase/auth';
-import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, query, where, addDoc, Firestore, DocumentData, updateDoc, getDocs } from 'firebase/firestore';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 // ===============================================
 // 1. INTERFACES & DATA MODELS
 // ===============================================
-interface AffiliateData extends DocumentData {
+interface AffiliateData {
+    _id: string;
+    userId: string;
+    name: string;
+    email: string;
+    registrationDate: string;
+    totalSales: number;
+    currentCommission: number;
+    referralCode: string;
+    isActive: boolean;
+    commissionRate: number;
+    totalCommissionEarned: number;
+    totalReferrals: number;
+    createdAt: string;
+    updatedAt: string;
+}
+
+interface Commission {
+    date: string;
+    amount: number;
+    status: 'Pending' | 'Paid';
+    type: 'Sales' | 'Referral';
+}
+
+interface Referral {
+    id: string;
+    name: string;
+    email: string;
+    joinDate: string;
+    sales: number;
+    commission: number;
+}
+
+interface Transaction {
+    _id: string;
+    userId: string;
+    referrerId: string | null;
+    affiliateId: string | null;
+    bagsSold: number;
+    amount: number;
+    commissionEarned: number;
+    commissionRate: number;
+    status: 'pending' | 'completed' | 'cancelled';
+    type: 'sales' | 'referral';
+    timestamp: string;
+    description: string;
+    createdAt: string;
+    updatedAt: string;
+}
+
+interface User {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    role: string;
+}
+
+// ===============================================
+// 2. AUTH CONTEXT
+// ===============================================
+interface AuthContextType {
+    user: User | null;
+    loading: boolean;
+    logout: () => Promise<void>;
+    token: string | null;
+}
+
+const AuthContext = createContext<AuthContextType>({
+    user: null,
+    loading: true,
+    logout: async () => { },
+    token: null,
+});
+
+const useAuth = () => useContext(AuthContext);
+
+// API Service
+const apiService = {
+    async get(endpoint: string, token: string) {
+        const response = await fetch(`http://localhost:5000/api${endpoint}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        if (!response.ok) {
+            throw new Error(`API Error: ${response.status}`);
+        }
+        return response.json();
+    },
+
+    async post(endpoint: string, data: any, token: string) {
+        const response = await fetch(`http://localhost:5000/api${endpoint}`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+        if (!response.ok) {
+            throw new Error(`API Error: ${response.status}`);
+        }
+        return response.json();
+    }
+};
+
+// ===============================================
+// 3. MAIN APP COMPONENT
+// ===============================================
+const App: React.FC = () => {
+    const [user, setUser] = useState<User | null>(null);
+    const [loading, setLoading] = useState<boolean>(true);
+    const [token, setToken] = useState<string | null>(null);
+    const [userData, setUserData] = useState<AffiliateData | null>(null);
+    const [error, setError] = useState<string>('');
+
+    useEffect(() => {
+        const initializeAuth = async () => {
+            try {
+                // Get token from localStorage
+                const storedToken = localStorage.getItem('token');
+                if (!storedToken) {
+                    setLoading(false);
+                    return;
+                }
+
+                setToken(storedToken);
+                
+                // Get user info from token or localStorage
+                const storedUser = localStorage.getItem('user');
+                if (storedUser) {
+                    setUser(JSON.parse(storedUser));
+                }
+                
+                setLoading(false);
+            } catch (e: unknown) {
+                console.error("Auth initialization failed:", e);
+                setError("Failed to initialize authentication");
+                setLoading(false);
+            }
+        };
+
+        initializeAuth();
+    }, []);
+
+    useEffect(() => {
+        if (!user || !token) return;
+
+        const fetchAffiliateData = async () => {
+            try {
+                const response = await apiService.get('/affiliate/profile', token);
+                if (response.success) {
+                    setUserData(response.data);
+                    setError('');
+                } else {
+                    setUserData(null);
+                }
+            } catch (error) {
+                console.error("Error fetching affiliate data:", error);
+                setError("Failed to load affiliate data");
+                setUserData(null);
+            }
+        };
+
+        fetchAffiliateData();
+    }, [user, token]);
+
+    const handleLogout = async () => {
+        try {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            setUser(null);
+            setToken(null);
+            setUserData(null);
+            setError('');
+        } catch (e: unknown) {
+            console.error("Logout error:", e);
+            setError("Failed to log out.");
+        }
+    };
+
+    const authContextValue: AuthContextType = { user, loading, logout: handleLogout, token };
+
+    return (
+        <AuthContext.Provider value={authContextValue}>
+            <div className="min-h-screen bg-gray-100 font-inter text-gray-800">
+                <main>
+                    {loading ? (
+                        <div className="flex justify-center items-center h-screen">
+                            <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500"></div>
+                        </div>
+                    ) : user && userData ? (
+                        <AffiliateDashboardPage user={user} userData={userData} token={token} />
+                    ) : (
+                        <LandingPage />
+                    )}
+                    {error && <div className="text-red-500 text-sm text-center mt-4">{error}</div>}
+                </main>
+                <footer className="bg-blue-900 text-white text-center py-4 rounded-t-lg mt-8">
+                    <p className="font-inter">&copy; 2024 Epilux Water. All rights reserved.</p>
+                </footer>
+            </div>
+        </AuthContext.Provider>
+    );
+};
+
+// ===============================================
+// 4. HEADER COMPONENT
+// ===============================================
+interface HeaderProps {
+    isLoggedIn: boolean;
+    onLogout?: () => void;
+    onLoginClick?: () => void;
+    onNavigate: (page: string) => void;
+    displayName: string | null;
+}
+
+const Header: React.FC<HeaderProps> = ({ isLoggedIn, onLogout, onLoginClick, onNavigate, displayName }) => {
+    const [currentPage, setCurrentPage] = useState<string>('dashboard');
+
+    const handleNavigation = (page: string) => {
+        setCurrentPage(page);
+        onNavigate(page);
+    };
+
+    return (
+        <header className="bg-white shadow-md">
+            <div className="container mx-auto px-4 py-3">
+                <div className="flex justify-between items-center">
+                    <div className="flex items-center space-x-4">
+                        <h1 className="text-2xl font-bold text-blue-900">Epilux Water</h1>
+                        {isLoggedIn && (
+                            <nav className="hidden md:flex space-x-6">
+                                <button
+                                    onClick={() => handleNavigation('dashboard')}
+                                    className={`px-3 py-2 rounded-md text-sm font-medium ${currentPage === 'dashboard' ? 'bg-blue-100 text-blue-900' : 'text-gray-700 hover:bg-gray-100'}`}
+                                >
+                                    Dashboard
+                                </button>
+                                <button
+                                    onClick={() => handleNavigation('sales')}
+                                    className={`px-3 py-2 rounded-md text-sm font-medium ${currentPage === 'sales' ? 'bg-blue-100 text-blue-900' : 'text-gray-700 hover:bg-gray-100'}`}
+                                >
+                                    Sales
+                                </button>
+                                <button
+                                    onClick={() => handleNavigation('referrals')}
+                                    className={`px-3 py-2 rounded-md text-sm font-medium ${currentPage === 'referrals' ? 'bg-blue-100 text-blue-900' : 'text-gray-700 hover:bg-gray-100'}`}
+                                >
+                                    Referrals
+                                </button>
+                            </nav>
+                        )}
+                    </div>
+                    <div className="flex items-center space-x-4">
+                        {isLoggedIn ? (
+                            <>
+                                <span className="text-sm text-gray-700">Welcome, {displayName}</span>
+                                <button
+                                    onClick={onLogout}
+                                    className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors text-sm"
+                                >
+                                    Logout
+                                </button>
+                            </>
+                        ) : (
+                            <button
+                                onClick={onLoginClick}
+                                className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors text-sm"
+                            >
+                                Login
+                            </button>
+                        )}
+                    </div>
+                </div>
+            </div>
+        </header>
+    );
+};
+
+// ===============================================
+// 5. LANDING PAGE COMPONENT
+// ===============================================
+const LandingPage: React.FC = () => {
+    return (
+        <div className="max-w-4xl mx-auto px-4 py-8">
+            <div className="text-center mb-12">
+                <h1 className="text-4xl font-bold text-gray-900 mb-4">Join Our Affiliate Program</h1>
+                <p className="text-xl text-gray-600 mb-8">Earn commissions by referring customers to Epilux Water</p>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8">
+                    <h2 className="text-2xl font-semibold text-blue-900 mb-4">How It Works</h2>
+                    <div className="grid md:grid-cols-3 gap-6">
+                        <div className="text-center">
+                            <div className="bg-blue-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                                <span className="text-2xl font-bold text-blue-900">1</span>
+                            </div>
+                            <h3 className="font-semibold text-lg mb-2">Sign Up</h3>
+                            <p className="text-gray-600">Create your affiliate account and get your unique referral code</p>
+                        </div>
+                        <div className="text-center">
+                            <div className="bg-blue-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                                <span className="text-2xl font-bold text-blue-900">2</span>
+                            </div>
+                            <h3 className="font-semibold text-lg mb-2">Refer Friends</h3>
+                            <p className="text-gray-600">Share your referral code with friends and family</p>
+                        </div>
+                        <div className="text-center">
+                            <div className="bg-blue-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                                <span className="text-2xl font-bold text-blue-900">3</span>
+                            </div>
+                            <h3 className="font-semibold text-lg mb-2">Earn Commissions</h3>
+                            <p className="text-gray-600">Get paid for every successful referral and sale</p>
+                        </div>
+                    </div>
+                </div>
+                <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+                    <h2 className="text-2xl font-semibold text-green-900 mb-4">Commission Structure</h2>
+                    <ul className="text-left max-w-2xl mx-auto space-y-2">
+                        <li className="flex items-center">
+                            <span className="text-green-600 mr-2">✓</span>
+                            <span><strong>10% commission</strong> on all referred sales</span>
+                        </li>
+                        <li className="flex items-center">
+                            <span className="text-green-600 mr-2">✓</span>
+                            <span><strong>5% bonus</strong> on sales from your referrals</span>
+                        </li>
+                        <li className="flex items-center">
+                            <span className="text-green-600 mr-2">✓</span>
+                            <span><strong>Monthly payouts</strong> via bank transfer</span>
+                        </li>
+                        <li className="flex items-center">
+                            <span className="text-green-600 mr-2">✓</span>
+                            <span><strong>Real-time tracking</strong> of your commissions</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// ===============================================
+// 6. LOGIN & REGISTER COMPONENT
+// ===============================================
+interface LoginPageProps {
+    onForgotPasswordClick?: () => void;
+}
+
+const LoginPage: React.FC<LoginPageProps> = ({ onForgotPasswordClick }) => {
+    const [isLoginMode, setIsLoginMode] = useState<boolean>(true);
+    const [formData, setFormData] = useState({
+        email: '',
+        password: '',
+        firstName: '',
+        lastName: ''
+    });
+    const [loading, setLoading] = useState<boolean>(false);
+    const [error, setError] = useState<string>('');
+    const [success, setSuccess] = useState<string>('');
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
+        setError('');
+        setSuccess('');
+
+        try {
+            const endpoint = isLoginMode ? '/auth/login' : '/auth/register';
+            const response = await fetch(`http://localhost:5000/api${endpoint}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                // Store token and user data
+                localStorage.setItem('token', data.token);
+                localStorage.setItem('user', JSON.stringify(data.user));
+                setSuccess(isLoginMode ? 'Login successful!' : 'Registration successful!');
+                // Reload to update auth state
+                setTimeout(() => window.location.reload(), 1000);
+            } else {
+                setError(data.message || 'Authentication failed');
+            }
+        } catch (error) {
+            console.error('Auth error:', error);
+            setError('Network error. Please try again.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="max-w-md mx-auto mt-8 bg-white rounded-lg shadow-md p-6">
+            <h2 className="text-2xl font-bold text-center mb-6">
+                {isLoginMode ? 'Login to Your Account' : 'Create Affiliate Account'}
+            </h2>
+            
+            {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">{error}</div>}
+            {success && <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">{success}</div>}
+            
+            <form onSubmit={handleSubmit} className="space-y-4">
+                {!isLoginMode && (
+                    <>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+                            <input
+                                type="text"
+                                name="firstName"
+                                value={formData.firstName}
+                                onChange={handleInputChange}
+                                required
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+                            <input
+                                type="text"
+                                name="lastName"
+                                value={formData.lastName}
+                                onChange={handleInputChange}
+                                required
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                        </div>
+                    </>
+                )}
+                
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <input
+                        type="email"
+                        name="email"
+                        value={formData.email}
+                        onChange={handleInputChange}
+                        required
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                </div>
+                
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                    <input
+                        type="password"
+                        name="password"
+                        value={formData.password}
+                        onChange={handleInputChange}
+                        required
+                        minLength={6}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                </div>
+                
+                <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition-colors disabled:opacity-50"
+                >
+                    {loading ? 'Processing...' : (isLoginMode ? 'Login' : 'Register')}
+                </button>
+            </form>
+            
+            <div className="mt-4 text-center">
+                <button
+                    type="button"
+                    onClick={() => setIsLoginMode(!isLoginMode)}
+                    className="text-blue-500 hover:text-blue-700 text-sm"
+                >
+                    {isLoginMode ? "Don't have an account? Register" : 'Already have an account? Login'}
+                </button>
+            </div>
+            
+            {isLoginMode && onForgotPasswordClick && (
+                <div className="mt-2 text-center">
+                    <button
+                        type="button"
+                        onClick={onForgotPasswordClick}
+                        className="text-blue-500 hover:text-blue-700 text-sm"
+                    >
+                        Forgot your password?
+                    </button>
+                </div>
+            )}
+        </div>
+    );
+};
+
+// ===============================================
+// 7. AFFILIATE DASHBOARD COMPONENTS
+// ===============================================
+interface AffiliateDashboardPageProps {
+    user: User;
+    userData: AffiliateData;
+    token: string | null;
+}
+
+const AffiliateDashboardPage: React.FC<AffiliateDashboardPageProps> = ({ user, userData, token }) => {
+    const [currentPage, setCurrentPage] = useState('dashboard');
+    const [salesData, setSalesData] = useState<Transaction[]>([]);
+    const [referrals, setReferrals] = useState<Referral[]>([]);
+    const [dashboardData, setDashboardData] = useState<any>(null);
+    const [loading, setLoading] = useState(false);
+    const { logout } = useAuth();
+    const displayName = userData?.name || 'Affiliate';
+
+    // Fetch dashboard data
+    useEffect(() => {
+        if (!token) return;
+
+        const fetchDashboardData = async () => {
+            setLoading(true);
+            try {
+                const response = await apiService.get('/affiliate/dashboard', token);
+                if (response.success) {
+                    setDashboardData(response.data);
+                }
+            } catch (error) {
+                console.error('Error fetching dashboard data:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchDashboardData();
+    }, [token]);
+
+    // Fetch sales data
+    useEffect(() => {
+        if (!token) return;
+
+        const fetchSalesData = async () => {
+            try {
+                const response = await apiService.get('/affiliate/sales', token);
+                if (response.success) {
+                    setSalesData(response.data);
+                }
+            } catch (error) {
+                console.error('Error fetching sales data:', error);
+            }
+        };
+
+        fetchSalesData();
+    }, [token]);
+
+    // Fetch referrals
+    useEffect(() => {
+        if (!token) return;
+
+        const fetchReferrals = async () => {
+            try {
+                const response = await apiService.get('/affiliate/referrals', token);
+                if (response.success) {
+                    setReferrals(response.data);
+                }
+            } catch (error) {
+                console.error('Error fetching referrals:', error);
+            }
+        };
+
+        fetchReferrals();
+    }, [token]);
+
+    const renderPage = () => {
+        switch (currentPage) {
+            case 'dashboard':
+                return <DashboardContent salesData={salesData} referrals={referrals} dashboardData={dashboardData} loading={loading} />;
+            case 'sales':
+                return <SalesPage salesData={salesData} loading={loading} />;
+            case 'referrals':
+                return <ReferralPage referrals={referrals} loading={loading} />;
+            default:
+                return <DashboardContent salesData={salesData} referrals={referrals} dashboardData={dashboardData} loading={loading} />;
+        }
+    };
+
+    return (
+        <div>
+            <Header
+                isLoggedIn={true}
+                onLogout={logout}
+                onNavigate={setCurrentPage}
+                displayName={displayName}
+            />
+            <div className="container mx-auto px-4 py-8">
+                {renderPage()}
+            </div>
+        </div>
+    );
+};
+
+// ===============================================
+// 8. DASHBOARD CONTENT COMPONENT
+// ===============================================
+interface DashboardContentProps {
+    salesData: Transaction[];
+    referrals: Referral[];
+    dashboardData: any;
+    loading: boolean;
+}
+
+const DashboardContent: React.FC<DashboardContentProps> = ({ salesData, referrals, dashboardData, loading }) => {
+    if (loading) {
+        return (
+            <div className="flex justify-center items-center h-64">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+            </div>
+        );
+    }
+
+    const totalSales = dashboardData?.summary?.totalSales || 0;
+    const totalCommission = dashboardData?.summary?.totalCommission || 0;
+    const totalReferrals = dashboardData?.summary?.totalReferrals || 0;
+    const totalTransactions = dashboardData?.summary?.totalTransactions || 0;
+    const chartData = dashboardData?.salesData || [];
+
+    return (
+        <div>
+            <div className="mb-8">
+                <h2 className="text-3xl font-bold text-gray-900 mb-2">Affiliate Dashboard</h2>
+                <p className="text-gray-600">Welcome back! Here's your affiliate performance overview.</p>
+            </div>
+
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div className="bg-white rounded-lg shadow p-6">
+                    <div className="flex items-center">
+                        <div className="p-2 bg-blue-100 rounded-lg">
+                            <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <div className="ml-4">
+                            <p className="text-sm font-medium text-gray-600">Total Sales</p>
+                            <p className="text-2xl font-semibold text-gray-900">${totalSales.toFixed(2)}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="bg-white rounded-lg shadow p-6">
+                    <div className="flex items-center">
+                        <div className="p-2 bg-green-100 rounded-lg">
+                            <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <div className="ml-4">
+                            <p className="text-sm font-medium text-gray-600">Commission Earned</p>
+                            <p className="text-2xl font-semibold text-gray-900">${totalCommission.toFixed(2)}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="bg-white rounded-lg shadow p-6">
+                    <div className="flex items-center">
+                        <div className="p-2 bg-purple-100 rounded-lg">
+                            <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                            </svg>
+                        </div>
+                        <div className="ml-4">
+                            <p className="text-sm font-medium text-gray-600">Total Referrals</p>
+                            <p className="text-2xl font-semibold text-gray-900">{totalReferrals}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="bg-white rounded-lg shadow p-6">
+                    <div className="flex items-center">
+                        <div className="p-2 bg-orange-100 rounded-lg">
+                            <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                            </svg>
+                        </div>
+                        <div className="ml-4">
+                            <p className="text-sm font-medium text-gray-600">Transactions</p>
+                            <p className="text-2xl font-semibold text-gray-900">{totalTransactions}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Chart */}
+            <div className="bg-white rounded-lg shadow p-6 mb-8">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Sales & Commission Trend</h3>
+                <div className="h-80">
+                    <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={chartData}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="month" />
+                            <YAxis />
+                            <Tooltip />
+                            <Line type="monotone" dataKey="sales" stroke="#3b82f6" strokeWidth={2} name="Sales ($)" />
+                            <Line type="monotone" dataKey="commission" stroke="#10b981" strokeWidth={2} name="Commission ($)" />
+                        </LineChart>
+                    </ResponsiveContainer>
+                </div>
+            </div>
+
+            {/* Recent Activity */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div className="bg-white rounded-lg shadow p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Sales</h3>
+                    <div className="space-y-3">
+                        {salesData.slice(0, 5).map((sale) => (
+                            <div key={sale._id} className="flex justify-between items-center py-2 border-b border-gray-100">
+                                <div>
+                                    <p className="font-medium text-gray-900">{sale.description}</p>
+                                    <p className="text-sm text-gray-600">{new Date(sale.timestamp).toLocaleDateString()}</p>
+                                </div>
+                                <div className="text-right">
+                                    <p className="font-medium text-gray-900">${sale.amount.toFixed(2)}</p>
+                                    <p className="text-sm text-green-600">${sale.commissionEarned.toFixed(2)} commission</p>
+                                </div>
+                            </div>
+                        ))}
+                        {salesData.length === 0 && (
+                            <p className="text-gray-500 text-center py-4">No sales data available</p>
+                        )}
+                    </div>
+                </div>
+
+                <div className="bg-white rounded-lg shadow p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Referrals</h3>
+                    <div className="space-y-3">
+                        {referrals.slice(0, 5).map((referral) => (
+                            <div key={referral.id} className="flex justify-between items-center py-2 border-b border-gray-100">
+                                <div>
+                                    <p className="font-medium text-gray-900">{referral.name}</p>
+                                    <p className="text-sm text-gray-600">{referral.email}</p>
+                                </div>
+                                <div className="text-right">
+                                    <p className="font-medium text-gray-900">{referral.sales} sales</p>
+                                    <p className="text-sm text-green-600">${referral.commission.toFixed(2)} commission</p>
+                                </div>
+                            </div>
+                        ))}
+                        {referrals.length === 0 && (
+                            <p className="text-gray-500 text-center py-4">No referrals data available</p>
+                        )}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// ===============================================
+// 9. SALES PAGE COMPONENT
+// ===============================================
+interface SalesPageProps {
+    salesData: Transaction[];
+    loading: boolean;
+}
+
+const SalesPage: React.FC<SalesPageProps> = ({ salesData, loading }) => {
+    if (loading) {
+        return (
+            <div className="flex justify-center items-center h-64">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+            </div>
+        );
+    }
+
+    return (
+        <div>
+            <div className="mb-8">
+                <h2 className="text-3xl font-bold text-gray-900 mb-2">Sales History</h2>
+                <p className="text-gray-600">Track all your sales and commission earnings.</p>
+            </div>
+
+            <div className="bg-white rounded-lg shadow overflow-hidden">
+                <div className="px-6 py-4 border-b border-gray-200">
+                    <h3 className="text-lg font-semibold text-gray-900">All Transactions</h3>
+                </div>
+                <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                            <tr>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Commission</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                            </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                            {salesData.map((sale) => (
+                                <tr key={sale._id}>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        {new Date(sale.timestamp).toLocaleDateString()}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        {sale.description}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        ${sale.amount.toFixed(2)}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600">
+                                        ${sale.commissionEarned.toFixed(2)}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                            sale.status === 'completed' ? 'bg-green-100 text-green-800' :
+                                            sale.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                            'bg-red-100 text-red-800'
+                                        }`}>
+                                            {sale.status.charAt(0).toUpperCase() + sale.status.slice(1)}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        {sale.type.charAt(0).toUpperCase() + sale.type.slice(1)}
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+                {salesData.length === 0 && (
+                    <div className="text-center py-8">
+                        <p className="text-gray-500">No sales data available</p>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+// ===============================================
+// 10. REFERRAL PAGE COMPONENT
+// ===============================================
+interface ReferralPageProps {
+    referrals: Referral[];
+    loading: boolean;
+}
+
+const ReferralPage: React.FC<ReferralPageProps> = ({ referrals, loading }) => {
+    if (loading) {
+        return (
+            <div className="flex justify-center items-center h-64">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+            </div>
+        );
+    }
+
+    return (
+        <div>
+            <div className="mb-8">
+                <h2 className="text-3xl font-bold text-gray-900 mb-2">Your Referrals</h2>
+                <p className="text-gray-600">Manage and track your referred customers.</p>
+            </div>
+
+            <div className="bg-white rounded-lg shadow overflow-hidden">
+                <div className="px-6 py-4 border-b border-gray-200">
+                    <h3 className="text-lg font-semibold text-gray-900">Referred Customers</h3>
+                </div>
+                <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                            <tr>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Join Date</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sales</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Commission</th>
+                            </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                            {referrals.map((referral) => (
+                                <tr key={referral.id}>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                        {referral.name}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        {referral.email}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        {new Date(referral.joinDate).toLocaleDateString()}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        {referral.sales}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600">
+                                        ${referral.commission.toFixed(2)}
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+                {referrals.length === 0 && (
+                    <div className="text-center py-8">
+                        <p className="text-gray-500">No referrals data available</p>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+export default App;
     name: string;
     email: string;
     registrationDate: Date;
@@ -919,6 +1820,11 @@ const CommissionHistory: React.FC<CommissionHistoryProps> = ({ commissions }) =>
                 </li>
             ))}
         </ul>
+    </div>
+);
+
+export default App;
+
     </div>
 );
 

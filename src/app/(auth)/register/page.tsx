@@ -5,9 +5,11 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { AuthProvider } from '@/Components/auth/AuthProvider';
 import { useAuth } from '@/hooks/useAuth';
+import { useRouter } from 'next/navigation';
 
 const RegisterPage = () => {
     const { register: registerMutation, loading } = useAuth();
+    const router = useRouter();
     const [formData, setFormData] = useState({
         firstName: '',
         lastName: '',
@@ -20,6 +22,16 @@ const RegisterPage = () => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
     };
+
+    // Handle registration success and redirect to login
+    React.useEffect(() => {
+        if (registerMutation.isSuccess) {
+            toast.success('Registration successful! Please login to continue.');
+            setTimeout(() => {
+                router.push('/login');
+            }, 1500);
+        }
+    }, [registerMutation.isSuccess, router]);
 
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();

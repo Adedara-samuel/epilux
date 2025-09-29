@@ -31,7 +31,7 @@ const userSchema = new mongoose.Schema({
     },
     emailVerified: {
         type: Boolean,
-        default: false
+        default: true
     },
     createdAt: {
         type: Date,
