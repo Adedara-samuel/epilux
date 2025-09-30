@@ -13,6 +13,9 @@ const App: React.FC = () => {
                 <h1 className="text-4xl font-bold text-gray-800 mb-4">Affiliate Program</h1>
                 <p className="text-xl text-gray-600">The affiliate program is currently not available.</p>
                 <p className="text-md text-gray-500 mt-2">This feature has been disabled.</p>
+
+                <>this is the affiliate nothing like that here before!
+                </>
             </div>
         </div>
     );
