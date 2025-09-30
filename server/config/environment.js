@@ -17,6 +17,10 @@ const config = {
     JWT_EXPIRE: process.env.JWT_EXPIRE || '7d',
     JWT_REFRESH_EXPIRE: process.env.JWT_REFRESH_EXPIRE || '30d',
     
+    // Admin configuration
+    ADMIN_EMAIL: process.env.ADMIN_EMAIL || 'epiluxcompany@gmail.com',
+    ADMIN_PASSWORD: process.env.ADMIN_PASSWORD || 'De-asa-7470',
+    
     // CORS configuration
     CORS_ORIGIN: process.env.CORS_ORIGIN || 'http://localhost:3000',
     
