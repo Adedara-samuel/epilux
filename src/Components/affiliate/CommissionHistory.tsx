@@ -1,46 +1,70 @@
-import { Card } from "../ui/card";
-
+import React from 'react';
+import { Card } from '@/Components/ui/card';
+import { History, DollarSign } from 'lucide-react';
 
 interface Commission {
     date: string;
     amount: number;
-    status: 'Paid' | 'Pending';
-    type: 'Sales' | 'Referral';
+    status: string;
+    type: string;
+    transactionId: string;
 }
 
-export default function CommissionHistory({ commissions }: { commissions: Commission[] }) {
+const getStatusBadge = (status: string) => {
+    switch (status) {
+        case 'Paid':
+            return 'bg-green-100 text-green-800 border-green-300';
+        case 'Pending':
+            return 'bg-yellow-100 text-yellow-800 border-yellow-300';
+        case 'Bonus':
+            return 'bg-blue-100 text-blue-800 border-blue-300';
+        default:
+            return 'bg-gray-100 text-gray-800 border-gray-300';
+    }
+};
+
+export const CommissionHistory = ({ commissions }: { commissions: Commission[] }) => {
     return (
-        <Card className="p-6 mt-6">
-            <h3 className="font-semibold mb-4">Commission History</h3>
-            <div className="overflow-x-auto">
+        <Card className="p-6 h-full">
+            <h3 className="flex items-center text-xl font-bold text-gray-800 mb-6 border-b pb-3">
+                <History className="h-5 w-5 mr-2 text-blue-600" />
+                Transaction History
+            </h3>
+            
+            <div className="overflow-x-auto rounded-lg border border-gray-200">
                 <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                         <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Date</th>
+                            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Amount</th>
+                            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
+                            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Type</th>
+                            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">ID</th>
                         </tr>
                     </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                        {commissions.map((commission, index) => (
-                            <tr key={index}>
+                    <tbody className="bg-white divide-y divide-gray-100">
+                        {commissions && commissions.map((commission) => (
+                            <tr key={commission.transactionId} className="hover:bg-blue-50/50 transition-colors">
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{commission.date}</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">₦{commission.amount.toLocaleString()}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 flex items-center">
+                                    <DollarSign className="h-4 w-4 mr-1 text-green-500" />
+                                    ₦{commission.amount.toLocaleString()}
+                                </td>
                                 <td className="px-6 py-4 whitespace-nowrap">
-                                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${commission.status === 'Paid'
-                                            ? 'bg-green-100 text-green-800'
-                                            : 'bg-yellow-100 text-yellow-800'
-                                        }`}>
+                                    <span className={`px-3 py-1 text-xs font-semibold rounded-full border ${getStatusBadge(commission.status)}`}>
                                         {commission.status}
                                     </span>
                                 </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{commission.type}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">{commission.type}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-400 font-mono">{commission.transactionId}</td>
                             </tr>
                         ))}
                     </tbody>
                 </table>
             </div>
+            <div className="text-right mt-4">
+                <a href="#" className="text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors">View Full Report &rarr;</a>
+            </div>
         </Card>
     );
-}
+};
