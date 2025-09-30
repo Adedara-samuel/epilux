@@ -34,7 +34,8 @@ router.post('/register', validateRegistration, handleValidationErrors, async (re
             email,
             password,
             firstName,
-            lastName
+            lastName,
+            emailVerified: true
         });
 
         await user.save();
