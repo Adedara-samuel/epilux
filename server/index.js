@@ -10,7 +10,46 @@ const PORT = config.PORT;
 
 // Middleware
 app.use(cors({
-    origin: config.CORS_ORIGIN,
+    origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps, curl, etc)
+        if (!origin) return callback(null, true);
+
+        // Define allowed origins
+        const allowedOrigins = [
+            'http://localhost:3000',
+            'http://127.0.0.1:3000',
+            'http://192.168.1.101:3000',
+            // Add more origins as needed
+        ];
+
+        // Check if the origin is in the allowed list
+        if (allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            console.log('CORS blocked origin:', origin);
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps, curl, etc)
+        if (!origin) return callback(null, true);
+        
+        // Define allowed origins
+        const allowedOrigins = [
+            'http://localhost:3000',
+            'http://127.0.0.1:3000',
+            'http://192.168.1.101:3000',
+            // Add more origins as needed
+        ];
+        
+        // Check if the origin is in the allowed list
+        if (allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            console.log('CORS blocked origin:', origin);
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
@@ -50,11 +89,13 @@ if (process.env.NODE_ENV !== 'test') {
 const authRoutes = require('./routes/auth');
 const productRoutes = require('./routes/products');
 const orderRoutes = require('./routes/orders');
+const affiliateRoutes = require('./routes/affiliate');
 
 // Use routes
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
+app.use('/api/affiliate', affiliateRoutes);
 
 // Basic route for testing
 app.get('/', (req, res) => {
