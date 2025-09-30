@@ -6,7 +6,7 @@ import { UseMutationResult } from '@tanstack/react-query';
 interface AuthContextType {
     user: any;
     loading: boolean;
-    register: UseMutationResult<{ user: any; token: any; }, Error, { firstName: string; lastName: string; email: string; password: string; }, unknown>;
+    register: UseMutationResult<{ user: any; token: any; }, Error, { firstName: string; lastName: string; email: string; password: string; role?: string; }, unknown>;
     login: UseMutationResult<{ user: any; token: any; }, Error, { email: string; password: string; }, unknown>;
     error: string | undefined;
     token: any;

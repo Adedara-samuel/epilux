@@ -1,15 +1,17 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @next/next/no-img-element */
 // components/components/RegistrationModal.tsx
 "use client";
 import React, { useState } from 'react';
 import { X, User, Mail, Lock, Key, DollarSign, Users, Zap, CheckCircle } from 'lucide-react';
+import { authAPI } from '@/services/auth';
+import { toast } from 'sonner';
 
 interface RegistrationModalProps {
     isOpen: boolean;
     onClose: () => void;
 }
 
-// Key benefits extracted and strictly taken from the EPILUX WEBSITE FEATURES JUNE 2025.docx
 const programHighlights = [
     {
         icon: DollarSign,
@@ -35,7 +37,8 @@ const programHighlights = [
 
 export default function RegistrationModal({ isOpen, onClose }: RegistrationModalProps) {
     const [formData, setFormData] = useState({
-        name: '',
+        firstName: '',
+        lastName: '',
         email: '',
         referralCode: '',
         password: '',
@@ -49,16 +52,26 @@ export default function RegistrationModal({ isOpen, onClose }: RegistrationModal
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (formData.password !== formData.confirmPassword) {
-            alert("Passwords do not match!");
+            toast.error("Passwords do not match!");
             return;
         }
-        
-        console.log("Registration Data:", formData);
-        // **TODO: Implement registration API call here**
-        onClose(); // Close modal after submission attempt
+
+        try {
+            await authAPI.register({
+                firstName: formData.firstName,
+                lastName: formData.lastName,
+                email: formData.email,
+                password: formData.password,
+                role: 'affiliate'
+            });
+            toast.success("Registration successful!");
+            onClose(); // Close modal after successful registration
+        } catch (error: any) {
+            toast.error(error.message || "Registration failed");
+        }
     };
 
     return (
@@ -111,14 +124,28 @@ export default function RegistrationModal({ isOpen, onClose }: RegistrationModal
                     <p className="text-gray-500 mb-6">It only takes a minute to get started.</p>
 
                     <form onSubmit={handleSubmit} className="space-y-4">
-                        {/* Name */}
+                        {/* First Name */}
                         <div className="relative">
                             <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                             <input
                                 type="text"
-                                name="name"
-                                placeholder="Full Name"
-                                value={formData.name}
+                                name="firstName"
+                                placeholder="First Name"
+                                value={formData.firstName}
+                                onChange={handleChange}
+                                required
+                                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-blue-500 transition-colors"
+                            />
+                        </div>
+
+                        {/* Last Name */}
+                        <div className="relative">
+                            <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                            <input
+                                type="text"
+                                name="lastName"
+                                placeholder="Last Name"
+                                value={formData.lastName}
                                 onChange={handleChange}
                                 required
                                 className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-blue-500 transition-colors"
