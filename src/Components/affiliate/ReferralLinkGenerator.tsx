@@ -1,3 +1,4 @@
+"use client"
 import React, { useState, useCallback } from 'react';
 import { Link, Copy } from 'lucide-react';
 import { Card } from '../ui/card';

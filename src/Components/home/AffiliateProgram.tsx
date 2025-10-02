@@ -43,7 +43,7 @@ const AffiliateProgram: React.FC = () => {
                             </li>
                         </ul>
                         <Button asChild className="bg-white text-blue-700 hover:bg-gray-100 px-8 py-3 text-lg rounded-full shadow-lg transition-transform transform hover:scale-105">
-                            <Link href="/affiliate">Learn More & Register</Link>
+                            <Link href="/affiliate-reg">Learn More & Register</Link>
                         </Button>
                     </div>
                 </div>
