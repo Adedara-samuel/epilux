@@ -14,6 +14,24 @@ export default function MyInboxPage() {
     const [loadingMessages, setLoadingMessages] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
+    // Mock inbox data - in a real app, this would come from an API
+    const mockMessages = [
+        {
+            id: '1',
+            subject: 'Welcome to Epilux Water!',
+            message: 'Thank you for joining us. Your account has been successfully created.',
+            date: new Date().toISOString(),
+            read: false,
+        },
+        {
+            id: '2',
+            subject: 'Order Confirmation',
+            message: 'Your order has been confirmed and is being processed.',
+            date: new Date(Date.now() - 86400000).toISOString(),
+            read: true,
+        },
+    ];
+
     useEffect(() => {
         if (authLoading) {
             return;
@@ -25,9 +43,10 @@ export default function MyInboxPage() {
             return;
         }
 
-        // Inbox functionality removed with Firebase
-        setError("Inbox is currently not available.");
-        setLoadingMessages(false);
+        // Simulate API call
+        setTimeout(() => {
+            setLoadingMessages(false);
+        }, 1000);
     }, [user, authLoading]);
 
 
@@ -65,10 +84,25 @@ export default function MyInboxPage() {
                 Here you'll find all your important messages, notifications, and updates from Epilux Water.
             </p>
 
-            <div className="text-center p-10 bg-white rounded-lg shadow-md">
-                <Mail className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                <p className="text-xl text-gray-600">Inbox is currently not available.</p>
-                <p className="text-md text-gray-500 mt-2">This feature has been disabled.</p>
+            <div className="max-w-4xl mx-auto space-y-4">
+                {mockMessages.map((message) => (
+                    <Card key={message.id} className={`p-6 ${!message.read ? 'bg-blue-50 border-blue-200' : 'bg-white'}`}>
+                        <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                                <h3 className={`text-lg font-semibold ${!message.read ? 'text-blue-800' : 'text-gray-800'}`}>
+                                    {message.subject}
+                                </h3>
+                                <p className="text-gray-600 mt-2">{message.message}</p>
+                                <p className="text-sm text-gray-500 mt-2">
+                                    {new Date(message.date).toLocaleDateString()}
+                                </p>
+                            </div>
+                            {!message.read && (
+                                <div className="w-3 h-3 bg-blue-600 rounded-full ml-4 mt-2"></div>
+                            )}
+                        </div>
+                    </Card>
+                ))}
             </div>
         </div>
     );

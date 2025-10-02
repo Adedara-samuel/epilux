@@ -9,17 +9,10 @@ import { ReferralNetwork } from '@/Components/affiliate/ReferralNetwork';
 import { CommissionHistory } from '@/Components/affiliate/CommissionHistory';
 import { PerformanceMilestones } from '@/Components/affiliate/PerformanceMilestones';
 
-
-
-
-// =================================================================================================
-// --- MOCK DATA ---
-// =================================================================================================
 const mockUserData = {
     firstName: "Samuel",
     rank: "Silver Partner",
     userId: "EPILUX_SML2025",
-    // Stats Data
     totalSales: 1250,
     totalCommission: 75250,
     activeReferrals: 15,
@@ -56,7 +49,7 @@ export default function AffiliateDashboard() {
             <Header />
 
             <main className="flex-grow container mx-auto px-4 py-8 md:py-12 max-w-7xl">
-                
+
                 {/* User Welcome and Rank Banner */}
                 <div className="mb-8 p-6 bg-blue-600 rounded-xl shadow-xl text-white flex justify-between items-center flex-wrap gap-4">
                     <div>
@@ -71,7 +64,7 @@ export default function AffiliateDashboard() {
 
                 {/* ROW 1: KEY PERFORMANCE INDICATORS (4-column grid) */}
                 <section className="mb-8">
-                    <AffiliateStats 
+                    <AffiliateStats
                         totalSales={mockUserData.totalSales}
                         totalCommission={mockUserData.totalCommission}
                         activeReferrals={mockUserData.activeReferrals}
@@ -102,7 +95,7 @@ export default function AffiliateDashboard() {
                         <CommissionHistory commissions={mockUserData.commissions} />
                     </div>
                 </section>
-                
+
                 {/* ROW 4: QUICK ACTIONS (Full Width Footer card) */}
                 <section className="mt-8">
                     <ReferralLinkGenerator userId={mockUserData.userId} />

@@ -3,13 +3,13 @@
 
 import Link from 'next/link';
 import { ShoppingCart, Search, Menu, UserCircle2, X } from 'lucide-react';
-import { useCart } from '@/app/context/cart-context';
+import { useCartStore } from '@/stores/cart-store';
 import { useState } from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 
 export default function Header() {
-    const { totalItems } = useCart();
+    const { totalItems } = useCartStore();
     const [searchQuery, setSearchQuery] = useState('');
     const [showMobileSearch, setShowMobileSearch] = useState(false);
 

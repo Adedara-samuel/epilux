@@ -24,6 +24,16 @@ interface UserCredentials {
 }
 
 /**
+ * Defines the structure for user profile update data.
+ */
+interface UserProfileUpdateData {
+    firstName?: string;
+    lastName?: string;
+    phone?: string;
+    profile?: Record<string, unknown>;
+}
+
+/**
  * Helper function to handle fetch response errors consistently.
  * @param response The Response object from a fetch call.
  * @param defaultMessage The default error message to use if API response doesn't provide one.
@@ -102,6 +112,42 @@ const authAPI = {
             },
         });
         return handleResponse(response, 'Logout failed');
+    },
+
+    /**
+     * Updates the user profile.
+     * @param token - The authorization token.
+     * @param profileData - The profile data to update.
+     * @returns A promise that resolves with the API response.
+     */
+    updateProfile: async (token: string, profileData: UserProfileUpdateData) => {
+        const response = await fetch(`${BASE_URL}/api/auth/profile`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(profileData),
+        });
+        return handleResponse(response, 'Profile update failed');
+    },
+
+    /**
+     * Changes the user password.
+     * @param token - The authorization token.
+     * @param passwordData - The password data including current and new password.
+     * @returns A promise that resolves with the API response.
+     */
+    changePassword: async (token: string, passwordData: { currentPassword: string; newPassword: string }) => {
+        const response = await fetch(`${BASE_URL}/api/auth/password`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(passwordData),
+        });
+        return handleResponse(response, 'Password change failed');
     },
 
     /**

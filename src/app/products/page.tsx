@@ -3,10 +3,10 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { Product, products as allProducts } from '@/types/product';
 import { useSearchParams } from 'next/navigation';
 import ProductGrid from '@/Components/products/product-grid';
-import { useSearch } from '@/app/context/search-context'; // Import useSearch
+import { useSearchStore } from '@/stores/search-store';
+import { useProducts, useCategories, useBrands } from '@/hooks/useProducts';
 
 // Note: Metadata export is moved to app/layout.tsx for client components.
 // If you need dynamic titles based on filters, you'd update the document title client-side.
@@ -14,7 +14,7 @@ import { useSearch } from '@/app/context/search-context'; // Import useSearch
 export default function ProductsPage() {
     const searchParams = useSearchParams();
     const initialCategory = searchParams.get('category') || 'all';
-    const { searchQuery } = useSearch(); // Get searchQuery from context
+    const { searchQuery } = useSearchStore(); // Get searchQuery from store
 
     const [selectedCategory, setSelectedCategory] = useState<string>(initialCategory);
     // Removed [searchQuery, setSearchQuery] useState and handleSearch function
@@ -36,28 +36,20 @@ export default function ProductsPage() {
         window.history.pushState(null, '', `?${newSearchParams.toString()}`);
     };
 
-    const filteredProducts = useMemo(() => {
-        let productsToFilter = allProducts;
+    // Use API for products
+    const { data: productsData, isLoading } = useProducts({
+        category: selectedCategory !== 'all' ? selectedCategory : undefined,
+        search: searchQuery || undefined,
+    });
 
-        // Filter by category first
-        if (selectedCategory !== 'all') {
-            productsToFilter = productsToFilter.filter(product => product.category === selectedCategory);
-        }
+    const products = productsData?.products || [];
 
-        // Then filter by global search query
-        if (searchQuery) {
-            const lowerCaseSearchQuery = searchQuery.toLowerCase();
-            productsToFilter = productsToFilter.filter(
-                product =>
-                    product.name.toLowerCase().includes(lowerCaseSearchQuery) ||
-                    product.description.toLowerCase().includes(lowerCaseSearchQuery) ||
-                    product.category.toLowerCase().includes(lowerCaseSearchQuery) ||
-                    (product.tags && product.tags.some(tag => tag.toLowerCase().includes(lowerCaseSearchQuery)))
-            );
-        }
+    // Get categories and brands for filters
+    const { data: categoriesData } = useCategories();
+    const { data: brandsData } = useBrands();
 
-        return productsToFilter;
-    }, [selectedCategory, searchQuery]); // Depend on searchQuery from context
+    const categories = categoriesData?.categories || [];
+    const brands = brandsData?.brands || [];
 
     return (
         <div className="flex">
@@ -96,20 +88,14 @@ export default function ProductsPage() {
                 </div>
 
                 <h2 className="text-2xl font-bold text-gray-800 mb-6 ml-6">
-                    {selectedCategory === 'all' ? 'All Products' : categories.find(c => c.value === selectedCategory)?.name + ' Products'}
+                    {selectedCategory === 'all' ? 'All Products' : `${selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)} Products`}
                 </h2>
-                <ProductGrid products={filteredProducts} />
+                {isLoading ? (
+                    <div className="text-center py-8">Loading products...</div>
+                ) : (
+                    <ProductGrid products={products} />
+                )}
             </main>
         </div>
     );
 }
-
-// Define categories outside the component for consistent access
-const categories = [
-    { name: 'All', value: 'all' },
-    { name: 'Sachet Water', value: 'sachet' },
-    { name: 'Bottled Water', value: 'bottled' },
-    { name: 'Water Dispensers', value: 'dispenser' },
-    { name: 'Accessories', value: 'accessories' },
-    { name: 'Bulk Orders', value: 'bulk' },
-];

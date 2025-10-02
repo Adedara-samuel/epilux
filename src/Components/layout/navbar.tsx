@@ -16,13 +16,12 @@ import { Badge } from '../ui/badge';
 
 export default function Navbar() {
     const { user, logout } = useAuth();
-    const { cart } = useCart();
+    const { cart, totalItems } = useCart();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [isScrolled, setIsScrolled] = useState(false);
     const router = useRouter();
     const mobileMenuRef = useRef<HTMLDivElement>(null);
-    const totalItems = cart.reduce((total, item) => total + item.quantity, 0);
     const userRole = user?.role || 'customer';
 
     const categories = [
@@ -152,20 +151,22 @@ export default function Navbar() {
                         {user ? (
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                    <Button 
-                                        variant="ghost" 
-                                        className="relative h-9 w-9 rounded-full p-0 hover:bg-gray-100"
-                                    >
-                                        <Avatar className="h-9 w-9">
-                                            <AvatarImage 
-                                                src={user.photoURL || undefined} 
-                                                className="rounded-full"
-                                            />
-                                            <AvatarFallback className="flex items-center justify-center h-full w-full rounded-full bg-gradient-to-br from-blue-500 to-green-500 text-white">
-                                                {user.email?.charAt(0).toUpperCase() || 'U'}
-                                            </AvatarFallback>
-                                        </Avatar>
-                                    </Button>
+                                    <Link href="/account">
+                                        <Button
+                                            variant="ghost"
+                                            className="relative h-9 w-9 rounded-full p-0 hover:bg-gray-100"
+                                        >
+                                            <Avatar className="h-9 w-9">
+                                                <AvatarImage
+                                                    src={user.profile?.avatar || undefined}
+                                                    className="rounded-full"
+                                                />
+                                                <AvatarFallback className="flex items-center justify-center h-full w-full rounded-full bg-gradient-to-br from-blue-500 to-green-500 text-white">
+                                                    {user.firstName?.charAt(0).toUpperCase() || 'U'}
+                                                </AvatarFallback>
+                                            </Avatar>
+                                        </Button>
+                                    </Link>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent 
                                     className="w-56 rounded-md bg-white p-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none" 
@@ -174,7 +175,7 @@ export default function Navbar() {
                                 >
                                     <div className="px-3 py-2">
                                         <div className="text-sm font-medium text-gray-900 truncate">
-                                            {user.displayName || user.email}
+                                            {`${user.firstName} ${user.lastName}` || user.email}
                                         </div>
                                         <div className="text-xs text-gray-500">
                                             {userRole === 'admin'
@@ -215,7 +216,10 @@ export default function Navbar() {
                                     )}
                                     <DropdownMenuSeparator className="h-px bg-gray-200 my-1" />
                                     <DropdownMenuItem
-                                        onClick={logout}
+                                        onClick={() => {
+                                            logout();
+                                            window.location.href = '/login';
+                                        }}
                                         className="block w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded cursor-pointer"
                                     >
                                         Logout
@@ -338,7 +342,7 @@ export default function Navbar() {
                             <div className="pt-2 border-t">
                                 <div className="px-4 py-3">
                                     <div className="text-sm font-medium text-gray-900 truncate">
-                                        {user.displayName || user.email}
+                                        {`${user.firstName} ${user.lastName}` || user.email}
                                     </div>
                                     <div className="text-xs text-gray-500">
                                         {userRole === 'admin'

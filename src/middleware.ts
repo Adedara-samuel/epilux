@@ -3,15 +3,19 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import jwt from 'jsonwebtoken';
 
-const SECRET_KEY = process.env.JWT_SECRET || 'your-secret-key'; // Match with API route
+const SECRET_KEY = process.env.JWT_SECRET || 'your-secret-key';
 
 export async function middleware(request: NextRequest) {
     const path = request.nextUrl.pathname;
     const authToken = request.cookies.get('authToken')?.value;
 
-    if (path.startsWith('/admin')) {
+    // Check if the path requires authentication
+    const protectedPaths = ['/admin', '/checkout'];
+    const requiresAuth = protectedPaths.some(protectedPath => path.startsWith(protectedPath));
+
+    if (requiresAuth) {
         if (!authToken) {
-            console.log('No authToken cookie found');
+            console.log('No authToken cookie found, redirecting to login');
             return NextResponse.redirect(new URL('/login', request.url));
         }
 
@@ -28,5 +32,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-    matcher: ['/admin/:path*'],
+    matcher: ['/admin/:path*', '/checkout/:path*'],
 };

@@ -4,7 +4,7 @@
 import { ShoppingCart } from 'lucide-react';
 import { toast } from 'sonner';
 import Link from 'next/link';
-import { useCart } from '@/app/context/cart-context';
+import { useCartStore } from '@/stores/cart-store';
 import { Button } from '../ui/button';
 import { Product } from '@/types/product'; // Import Product interface
 
@@ -13,7 +13,7 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ product }: ProductCardProps) {
-    const { addToCart } = useCart();
+    const { addToCart } = useCartStore();
 
     if (!product) {
         return <div className="bg-white rounded-lg shadow p-4">Product not available</div>;

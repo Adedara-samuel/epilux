@@ -3,41 +3,39 @@
 'use client'; // Convert to client component
 
 import { notFound, useParams } from 'next/navigation';
-import { products } from '@/types/product';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { toast } from 'sonner';
 import { useCart } from '@/app/context/cart-context';
 import { Button } from '@/Components/ui/button';
+import { useProduct } from '@/hooks/useProducts';
 
 export default function ProductDetailPage() {
-    const params = useParams(); // Use useParams to get route parameters
-    const id = params.id as string; // Get the id from params
-    const [product, setProduct] = useState<typeof products[0] | null>(null);
-    const [quantity, setQuantity] = useState<number>(1); // State for quantity
-    const { addToCart } = useCart(); // Use cart context
+    const params = useParams();
+    const id = params.id as string;
+    const [quantity, setQuantity] = useState<number>(1);
+    const { addToCart } = useCart();
 
-    useEffect(() => {
-        if (id) {
-            const foundProduct = products.find((p) => p.id === id);
-            if (!foundProduct) {
-                notFound(); // Renders Next.js not-found page if product isn't found
-            }
-            setProduct(foundProduct);
-        }
-    }, [id]);
+    // Use API to fetch product
+    const { data: productData, isLoading, error } = useProduct(id);
 
-    if (!product) {
+    const product = productData?.product;
+
+    // Handle loading and error states
+    if (isLoading) {
         return (
             <div className="container mx-auto px-4 py-12 text-center">
                 <h1 className="text-2xl font-bold text-gray-700">Loading Product...</h1>
-                <p className="text-gray-500">If the product does not load, it might not exist.</p>
             </div>
         );
     }
 
+    if (error || !product) {
+        notFound(); // Renders Next.js not-found page if product isn't found
+    }
+
     const handleAddToCart = () => {
         addToCart(product, quantity); // Pass quantity to addToCart
-        toast.success(`${quantity} ${product.name}(s) added to cart!`);
+        toast.success(`${quantity} ${product.name}${quantity > 1 ? 's' : ''} added to cart!`);
     };
 
     return (
@@ -55,12 +53,12 @@ export default function ProductDetailPage() {
                 <div>
                     <h1 className="text-4xl font-extrabold text-blue-800 mb-3">{product.name}</h1>
                     {product.category && (
-                        <p className="text-lg text-gray-500 mb-4">Category: {product.category.charAt(0).toUpperCase() + product.category.slice(1)} Water</p>
+                        <p className="text-lg text-gray-500 mb-4">Category: {product.category.charAt(0).toUpperCase() + product.category.slice(1)}</p>
                     )}
 
                     {product.tags && product.tags.length > 0 && (
                         <div className="flex flex-wrap gap-2 mb-4">
-                            {product.tags.map((tag) => (
+                            {product.tags.map((tag: string) => (
                                 <span
                                     key={tag}
                                     className="px-3 py-1 text-sm font-medium rounded-full bg-blue-500/10 text-blue-600 border border-blue-200"
@@ -129,7 +127,7 @@ export default function ProductDetailPage() {
                         <h3 className="font-semibold text-xl text-gray-800 mb-3">Product Specifications</h3>
                         <ul className="text-base text-gray-700 space-y-2">
                             <li><strong className="font-medium">SKU:</strong> {product.id.toUpperCase()}</li>
-                            <li><strong className="font-medium">Category:</strong> {product.category.charAt(0).toUpperCase() + product.category.slice(1)} Water</li>
+                            <li><strong className="font-medium">Category:</strong> {product.category.charAt(0).toUpperCase() + product.category.slice(1)}</li>
                             <li><strong className="font-medium">Availability:</strong> {product.stock > 0 ? `${product.stock} units in stock` : 'Out of Stock'}</li>
                             <li><strong className="font-medium">Delivery:</strong> Free delivery on orders above ₦10,000</li>
                         </ul>

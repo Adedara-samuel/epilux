@@ -1,13 +1,14 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
-import React, { useState } from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import React, { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
-import { AuthProvider } from '@/Components/auth/AuthProvider';
 import { useAuth } from '@/hooks/useAuth';
 
 const RegisterPage = () => {
     const { register: registerMutation, loading } = useAuth();
+    const router = useRouter();
+    const searchParams = useSearchParams();
     const [formData, setFormData] = useState({
         firstName: '',
         lastName: '',
@@ -15,6 +16,15 @@ const RegisterPage = () => {
         password: '',
         confirmPassword: ''
     });
+
+    // Redirect to login on successful registration with redirect parameter
+    useEffect(() => {
+        if (registerMutation.isSuccess) {
+            const redirect = searchParams.get('redirect');
+            const loginUrl = redirect ? `/login?redirect=${encodeURIComponent(redirect)}` : '/login';
+            router.push(loginUrl);
+        }
+    }, [registerMutation.isSuccess, router, searchParams]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
@@ -196,14 +206,6 @@ const RegisterPage = () => {
     );
 };
 
-const queryClient = new QueryClient();
-
 export default function App() {
-    return (
-        <QueryClientProvider client={queryClient}>
-            <AuthProvider>
-                <RegisterPage />
-            </AuthProvider>
-        </QueryClientProvider>
-    );
+    return <RegisterPage />;
 }

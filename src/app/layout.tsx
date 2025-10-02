@@ -1,10 +1,9 @@
 // app/layout.tsx
 import './globals.css';
 import { Inter } from 'next/font/google';
-import { AuthProvider } from './context/auth-context';
-import { CartProvider } from './context/cart-context';
-// import { SearchProvider } from './context/search-context'; // REMOVE THIS LINE
 import { Toaster } from 'sonner';
+import { AuthInitializer } from '@/Components/AuthInitializer';
+import { Providers } from '@/Components/providers';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -21,17 +20,15 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <AuthProvider>
-          <CartProvider>
-            {/* SearchProvider is now moved to app/products/layout.tsx */}
-            <Toaster position="top-center" richColors />
-            <div className="flex flex-col min-h-screen">
-              <main className="flex-grow">
-                {children} {/* All page content will be rendered here */}
-              </main>
-            </div>
-          </CartProvider>
-        </AuthProvider>
+        <Providers>
+          <AuthInitializer />
+          <Toaster position="top-center" richColors />
+          <div className="flex flex-col min-h-screen">
+            <main className="flex-grow">
+              {children}
+            </main>
+          </div>
+        </Providers>
       </body>
     </html>
   );

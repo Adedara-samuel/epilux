@@ -6,8 +6,6 @@
 'use client';
 
 import { useAuth } from '@/hooks/useAuth';
-import { AuthProvider } from '@/Components/auth/AuthProvider';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
@@ -22,30 +20,30 @@ function LoginPage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState('');
 
-    // State to hold the redirect path, initialized to a default
-    const [redirectTo, setRedirectTo] = useState('/account'); // Default for general users
+    // State to hold the redirect path
+    const [redirectTo, setRedirectTo] = useState<string | null>(null);
 
     // --- IMPORTANT: Parse redirect parameter first ---
     useEffect(() => {
         if (typeof window !== 'undefined') {
             const params = new URLSearchParams(window.location.search);
-            setRedirectTo(params.get('redirect') || '/');
+            setRedirectTo(params.get('redirect') || '/products');
         }
     }, []);
 
     // Redirect if already logged in (after redirectTo is set and user data is available)
     useEffect(() => {
-        if (!authLoading && user) {
+        if (!authLoading && user && redirectTo) {
             if (!user.emailVerified) {
-                router.push('/verify-email');
+                router.replace('/verify-email');
             } else {
                 const role = user.role;
                 if (role === 'admin') {
-                    router.push('/admin/dashboard');
+                    router.replace('/admin/dashboard');
                 } else if (role === 'affiliate') {
-                    router.push('/affiliate/dashboard');
+                    router.replace('/affiliate/dashboard');
                 } else {
-                    router.push(redirectTo);
+                    router.replace(redirectTo);
                 }
             }
         }
@@ -61,15 +59,17 @@ function LoginPage() {
 
         loginMutation.mutate({ email, password }, {
             onSuccess: () => {
-                
+                // Redirect will be handled by the useEffect that watches user state
+                setIsSubmitting(false);
             },
             onError: (err: any) => {
                 setError(err.message || "Login failed. Please check your credentials.");
+                setIsSubmitting(false);
             },
         });
     };
 
-    if (authLoading || (user && !error)) {
+    if (authLoading || (user && !redirectTo)) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-white">
                 <motion.div
@@ -214,14 +214,6 @@ function LoginPage() {
     );
 }
 
-const queryClient = new QueryClient();
-
 export default function App() {
-    return (
-        <QueryClientProvider client={queryClient}>
-            <AuthProvider>
-                <LoginPage />
-            </AuthProvider>
-        </QueryClientProvider>
-    );
+    return <LoginPage />;
 }

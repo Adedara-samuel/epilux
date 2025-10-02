@@ -23,8 +23,6 @@ const categories = [
 
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     const { user, logout } = useAuth();
-
-
     const handleLinkClick = () => {
         onClose();
     };
@@ -145,6 +143,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                                             onClick={async () => {
                                                 await logout();
                                                 onClose();
+                                                window.location.href = '/login';
                                             }}
                                             className="flex items-center gap-3 px-3 py-2.5 rounded-md text-red-600 hover:bg-red-50 w-full text-left transition-colors"
                                         >

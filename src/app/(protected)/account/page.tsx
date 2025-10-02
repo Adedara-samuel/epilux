@@ -15,7 +15,7 @@ export default function AccountPage() {
     useEffect(() => {
         if (!loading && !user) {
             // If not logged in after auth state is resolved, redirect to login
-            router.push('/login?redirect=/account');
+            router.push('/login');
         }
     }, [user, loading, router]);
 

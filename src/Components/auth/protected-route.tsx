@@ -1,19 +1,21 @@
 // Components/auth/protected-route.tsx
 'use client';
 
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/app/context/auth-context';
+import { useRouter, usePathname } from 'next/navigation';
+import { useAuth } from '@/hooks/useAuth';
 import { useEffect } from 'react';
 
 export default function ProtectedRoute({ children }: { children: React.ReactNode }) {
     const { user, loading } = useAuth();
     const router = useRouter();
+    const pathname = usePathname();
 
     useEffect(() => {
         if (!loading && !user) {
-            router.push('/login');
+            const redirectUrl = `/login?redirect=${encodeURIComponent(pathname)}`;
+            router.push(redirectUrl);
         }
-    }, [user, loading, router]);
+    }, [user, loading, router, pathname]);
 
     if (loading || !user) {
         return (
