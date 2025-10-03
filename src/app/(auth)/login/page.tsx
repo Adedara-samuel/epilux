@@ -82,7 +82,7 @@ function LoginPage() {
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-white p-4">
+        <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -194,13 +194,13 @@ function LoginPage() {
                     </div>
                 </div>
 
-                <div className="hidden lg:block w-1/2 relative bg-gradient-to-br from-blue-600 to-blue-800">
+                <div className="hidden lg:block w-1/2 relative bg-blue-600">
                     <img
                         src="/images/auth-bg.jpg"
                         alt="Water delivery"
                         className="object-cover w-full h-full opacity-90"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-black/20 flex items-end p-12">
+                    <div className="absolute inset-0 bg-black/40 flex items-end p-12">
                         <div>
                             <h2 className="text-2xl font-bold text-white mb-3">Customer Dashboard</h2>
                             <p className="text-white/90 max-w-md">

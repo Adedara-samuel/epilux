@@ -239,8 +239,16 @@ export default function Navbar() {
                                 </Button>
                                 <Button
                                     asChild
+                                    variant="outline"
                                     size="sm"
-                                    className="bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 text-white shadow-sm"
+                                    className="text-blue-600 hover:text-blue-700 border-blue-300 hover:border-blue-400"
+                                >
+                                    <Link href="/admin-login">Admin Login</Link>
+                                </Button>
+                                <Button
+                                    asChild
+                                    size="sm"
+                                    className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
                                 >
                                     <Link href="/register">Register</Link>
                                 </Button>
@@ -307,30 +315,41 @@ export default function Navbar() {
 
                         {/* Mobile Auth Buttons */}
                         {!user && (
-                            <div className="flex gap-2 pt-2">
+                            <div className="space-y-2 pt-2">
                                 <Button
                                     asChild
                                     variant="outline"
                                     size="sm"
-                                    className="flex-1 border-gray-300 hover:border-blue-400 text-gray-700"
+                                    className="w-full border-gray-300 hover:border-blue-400 text-gray-700"
                                 >
                                     <Link
                                         href="/login"
                                         onClick={() => setMobileMenuOpen(false)}
-                                        className="w-full"
                                     >
                                         Login
                                     </Link>
                                 </Button>
                                 <Button
                                     asChild
+                                    variant="outline"
                                     size="sm"
-                                    className="flex-1 bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 text-white shadow-sm"
+                                    className="w-full border-blue-300 hover:border-blue-400 text-blue-600"
+                                >
+                                    <Link
+                                        href="/admin-login"
+                                        onClick={() => setMobileMenuOpen(false)}
+                                    >
+                                        Admin Login
+                                    </Link>
+                                </Button>
+                                <Button
+                                    asChild
+                                    size="sm"
+                                    className="w-full bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
                                 >
                                     <Link
                                         href="/register"
                                         onClick={() => setMobileMenuOpen(false)}
-                                        className="w-full"
                                     >
                                         Register
                                     </Link>

@@ -28,6 +28,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const loginMutation = useMutation({
         mutationFn: authAPI.login,
         onSuccess: (data: { user: any; token: any }) => {
+            // Set cookie for backend compatibility
+            if (typeof window !== 'undefined' && data.token) {
+                document.cookie = `authToken=${data.token}; path=/; max-age=86400; samesite=strict${process.env.NODE_ENV === 'production' ? '; secure' : ''}`;
+            }
             setUser(data.user);
             setToken(data.token);
             toast.success('Login successful!');
@@ -40,6 +44,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const adminLoginMutation = useMutation({
         mutationFn: authAPI.adminLogin,
         onSuccess: (data: { user: any; token: any }) => {
+            // Set cookie for backend compatibility
+            if (typeof window !== 'undefined' && data.token) {
+                document.cookie = `authToken=${data.token}; path=/; max-age=86400; samesite=strict${process.env.NODE_ENV === 'production' ? '; secure' : ''}`;
+            }
             setUser(data.user);
             setToken(data.token);
             toast.success('Admin login successful!');

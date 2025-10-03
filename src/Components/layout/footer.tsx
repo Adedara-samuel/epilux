@@ -37,7 +37,7 @@ const Footer: React.FC = () => {
                             </Link>
                         </li>
                         <li>
-                            <Link href="/login?redirect=/admin" className="hover:text-white transition-colors text-sm">
+                            <Link href="/admin-login" className="hover:text-white transition-colors text-sm">
                                 Admin Portal
                             </Link>
                         </li>
