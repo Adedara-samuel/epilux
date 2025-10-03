@@ -89,7 +89,8 @@ const adminAPI = {
      * @returns A promise that resolves with the stats data.
      */
     getDashboardStats: async (token: string) => {
-        const response = await fetch(`${BASE_URL}/api/admin/dashboard/stats`, {
+        // Use relative URL for Next.js API
+        const response = await fetch('/api/admin/dashboard/stats', {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,

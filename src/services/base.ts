@@ -13,12 +13,21 @@ export const api = axios.create({
     timeout: 10000,
 });
 
+// Override baseURL for Next.js API routes
+api.interceptors.request.use((config) => {
+    if (config.url?.startsWith('/api/')) {
+        config.baseURL = '';
+    }
+    return config;
+});
+
 // Request interceptor to add auth token
 api.interceptors.request.use(
     (config) => {
         const token = tokenManager.getToken();
         if (token && typeof window !== 'undefined') {
-            // Set token as cookie for backend compatibility
+            config.headers.Authorization = `Bearer ${token}`;
+            // Also set token as cookie for backend compatibility
             document.cookie = `authToken=${token}; path=/; max-age=86400; samesite=strict${process.env.NODE_ENV === 'production' ? '; secure' : ''}`;
         }
         return config;

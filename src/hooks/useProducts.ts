@@ -27,6 +27,7 @@ export const useCreateProduct = () => {
     mutationFn: productsAPI.createProduct,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'dashboard', 'stats'] });
     },
   });
 };

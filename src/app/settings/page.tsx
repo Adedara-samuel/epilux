@@ -15,8 +15,6 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Loader2, User, Key } from 'lucide-react';
 import { toast } from 'sonner';
 import { useUpdateProfile, useChangePassword } from '@/hooks';
-import { Label } from '@/components/ui/label';
-import { Card } from '@/Components/ui/card';
 
 // Zod schemas for validation
 const profileSchema = z.object({

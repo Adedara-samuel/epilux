@@ -7,7 +7,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
 export async function GET(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         // Verify admin token
@@ -23,7 +23,7 @@ export async function GET(
             return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
         }
 
-        const { id } = params;
+        const { id } = await params;
 
         // Mock user data - in real app, fetch from database
         const user = {
@@ -45,7 +45,7 @@ export async function GET(
 
 export async function PUT(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         // Verify admin token
@@ -61,7 +61,7 @@ export async function PUT(
             return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
         }
 
-        const { id } = params;
+        const { id } = await params;
         const { role } = await request.json();
 
         // Mock update - in real app, update in database
@@ -84,7 +84,7 @@ export async function PUT(
 
 export async function DELETE(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         // Verify admin token
@@ -100,7 +100,7 @@ export async function DELETE(
             return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
         }
 
-        const { id } = params;
+        const { id } = await params;
 
         // Mock delete - in real app, delete from database
         return NextResponse.json({ message: 'User deleted successfully' });

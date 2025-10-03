@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
-import React, { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
+import React, { useState } from 'react';
 import { toast } from 'sonner';
-import { authAPI } from '../../services/auth';
 import { AuthContext } from '../../hooks/useAuth';
+import { authAPI } from '../../services/auth';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [user, setUser] = useState(null);
@@ -28,8 +28,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const loginMutation = useMutation({
         mutationFn: authAPI.login,
         onSuccess: (data: { user: any; token: any }) => {
-            // Set cookie for backend compatibility
+            // Set token in localStorage and cookie
             if (typeof window !== 'undefined' && data.token) {
+                localStorage.setItem('authToken', data.token);
                 document.cookie = `authToken=${data.token}; path=/; max-age=86400; samesite=strict${process.env.NODE_ENV === 'production' ? '; secure' : ''}`;
             }
             setUser(data.user);
@@ -44,8 +45,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const adminLoginMutation = useMutation({
         mutationFn: authAPI.adminLogin,
         onSuccess: (data: { user: any; token: any }) => {
-            // Set cookie for backend compatibility
+            // Set token in localStorage and cookie
             if (typeof window !== 'undefined' && data.token) {
+                localStorage.setItem('authToken', data.token);
                 document.cookie = `authToken=${data.token}; path=/; max-age=86400; samesite=strict${process.env.NODE_ENV === 'production' ? '; secure' : ''}`;
             }
             setUser(data.user);

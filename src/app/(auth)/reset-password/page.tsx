@@ -1,16 +1,15 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @next/next/no-img-element */
 // app/reset-password/page.tsx
 'use client';
 
 import axios from 'axios';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 
-export default function ResetPasswordPage() {
+function ResetPasswordContent() {
     const [token, setToken] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -18,7 +17,7 @@ export default function ResetPasswordPage() {
     const [message, setMessage] = useState('');
     const [error, setError] = useState('');
     const [isValidToken, setIsValidToken] = useState(true);
-    
+
     const router = useRouter();
     const searchParams = useSearchParams();
 
@@ -209,5 +208,13 @@ export default function ResetPasswordPage() {
                 </div>
             </motion.div>
         </div>
+    );
+};
+
+export default function ResetPasswordPage() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <ResetPasswordContent />
+        </Suspense>
     );
 }
