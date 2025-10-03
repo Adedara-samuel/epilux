@@ -1,7 +1,9 @@
 /* eslint-disable react/no-unescaped-entities */
 import React from 'react';
 import { Card } from '../ui/card';
-import { Users, Gift } from 'lucide-react';
+import { Users, Gift, ArrowRight } from 'lucide-react';
+import { Button } from '../ui/button';
+import { useRouter } from 'next/navigation';
 
 interface Referral {
   name: string;
@@ -24,12 +26,25 @@ const getStatusBadge = (status: string) => {
 };
 
 export const ReferralNetwork = ({ referrals }: { referrals: Referral[] }) => {
+    const router = useRouter();
+
     return (
         <Card className="p-6 h-full">
-            <h3 className="flex items-center text-xl font-bold text-gray-800 mb-6 border-b pb-3">
-                <Users className="h-5 w-5 mr-2 text-indigo-600" />
-                Your Referral Network
-            </h3>
+            <div className="flex items-center justify-between mb-6 border-b pb-3">
+                <h3 className="flex items-center text-xl font-bold text-gray-800">
+                    <Users className="h-5 w-5 mr-2 text-indigo-600" />
+                    Your Referral Network
+                </h3>
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => router.push('/affiliate/referrals')}
+                    className="flex items-center gap-2"
+                >
+                    View All
+                    <ArrowRight className="h-4 w-4" />
+                </Button>
+            </div>
             
             {referrals && referrals.length > 0 ? (
                 <div className="space-y-4">

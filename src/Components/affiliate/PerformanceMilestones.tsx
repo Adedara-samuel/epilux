@@ -1,6 +1,7 @@
 import React from 'react';
 import { Card } from '@/Components/ui/card';
 import { Award, CheckCircle, Clock } from 'lucide-react';
+import Link from 'next/link';
 interface Milestone {
     name: string;
     progress: number;
@@ -58,6 +59,11 @@ export const PerformanceMilestones = ({ milestones }: { milestones: Milestone[] 
                         </div>
                     );
                 })}
+            </div>
+            <div className="text-center mt-6 pt-4 border-t border-gray-200">
+                <Link href="/affiliate/milestones" className="text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors">
+                    View All Milestones &rarr;
+                </Link>
             </div>
         </Card>
     );

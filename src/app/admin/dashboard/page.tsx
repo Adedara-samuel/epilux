@@ -3,54 +3,33 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/app/context/auth-context';
-import { products } from '@/types/product';
+import { useAuth } from '@/hooks/useAuth';
 import AdminStats from '@/Components/admin/admin-stats';
 import SalesOverview from '@/Components/admin/SalesOverview';
 import InventoryStatus from '@/Components/admin/InventoryStatus';
 import RecentOrders from '@/Components/admin/RecentOrders';
 import TopAffiliates from '@/Components/admin/TopAffiliates';
+import { useAdminDashboardStats } from '@/hooks/useAdmin';
+import { useProducts } from '@/hooks/useProducts';
 
-// Define the Order type with specific status values
-type Order = {
-    id: string;
-    customer: string;
-    amount: number;
-    status: 'Pending' | 'Processing' | 'Shipped' | 'Delivered' | 'Cancelled';
-    date: string;
-};
-
-type Affiliate = {
-    name: string;
-    sales: number;
-    commission: number;
-};
-
-// Mock data with proper typing
-const mockOrders: Order[] = [
-    { id: 'ORD-1001', customer: 'John Doe', amount: 12500, status: 'Delivered', date: '2023-10-15' },
-    { id: 'ORD-1002', customer: 'Jane Smith', amount: 8500, status: 'Processing', date: '2023-10-14' },
-    { id: 'ORD-1003', customer: 'Adeola Johnson', amount: 21000, status: 'Shipped', date: '2023-10-14' },
-    { id: 'ORD-1004', customer: 'Michael Brown', amount: 17500, status: 'Delivered', date: '2023-10-13' },
-    { id: 'ORD-1005', customer: 'Sarah Williams', amount: 9200, status: 'Cancelled', date: '2023-10-12' },
-];
-
-const mockAffiliates: Affiliate[] = [
-    { name: 'David Wilson', sales: 1250, commission: 62500 },
-    { name: 'Grace Adebayo', sales: 980, commission: 49000 },
-    { name: 'James Johnson', sales: 750, commission: 37500 },
-    { name: 'Patricia Davis', sales: 620, commission: 31000 },
-    { name: 'Robert Miller', sales: 580, commission: 29000 },
-];
+// TODO: Implement orders and affiliates APIs
 
 export default function AdminDashboard() {
     const { user } = useAuth();
     const router = useRouter();
     const [loading, setLoading] = useState(true);
 
+    const { data: statsData } = useAdminDashboardStats();
+    const { data: productsData } = useProducts({ limit: 20 });
+
+    const stats = statsData?.stats;
+    const products = productsData?.products || [];
+
     useEffect(() => {
         if (!user) {
             router.push('/login');
+        } else if (user.role !== 'admin') {
+            router.push('/');
         } else {
             setLoading(false);
         }
@@ -70,10 +49,10 @@ export default function AdminDashboard() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 <AdminStats
-                    totalSales={12500}
-                    totalRevenue={4375000}
-                    activeAffiliates={85}
-                    pendingOrders={12}
+                    totalSales={stats?.totalOrders || 0}
+                    totalRevenue={stats?.totalRevenue || 0}
+                    activeAffiliates={stats?.activeUsers || 0}
+                    pendingOrders={stats?.recentOrders || 0}
                 />
             </div>
 
@@ -87,8 +66,8 @@ export default function AdminDashboard() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <RecentOrders orders={mockOrders} />
-                <TopAffiliates affiliates={mockAffiliates} />
+                <RecentOrders orders={[]} /> {/* Need to implement orders API */}
+                <TopAffiliates affiliates={[]} /> {/* Need to implement affiliates API */}
             </div>
         </div>
     );

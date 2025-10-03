@@ -10,15 +10,16 @@ export const api = axios.create({
     headers: {
         'Content-Type': 'application/json',
     },
-    timeout: 10000, // 10 second timeout
+    timeout: 10000,
 });
 
 // Request interceptor to add auth token
 api.interceptors.request.use(
     (config) => {
         const token = tokenManager.getToken();
-        if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
+        if (token && typeof window !== 'undefined') {
+            // Set token as cookie for backend compatibility
+            document.cookie = `authToken=${token}; path=/; max-age=86400; samesite=strict${process.env.NODE_ENV === 'production' ? '; secure' : ''}`;
         }
         return config;
     },
@@ -31,13 +32,7 @@ api.interceptors.request.use(
 api.interceptors.response.use(
     (response) => response,
     (error) => {
-        if (error.response?.status === 401) {
-            // Clear token and redirect to login
-            tokenManager.clearAuth();
-            if (typeof window !== 'undefined') {
-                window.location.href = '/login';
-            }
-        }
+        // Don't automatically clear auth on 401, let components handle it
         return Promise.reject(error);
     }
 );
@@ -88,6 +83,8 @@ export const tokenManager = {
         if (typeof window !== 'undefined') {
             localStorage.removeItem('authToken');
             localStorage.removeItem('user');
+            // Clear the auth cookie
+            document.cookie = 'authToken=; path=/; max-age=0; samesite=strict';
         }
     },
 };

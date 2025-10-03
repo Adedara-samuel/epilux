@@ -118,7 +118,7 @@ const SubscriptionPlans: React.FC = () => {
                     </div>
                 </div>
 
-                <div className="mt-20 text-center bg-blue-700 text-white p-12 rounded-xl shadow-xl">
+                <div className="mt-20 text-center bg-blue-700 text-white p-12 rounded-xl shadow-lg">
                     <h3 className="text-3xl font-bold mb-6">Convenient Payment Options</h3>
                     <p className="text-lg opacity-90 max-w-3xl mx-auto mb-8">
                         We offer a variety of secure and flexible payment methods to ensure a smooth and hassle-free transaction experience.

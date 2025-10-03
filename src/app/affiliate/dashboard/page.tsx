@@ -1,3 +1,7 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+'use client';
+
 import React from 'react';
 import { Award } from 'lucide-react';
 import { Header } from '@/Components/affiliate/header';
@@ -8,41 +12,82 @@ import { ReferralLinkGenerator } from '@/Components/affiliate/ReferralLinkGenera
 import { ReferralNetwork } from '@/Components/affiliate/ReferralNetwork';
 import { CommissionHistory } from '@/Components/affiliate/CommissionHistory';
 import { PerformanceMilestones } from '@/Components/affiliate/PerformanceMilestones';
+import { useAuth } from '@/hooks/useAuth';
+import { useAffiliateProfile, useAffiliateDashboard, useAffiliateSales, useAffiliateReferrals } from '@/hooks/useAffiliate';
 
-const mockUserData = {
-    firstName: "Samuel",
-    rank: "Silver Partner",
-    userId: "EPILUX_SML2025",
-    totalSales: 1250,
-    totalCommission: 75250,
-    activeReferrals: 15,
-    referralBonus: 12750,
-    // Milestones Data
-    milestones: [
-        { name: 'Bronze Partner Rank', target: 500, progress: 500, reward: '₦5,000 Bonus', achieved: true },
-        { name: 'Reach 10 Referrals', target: 10, progress: 8, reward: 'Free Delivery for 3 Months', achieved: false },
-        { name: 'Silver Partner Rank', target: 2000, progress: 1250, reward: '2% Commission Increase', achieved: false },
-    ],
-    // Commission Data
-    commissions: [
-        { date: '2024-07-25', amount: 5000, status: 'Paid', type: 'Sales', transactionId: 'TXN-00124' },
-        { date: '2024-07-20', amount: 1500, status: 'Pending', type: 'Referral', transactionId: 'TXN-00123' },
-        { date: '2024-07-15', amount: 8500, status: 'Paid', type: 'Sales', transactionId: 'TXN-00122' },
-        { date: '2024-07-01', amount: 1000, status: 'Bonus', type: 'Bonus', transactionId: 'TXN-00121' },
-    ],
-    // Referral Data
-    referrals: [
-        { name: 'Blessing Adeoye', joinDate: '2024-05-01', sales: 500, commission: 25000, status: 'Active' },
-        { name: 'Kolawole Jide', joinDate: '2024-06-15', sales: 120, commission: 6000, status: 'Promising' },
-        { name: 'Tosin Alabi', joinDate: '2024-07-20', sales: 5, commission: 250, status: 'Inactive' },
-    ]
-};
+// TODO: Implement milestones API
 
 // =================================================================================================
 // --- MAIN AFFILIATE DASHBOARD LAYOUT ---
 // =================================================================================================
 
 export default function AffiliateDashboard() {
+    const { user } = useAuth();
+    const { data: profileData, isLoading: profileLoading } = useAffiliateProfile();
+    const { data: dashboardData, isLoading: dashboardLoading } = useAffiliateDashboard();
+    const { data: salesData, isLoading: salesLoading } = useAffiliateSales();
+    const { data: referralsData, isLoading: referralsLoading } = useAffiliateReferrals();
+
+    const profile = profileData?.profile;
+    const dashboard = dashboardData?.dashboard;
+    const sales = salesData?.sales || [];
+    const referrals = referralsData?.referrals || [];
+
+    const isLoading = profileLoading || dashboardLoading || salesLoading || referralsLoading;
+
+    // Calculate milestone progress
+    const totalSales = sales.filter((s: any) => s.status === 'completed').length;
+    const totalReferrals = referrals.length;
+    const totalEarnings = sales.reduce((sum: number, s: any) => sum + s.amount, 0);
+
+    const milestones = [
+        {
+            id: '1',
+            name: 'First Sale',
+            description: 'Make your first commission-earning sale',
+            target: 1,
+            current: totalSales,
+            progress: totalSales,
+            reward: '₦5,000 Bonus',
+            category: 'sales',
+            achieved: totalSales >= 1
+        },
+        {
+            id: '2',
+            name: 'Sales Champion',
+            description: 'Reach 10 successful sales',
+            target: 10,
+            current: totalSales,
+            progress: totalSales,
+            reward: 'Exclusive Affiliate Badge',
+            category: 'sales',
+            achieved: totalSales >= 10
+        },
+        {
+            id: '3',
+            name: 'Referral Master',
+            description: 'Bring in 5 active referrals',
+            target: 5,
+            current: totalReferrals,
+            progress: totalReferrals,
+            reward: '2% Commission Boost',
+            category: 'referrals',
+            achieved: totalReferrals >= 5
+        }
+    ];
+
+    if (isLoading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
+            </div>
+        );
+    }
+
+    if (!user || user.role !== 'affiliate') {
+        return <div>Access denied</div>;
+    }
+
     return (
         <div className="min-h-screen flex flex-col bg-gray-50 font-sans">
             {/* Header (Top Navigation/Branding) */}
@@ -53,22 +98,22 @@ export default function AffiliateDashboard() {
                 {/* User Welcome and Rank Banner */}
                 <div className="mb-8 p-6 bg-blue-600 rounded-xl shadow-xl text-white flex justify-between items-center flex-wrap gap-4">
                     <div>
-                        <h2 className="text-3xl font-extrabold">Hello, {mockUserData.firstName}!</h2>
-                        <p className="text-blue-100 mt-1 text-lg">Your Partner ID: <span className="font-mono bg-blue-700 px-2 py-0.5 rounded text-sm">{mockUserData.userId}</span></p>
+                        <h2 className="text-3xl font-extrabold">Hello, {user.firstName}!</h2>
+                        <p className="text-blue-100 mt-1 text-lg">Your Partner ID: <span className="font-mono bg-blue-700 px-2 py-0.5 rounded text-sm">{profile?.userId || user.id}</span></p>
                     </div>
                     <div className="flex items-center bg-white text-blue-800 px-4 py-2 rounded-full font-bold shadow-md">
                         <Award className="h-5 w-5 mr-2 text-yellow-500 fill-yellow-500" />
-                        Rank: {mockUserData.rank}
+                        Rank: Silver Partner {/* TODO: Get from API */}
                     </div>
                 </div>
 
                 {/* ROW 1: KEY PERFORMANCE INDICATORS (4-column grid) */}
                 <section className="mb-8">
                     <AffiliateStats
-                        totalSales={mockUserData.totalSales}
-                        totalCommission={mockUserData.totalCommission}
-                        activeReferrals={mockUserData.activeReferrals}
-                        referralBonus={mockUserData.referralBonus}
+                        totalSales={dashboard?.totalEarnings || 0}
+                        totalCommission={profile?.totalEarnings || 0}
+                        activeReferrals={profile?.activeReferrals || 0}
+                        referralBonus={profile?.availableBalance || 0}
                     />
                 </section>
 
@@ -80,7 +125,7 @@ export default function AffiliateDashboard() {
                     </div>
                     {/* Performance Milestones (1/3 width) */}
                     <div className="lg:col-span-1">
-                        <PerformanceMilestones milestones={mockUserData.milestones} />
+                        <PerformanceMilestones milestones={milestones} />
                     </div>
                 </section>
 
@@ -88,17 +133,17 @@ export default function AffiliateDashboard() {
                 <section className="grid grid-cols-1 lg:grid-cols-2 gap-6 auto-rows-fr">
                     {/* Referral Network (1/2 width) */}
                     <div className="lg:col-span-1">
-                        <ReferralNetwork referrals={mockUserData.referrals} />
+                        <ReferralNetwork referrals={referrals} />
                     </div>
                     {/* Commission History (1/2 width) */}
                     <div className="lg:col-span-1">
-                        <CommissionHistory commissions={mockUserData.commissions} />
+                        <CommissionHistory commissions={sales} />
                     </div>
                 </section>
 
                 {/* ROW 4: QUICK ACTIONS (Full Width Footer card) */}
                 <section className="mt-8">
-                    <ReferralLinkGenerator userId={mockUserData.userId} />
+                    <ReferralLinkGenerator userId={profile?.userId || user.id} />
                 </section>
 
             </main>

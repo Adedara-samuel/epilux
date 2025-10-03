@@ -1,6 +1,7 @@
 import React from 'react';
 import { Card } from '@/Components/ui/card';
 import { History, DollarSign } from 'lucide-react';
+import Link from 'next/link';
 
 interface Commission {
     date: string;
@@ -63,7 +64,9 @@ export const CommissionHistory = ({ commissions }: { commissions: Commission[] }
                 </table>
             </div>
             <div className="text-right mt-4">
-                <a href="#" className="text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors">View Full Report &rarr;</a>
+                <Link href="/affiliate/reports" className="text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors">
+                    View Full Report &rarr;
+                </Link>
             </div>
         </Card>
     );

@@ -4,6 +4,7 @@ import { Link, Copy } from 'lucide-react';
 import { Card } from '../ui/card';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
+import NextLink from 'next/link';
 
 interface ReferralLinkGeneratorProps {
     userId: string;
@@ -59,9 +60,9 @@ export const ReferralLinkGenerator = ({ userId }: ReferralLinkGeneratorProps) =>
                     </div>
                 </div>
             </div>
-            <a href="#" className="mt-4 text-blue-600 font-semibold hover:text-blue-700 transition-colors flex items-center justify-end">
+            <NextLink href="/affiliate/marketing" className="mt-4 text-blue-600 font-semibold hover:text-blue-700 transition-colors flex items-center justify-end">
                 Go to Marketing Assets &rarr;
-            </a>
+            </NextLink>
         </Card>
     );
 };

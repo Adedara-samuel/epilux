@@ -37,6 +37,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         },
     });
 
+    const adminLoginMutation = useMutation({
+        mutationFn: authAPI.adminLogin,
+        onSuccess: (data: { user: any; token: any }) => {
+            setUser(data.user);
+            setToken(data.token);
+            toast.success('Admin login successful!');
+        },
+        onError: (error: Error) => {
+            toast.error(`Admin login failed: ${error.message}`);
+        },
+    });
+
     const logoutMutation = useMutation({
         mutationFn: () => token ? authAPI.logout(token) : Promise.resolve(),
         onSuccess: () => {
@@ -51,11 +63,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const value = {
         user,
-        loading: registerMutation.isPending || loginMutation.isPending || logoutMutation.isPending,
+        loading: registerMutation.isPending || loginMutation.isPending || adminLoginMutation.isPending || logoutMutation.isPending,
         register: registerMutation,
         login: loginMutation,
+        adminLogin: adminLoginMutation,
         logout: logoutMutation.mutate,
-        error: registerMutation.error?.message || loginMutation.error?.message || logoutMutation.error?.message,
+        error: registerMutation.error?.message || loginMutation.error?.message || adminLoginMutation.error?.message || logoutMutation.error?.message,
         token
     };
 

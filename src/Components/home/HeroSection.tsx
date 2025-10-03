@@ -5,7 +5,7 @@ import React from 'react';
 
 const HeroSection: React.FC = () => {
     return (
-        <section className="relative bg-gradient-to-r from-blue-600 to-blue-800 text-white py-24 md:py-32 overflow-hidden shadow-lg">
+        <section className="relative bg-blue-600 text-white py-24 md:py-32 overflow-hidden shadow-lg">
             <div className="container mx-auto px-6 relative z-10 text-center">
                 <h1 className="text-4xl md:text-6xl font-extrabold mb-6 animate-fade-in-down">
                     Premium Quality Water Delivered to You

@@ -48,7 +48,7 @@ const SeasonalPromotions: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                     {promotions.map((promo, index) => (
                         <div key={index} className="relative rounded-xl overflow-hidden shadow-lg transform hover:scale-105 transition-transform duration-300">
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent z-10"></div>
+                            <div className="absolute inset-0 bg-black/70 z-10"></div>
                             <img
                                 src={promo.image}
                                 alt={promo.title}

@@ -83,6 +83,22 @@ const authAPI = {
     },
 
     /**
+     * Logs in an admin with the backend API.
+     * @param credentials - The admin credentials including email and password.
+     * @returns A promise that resolves with the API response (e.g., auth token).
+     */
+    adminLogin: async (credentials: UserCredentials) => {
+        const response = await fetch(`${BASE_URL}/api/auth/admin/login`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(credentials),
+        });
+        return handleResponse(response, 'Admin login failed');
+    },
+
+    /**
      * Gets the current user's profile.
      * @param token - The authorization token.
      * @returns A promise that resolves with the user profile data.

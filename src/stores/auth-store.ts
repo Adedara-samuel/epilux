@@ -7,6 +7,7 @@ interface AuthStore {
     user: User | null;
     loading: boolean;
     login: (credentials: { email: string; password: string }) => Promise<{ success: boolean; message: string }>;
+    adminLogin: (credentials: { email: string; password: string }) => Promise<{ success: boolean; message: string }>;
     register: (userData: { email: string; password: string; firstName: string; lastName: string }) => Promise<{ success: boolean; message: string }>;
     logout: () => Promise<void>;
     updateUser: (userData: Partial<User>) => void;
@@ -52,6 +53,25 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         } catch (error: any) {
             console.error('Login error:', error);
             const message = error.response?.data?.message || 'An error occurred during login';
+            return { success: false, message };
+        }
+    },
+
+    adminLogin: async (credentials: { email: string; password: string }) => {
+        try {
+            const response = await authAPI.adminLogin(credentials);
+
+            if (response.success && response.token && response.user) {
+                tokenManager.setToken(response.token);
+                tokenManager.setUser(response.user);
+                set({ user: response.user });
+                return { success: true, message: response.message };
+            } else {
+                return { success: false, message: response.message || 'Admin login failed' };
+            }
+        } catch (error: any) {
+            console.error('Admin login error:', error);
+            const message = error.response?.data?.message || 'An error occurred during admin login';
             return { success: false, message };
         }
     },

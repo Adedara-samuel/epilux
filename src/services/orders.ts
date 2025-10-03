@@ -3,15 +3,15 @@ import { api } from './base';
 
 // Orders API functions
 export const ordersAPI = {
-  // Get user's orders
-  getMyOrders: async (params?: {
-    page?: number;
-    limit?: number;
-    status?: string;
-  }) => {
-    const response = await api.get('/api/orders/my-orders', { params });
-    return response.data;
-  },
+  // Get user's orders
+  getMyOrders: async (params?: {
+    page?: number;
+    limit?: number;
+    status?: string;
+  }) => {
+    const response = await api.get('/api/orders/my-orders', { params });
+    return response.data;
+  },
 
   // Get single order by ID
   getOrder: async (id: string) => {

@@ -1,12 +1,31 @@
 // components/home/FeaturedProducts.tsx
-import { products, Product } from '@/types/product';
+'use client';
+
 import Link from 'next/link';
 import ProductCard from '../products/product-card';
 import { Button } from '../ui/button';
 import React from 'react';
+import { useProducts } from '@/hooks/useProducts';
+import { Product } from '@/types/product';
 
 const FeaturedProducts: React.FC = () => {
-    const bestSellerProducts: Product[] = products.filter(product => product.tags?.includes('popular') || product.tags?.includes('best-seller')).slice(0, 3);
+    const { data: productsData, isLoading } = useProducts({ limit: 6 });
+    const products = productsData?.products || [];
+
+    // Filter for featured products (you can adjust the criteria)
+    const featuredProducts = products.filter((product: Product) =>
+        product.category === 'bottled' || product.category === 'sachet'
+    ).slice(0, 3);
+
+    if (isLoading) {
+        return (
+            <section className="py-16 bg-gray-100">
+                <div className="container mx-auto px-6 text-center">
+                    <p>Loading featured products...</p>
+                </div>
+            </section>
+        );
+    }
 
     return (
         <section className="py-16 bg-gray-100">
@@ -19,7 +38,7 @@ const FeaturedProducts: React.FC = () => {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
-                    {bestSellerProducts.map((product) => (
+                    {featuredProducts.map((product: Product) => (
                         <ProductCard key={product.id} product={product} />
                     ))}
                 </div>

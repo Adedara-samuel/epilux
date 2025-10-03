@@ -49,47 +49,64 @@ export default function HelpCenterPage() {
     };
 
     return (
-        <div className="container mx-auto px-4 py-12 bg-gray-50 min-h-screen">
-            <h1 className="text-4xl font-extrabold text-blue-800 mb-8 text-center">Help Center & FAQs</h1>
-            <p className="text-lg text-gray-700 max-w-3xl mx-auto text-center mb-10">
-                Find quick answers to your most common questions about Epilux Water products, orders, and services.
-            </p>
+        <div className="min-h-screen bg-gray-50">
+            <div className="container mx-auto px-4 py-12">
+                {/* Header */}
+                <div className="text-center mb-12">
+                    <h1 className="text-4xl font-bold text-gray-900 mb-4">Help Center & FAQs</h1>
+                    <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+                        Find quick answers to your most common questions about Epilux Water products, orders, and services.
+                    </p>
+                </div>
 
-            <div className="max-w-4xl mx-auto space-y-6">
-                {faqs.map((faq, index) => (
-                    <div key={index} className="bg-white rounded-xl shadow-md overflow-hidden border border-blue-100">
-                        <button
-                            className="w-full flex justify-between items-center p-6 text-left font-semibold text-lg text-gray-800 hover:bg-blue-50 transition-colors duration-200"
-                            onClick={() => toggleFAQ(index)}
-                            aria-expanded={openIndex === index}
-                            aria-controls={`faq-answer-${index}`}
-                        >
-                            {faq.question}
-                            {openIndex === index ? (
-                                <ChevronUp className="h-6 w-6 text-blue-600" />
-                            ) : (
-                                <ChevronDown className="h-6 w-6 text-gray-500" />
-                            )}
-                        </button>
-                        <div
-                            id={`faq-answer-${index}`}
-                            className={`px-6 pb-6 text-gray-600 transition-all duration-300 ease-in-out ${openIndex === index ? 'max-h-screen opacity-100 pt-2' : 'max-h-0 opacity-0 overflow-hidden'
-                                }`}
-                        >
-                            <p>{faq.answer}</p>
-                        </div>
+                {/* FAQ Section */}
+                <div className="max-w-4xl mx-auto mb-16">
+                    <div className="space-y-4">
+                        {faqs.map((faq, index) => (
+                            <div key={index} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                                <button
+                                    className="w-full flex justify-between items-center p-6 text-left font-medium text-gray-900 hover:bg-gray-50 transition-colors"
+                                    onClick={() => toggleFAQ(index)}
+                                    aria-expanded={openIndex === index}
+                                    aria-controls={`faq-answer-${index}`}
+                                >
+                                    <span className="text-lg">{faq.question}</span>
+                                    {openIndex === index ? (
+                                        <ChevronUp className="h-5 w-5 text-gray-500 flex-shrink-0" />
+                                    ) : (
+                                        <ChevronDown className="h-5 w-5 text-gray-500 flex-shrink-0" />
+                                    )}
+                                </button>
+                                <div
+                                    id={`faq-answer-${index}`}
+                                    className={`px-6 pb-6 text-gray-700 transition-all duration-300 ease-in-out ${openIndex === index ? 'max-h-screen opacity-100 pt-2' : 'max-h-0 opacity-0 overflow-hidden'
+                                        }`}
+                                >
+                                    <p className="leading-relaxed">{faq.answer}</p>
+                                </div>
+                            </div>
+                        ))}
                     </div>
-                ))}
-            </div>
+                </div>
 
-            <div className="mt-16 text-center p-8 bg-blue-700 text-white rounded-xl shadow-lg">
-                <h2 className="text-3xl font-bold mb-4">Still Need Help?</h2>
-                <p className="text-lg mb-6 opacity-90">
-                    If you can't find the answer you're looking for, feel free to reach out to our support team.
-                </p>
-                <a href="/account/contact" className="inline-block bg-white text-blue-700 hover:bg-gray-100 px-8 py-3 rounded-full text-lg font-semibold shadow-md transition-all duration-300 transform hover:scale-105">
-                    Contact Support
-                </a>
+                {/* Contact Support Section */}
+                <div className="max-w-4xl mx-auto">
+                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
+                        <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <span className="text-3xl">💬</span>
+                        </div>
+                        <h2 className="text-2xl font-bold text-gray-900 mb-4">Still Need Help?</h2>
+                        <p className="text-gray-600 mb-6 max-w-md mx-auto">
+                            If you can't find the answer you're looking for, feel free to reach out to our support team.
+                        </p>
+                        <a
+                            href="/account/contact"
+                            className="inline-block bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+                        >
+                            Contact Support
+                        </a>
+                    </div>
+                </div>
             </div>
         </div>
     );

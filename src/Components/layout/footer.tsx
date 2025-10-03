@@ -32,7 +32,7 @@ const Footer: React.FC = () => {
                     <h4 className="font-bold text-lg text-blue-400 mb-5">Partnership</h4>
                     <ul className="space-y-3">
                         <li>
-                            <Link href="/affiliate" className="hover:text-white transition-colors text-sm">
+                            <Link href="/affiliate-reg" className="hover:text-white transition-colors text-sm">
                                 Become an Affiliate
                             </Link>
                         </li>
@@ -50,7 +50,7 @@ const Footer: React.FC = () => {
                     <ul className="space-y-3 text-sm">
                         <li className="flex items-center gap-2">
                             <Mail className="h-4 w-4 text-blue-300" />
-                            <span>info@epiluxwater.com</span>
+                            <span>epiluxcompany@gmail.com</span>
                         </li>
                         <li className="flex items-center gap-2">
                             <Phone className="h-4 w-4 text-blue-300" />

@@ -4,10 +4,10 @@ import { ordersAPI } from '@/services';
 
 // Hook for getting user's orders
 export const useMyOrders = (params?: Parameters<typeof ordersAPI.getMyOrders>[0]) => {
-  return useQuery({
-    queryKey: ['my-orders', params],
-    queryFn: () => ordersAPI.getMyOrders(params),
-  });
+  return useQuery({
+    queryKey: ['my-orders', params],
+    queryFn: () => ordersAPI.getMyOrders(params),
+  });
 };
 
 // Hook for getting single order

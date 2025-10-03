@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 // components/Navbar.tsx
 'use client';
@@ -101,8 +102,8 @@ export default function Navbar() {
 
                         {/* Logo */}
                         <Link href="/" className="flex items-center gap-2">
-                            <img 
-                                src="/images/logo.png" 
+                            <img
+                                src="/images/logo.png"
                                 className="w-10 h-10 transition-transform hover:scale-105"
                                 alt="Epilux Logo"
                             />
@@ -122,10 +123,10 @@ export default function Navbar() {
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
-                            <Button 
+                            <Button
                                 type="submit"
-                                variant="ghost" 
-                                size="icon" 
+                                variant="ghost"
+                                size="icon"
                                 className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full hover:bg-gray-100"
                             >
                                 <Search className="h-4 w-4 text-blue-600" />
@@ -168,9 +169,9 @@ export default function Navbar() {
                                         </Button>
                                     </Link>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent 
-                                    className="w-56 rounded-md bg-white p-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none" 
-                                    align="end" 
+                                <DropdownMenuContent
+                                    className="w-56 rounded-md bg-white p-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
+                                    align="end"
                                     forceMount
                                 >
                                     <div className="px-3 py-2">
@@ -187,8 +188,8 @@ export default function Navbar() {
                                     </div>
                                     <DropdownMenuSeparator className="h-px bg-gray-200 my-1" />
                                     <DropdownMenuItem asChild>
-                                        <Link 
-                                            href="/account" 
+                                        <Link
+                                            href="/account"
                                             className="block w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded"
                                         >
                                             My Account
@@ -196,8 +197,8 @@ export default function Navbar() {
                                     </DropdownMenuItem>
                                     {userRole === 'admin' && (
                                         <DropdownMenuItem asChild>
-                                            <Link 
-                                                href="/admin" 
+                                            <Link
+                                                href="/admin"
                                                 className="block w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded"
                                             >
                                                 Admin Dashboard
@@ -206,8 +207,8 @@ export default function Navbar() {
                                     )}
                                     {userRole === 'affiliate' && (
                                         <DropdownMenuItem asChild>
-                                            <Link 
-                                                href="/affiliate" 
+                                            <Link
+                                                href="/affiliate"
                                                 className="block w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded"
                                             >
                                                 Affiliate Dashboard
@@ -228,17 +229,17 @@ export default function Navbar() {
                             </DropdownMenu>
                         ) : (
                             <div className="hidden sm:flex gap-2">
-                                <Button 
-                                    asChild 
-                                    variant="outline" 
-                                    size="sm" 
+                                <Button
+                                    asChild
+                                    variant="outline"
+                                    size="sm"
                                     className="text-gray-700 hover:text-blue-600 border-gray-300 hover:border-blue-400"
                                 >
                                     <Link href="/login">Login</Link>
                                 </Button>
-                                <Button 
-                                    asChild 
-                                    size="sm" 
+                                <Button
+                                    asChild
+                                    size="sm"
                                     className="bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 text-white shadow-sm"
                                 >
                                     <Link href="/register">Register</Link>
@@ -280,10 +281,10 @@ export default function Navbar() {
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
-                            <Button 
+                            <Button
                                 type="submit"
-                                variant="ghost" 
-                                size="icon" 
+                                variant="ghost"
+                                size="icon"
                                 className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full hover:bg-gray-100"
                             >
                                 <Search className="h-4 w-4 text-blue-600" />
@@ -307,27 +308,27 @@ export default function Navbar() {
                         {/* Mobile Auth Buttons */}
                         {!user && (
                             <div className="flex gap-2 pt-2">
-                                <Button 
-                                    asChild 
-                                    variant="outline" 
-                                    size="sm" 
+                                <Button
+                                    asChild
+                                    variant="outline"
+                                    size="sm"
                                     className="flex-1 border-gray-300 hover:border-blue-400 text-gray-700"
                                 >
-                                    <Link 
-                                        href="/login" 
+                                    <Link
+                                        href="/login"
                                         onClick={() => setMobileMenuOpen(false)}
                                         className="w-full"
                                     >
                                         Login
                                     </Link>
                                 </Button>
-                                <Button 
-                                    asChild 
-                                    size="sm" 
+                                <Button
+                                    asChild
+                                    size="sm"
                                     className="flex-1 bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 text-white shadow-sm"
                                 >
-                                    <Link 
-                                        href="/register" 
+                                    <Link
+                                        href="/register"
                                         onClick={() => setMobileMenuOpen(false)}
                                         className="w-full"
                                     >

@@ -4,7 +4,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '@/app/context//auth-context';
+import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -122,115 +122,238 @@ export default function SettingsPage() {
     }
 
     return (
-        <div className="container mx-auto px-4 py-12 bg-gray-50 min-h-screen">
-            <h1 className="text-4xl font-extrabold text-blue-800 mb-8 text-center">Account Settings</h1>
-            <p className="text-lg text-gray-700 max-w-3xl mx-auto text-center mb-10">
-                Manage your personal information, security settings, and account preferences here.
-            </p>
+        <div className="min-h-screen bg-gray-50">
+            <div className="container mx-auto px-4 py-12">
+                {/* Header */}
+                <div className="text-center mb-12">
+                    <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-4">
+                        Account Settings
+                    </h1>
+                    <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+                        Manage your personal information, security settings, and account preferences
+                    </p>
+                </div>
 
-            <div className="max-w-3xl mx-auto space-y-10">
-                {/* Profile Information */}
-                <div className="bg-white rounded-xl shadow-lg p-8 border border-blue-100">
-                    <h2 className="text-2xl font-bold text-gray-800 mb-6 border-b pb-4 flex items-center gap-3">
-                        <User className="h-6 w-6 text-blue-600" /> Profile Information
-                    </h2>
-                    <Form {...profileForm}>
-                        <form onSubmit={profileForm.handleSubmit(handleProfileUpdate)} className="space-y-6">
-                            <FormItem>
-                                <Label className="text-gray-700 font-medium">Email Address</Label>
-                                <Input value={user.email || 'N/A'} disabled className="bg-gray-50 cursor-not-allowed" />
-                                <p className="text-sm text-gray-500 mt-1">Email cannot be changed here.</p>
-                            </FormItem>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <FormField
-                                    control={profileForm.control}
-                                    name="firstName"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel className="text-gray-700 font-medium">First Name</FormLabel>
-                                            <FormControl>
-                                                <Input placeholder="First Name" {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={profileForm.control}
-                                    name="lastName"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel className="text-gray-700 font-medium">Last Name</FormLabel>
-                                            <FormControl>
-                                                <Input placeholder="Last Name" {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
+                <div className="max-w-4xl mx-auto space-y-8">
+                    {/* Profile Information Card */}
+                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                        <div className="p-8 border-b border-gray-100">
+                            <div className="flex items-center gap-4">
+                                <div className="p-3 bg-blue-100 rounded-lg">
+                                    <User className="h-6 w-6 text-blue-600" />
+                                </div>
+                                <div>
+                                    <h2 className="text-2xl font-bold text-gray-900">Profile Information</h2>
+                                    <p className="text-gray-600">Update your personal details</p>
+                                </div>
                             </div>
-                            <Button type="submit" disabled={profileForm.formState.isSubmitting} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-full">
-                                {profileForm.formState.isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                                Update Profile
-                            </Button>
-                        </form>
-                    </Form>
-                </div>
+                        </div>
 
-                {/* Change Password */}
-                <div className="bg-white rounded-xl shadow-lg p-8 border border-yellow-100">
-                    <h2 className="text-2xl font-bold text-gray-800 mb-6 border-b pb-4 flex items-center gap-3">
-                        <Key className="h-6 w-6 text-yellow-600" /> Change Password
-                    </h2>
-                    <Form {...passwordForm}>
-                        <form onSubmit={passwordForm.handleSubmit(handlePasswordChange)} className="space-y-6">
-                            <FormField
-                                control={passwordForm.control}
-                                name="currentPassword"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel className="text-gray-700 font-medium">Current Password</FormLabel>
-                                        <FormControl>
-                                            <Input type="password" placeholder="Enter current password" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={passwordForm.control}
-                                name="newPassword"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel className="text-gray-700 font-medium">New Password</FormLabel>
-                                        <FormControl>
-                                            <Input type="password" placeholder="Enter new password" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={passwordForm.control}
-                                name="confirmNewPassword"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel className="text-gray-700 font-medium">Confirm New Password</FormLabel>
-                                        <FormControl>
-                                            <Input type="password" placeholder="Confirm new password" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <Button type="submit" disabled={passwordForm.formState.isSubmitting} className="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-semibold py-3 rounded-full">
-                                {passwordForm.formState.isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                                Change Password
-                            </Button>
-                        </form>
-                    </Form>
-                </div>
+                        <div className="p-8">
+                            <Form {...profileForm}>
+                                <form onSubmit={profileForm.handleSubmit(handleProfileUpdate)} className="space-y-6">
+                                    <div className="bg-gray-50/50 rounded-xl p-6 border border-gray-100">
+                                        <h3 className="text-lg font-semibold text-gray-800 mb-4">Email Address</h3>
+                                        <Input
+                                            value={user.email || 'N/A'}
+                                            disabled
+                                            className="bg-white border-gray-200 cursor-not-allowed rounded-xl"
+                                        />
+                                        <p className="text-sm text-gray-500 mt-2">Email cannot be changed here for security reasons.</p>
+                                    </div>
 
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <FormField
+                                            control={profileForm.control}
+                                            name="firstName"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel className="text-gray-700 font-medium text-lg">First Name</FormLabel>
+                                                    <FormControl>
+                                                        <Input
+                                                            placeholder="Enter your first name"
+                                                            className="rounded-xl border-gray-200 focus:border-blue-500 focus:ring-blue-500 h-12"
+                                                            {...field}
+                                                        />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <FormField
+                                            control={profileForm.control}
+                                            name="lastName"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel className="text-gray-700 font-medium text-lg">Last Name</FormLabel>
+                                                    <FormControl>
+                                                        <Input
+                                                            placeholder="Enter your last name"
+                                                            className="rounded-xl border-gray-200 focus:border-blue-500 focus:ring-blue-500 h-12"
+                                                            {...field}
+                                                        />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                    </div>
+
+                                    <Button
+                                        type="submit"
+                                        disabled={profileForm.formState.isSubmitting}
+                                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-6 rounded-lg shadow-md hover:shadow-lg transition-colors text-lg"
+                                    >
+                                        {profileForm.formState.isSubmitting ? (
+                                            <>
+                                                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                                                Updating Profile...
+                                            </>
+                                        ) : (
+                                            'Update Profile'
+                                        )}
+                                    </Button>
+                                </form>
+                            </Form>
+                        </div>
+                    </div>
+
+                    {/* Change Password Card */}
+                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                        <div className="p-8 border-b border-gray-100">
+                            <div className="flex items-center gap-4">
+                                <div className="p-3 bg-yellow-100 rounded-lg">
+                                    <Key className="h-6 w-6 text-yellow-600" />
+                                </div>
+                                <div>
+                                    <h2 className="text-2xl font-bold text-gray-900">Security Settings</h2>
+                                    <p className="text-gray-600">Change your password to keep your account secure</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="p-8">
+                            <Form {...passwordForm}>
+                                <form onSubmit={passwordForm.handleSubmit(handlePasswordChange)} className="space-y-6">
+                                    <FormField
+                                        control={passwordForm.control}
+                                        name="currentPassword"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel className="text-gray-700 font-medium text-lg">Current Password</FormLabel>
+                                                <FormControl>
+                                                    <Input
+                                                        type="password"
+                                                        placeholder="Enter your current password"
+                                                        className="rounded-xl border-gray-200 focus:border-yellow-500 focus:ring-yellow-500 h-12"
+                                                        {...field}
+                                                    />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <FormField
+                                            control={passwordForm.control}
+                                            name="newPassword"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel className="text-gray-700 font-medium text-lg">New Password</FormLabel>
+                                                    <FormControl>
+                                                        <Input
+                                                            type="password"
+                                                            placeholder="Enter new password"
+                                                            className="rounded-xl border-gray-200 focus:border-yellow-500 focus:ring-yellow-500 h-12"
+                                                            {...field}
+                                                        />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <FormField
+                                            control={passwordForm.control}
+                                            name="confirmNewPassword"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel className="text-gray-700 font-medium text-lg">Confirm New Password</FormLabel>
+                                                    <FormControl>
+                                                        <Input
+                                                            type="password"
+                                                            placeholder="Confirm new password"
+                                                            className="rounded-xl border-gray-200 focus:border-yellow-500 focus:ring-yellow-500 h-12"
+                                                            {...field}
+                                                        />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                    </div>
+
+                                    <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+                                        <div className="flex items-start gap-3">
+                                            <div className="p-1 bg-yellow-100 rounded-lg">
+                                                <Key className="h-4 w-4 text-yellow-600" />
+                                            </div>
+                                            <div>
+                                                <h4 className="font-medium text-yellow-800">Password Requirements</h4>
+                                                <ul className="text-sm text-yellow-700 mt-1 space-y-1">
+                                                    <li>• At least 6 characters long</li>
+                                                    <li>• Use a mix of letters and numbers</li>
+                                                    <li>• Avoid common passwords</li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <Button
+                                        type="submit"
+                                        disabled={passwordForm.formState.isSubmitting}
+                                        className="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-semibold py-4 px-6 rounded-lg shadow-md hover:shadow-lg transition-colors text-lg"
+                                    >
+                                        {passwordForm.formState.isSubmitting ? (
+                                            <>
+                                                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                                                Changing Password...
+                                            </>
+                                        ) : (
+                                            'Change Password'
+                                        )}
+                                    </Button>
+                                </form>
+                            </Form>
+                        </div>
+                    </div>
+
+                    {/* Account Actions */}
+                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
+                        <h2 className="text-2xl font-bold text-gray-900 mb-6">Account Actions</h2>
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between p-4 border border-gray-200 rounded-xl">
+                                <div>
+                                    <h3 className="font-medium text-gray-800">Export Account Data</h3>
+                                    <p className="text-sm text-gray-600">Download a copy of your account data</p>
+                                </div>
+                                <Button variant="outline" className="rounded-xl">
+                                    Export Data
+                                </Button>
+                            </div>
+
+                            <div className="flex items-center justify-between p-4 border border-red-200 bg-red-50 rounded-xl">
+                                <div>
+                                    <h3 className="font-medium text-red-800">Delete Account</h3>
+                                    <p className="text-sm text-red-600">Permanently delete your account and all data</p>
+                                </div>
+                                <Button variant="outline" className="border-red-300 text-red-600 hover:bg-red-50 rounded-xl">
+                                    Delete Account
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     );
