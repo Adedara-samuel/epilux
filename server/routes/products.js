@@ -1,16 +1,16 @@
-/* eslint-disable @typescript-eslint/no-require-imports */
-const express = require('express');
-const router = express.Router();
-const Product = require('../models/Product');
-const { catchAsync, NotFoundError } = require('../middleware/errorHandler');
-const {
+import express from 'express';
+import Product from '../models/Product.js';
+import { catchAsync, NotFoundError } from '../middleware/errorHandler.js';
+import {
     validateProductCreation,
     validateProductUpdate,
     validateMongoId,
     validatePagination,
     handleValidationErrors
-} = require('../middleware/validation');
-const { authenticate, authorize } = require('../middleware/auth');
+} from '../middleware/validation.js';
+import { authenticate, authorize } from '../middleware/auth.js';
+
+const router = express.Router();
 
 // Get all products (public)
 router.get('/', validatePagination, handleValidationErrors, catchAsync(async (req, res) => {
@@ -159,4 +159,4 @@ router.get('/brands/list', catchAsync(async (req, res) => {
     });
 }));
 
-module.exports = router;
+export default router;

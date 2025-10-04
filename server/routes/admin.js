@@ -1,50 +1,50 @@
-const express = require('express');
+import express from 'express';
+import { authenticate, authorize } from '../middleware/auth.js';
+import * as adminController from '../controllers/adminController.js';
+import * as productController from '../controllers/productController.js';
+import * as orderController from '../controllers/orderController.js';
+import User from '../models/User.js';
+
 const router = express.Router();
-const { authenticate, authorize } = require('../middleware/auth');
-const User = require('../models/User');
 
-// Get all users (admin only)
-router.get('/users', authenticate, authorize('admin'), async (req, res) => {
-    try {
-        const users = await User.find().select('-password').sort({ createdAt: -1 });
-        
-        res.json({
-            success: true,
-            users
-        });
-    } catch (error) {
-        console.error('Error fetching users:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error fetching users'
-        });
-    }
-});
+// Admin dashboard stats
+router.get('/dashboard/stats', authenticate, authorize('admin'), adminController.getDashboardStats);
 
-// Get user by ID (admin only)
-router.get('/users/:id', authenticate, authorize('admin'), async (req, res) => {
-    try {
-        const user = await User.findById(req.params.id).select('-password');
-        
-        if (!user) {
-            return res.status(404).json({
-                success: false,
-                message: 'User not found'
-            });
-        }
+// User management routes
+router.get('/users', authenticate, authorize('admin'), adminController.getUsers);
+router.get('/users/:id', authenticate, authorize('admin'), adminController.getUser);
+router.put('/users/:id', authenticate, authorize('admin'), adminController.updateUser);
+router.delete('/users/:id', authenticate, authorize('admin'), adminController.deleteUser);
 
-        res.json({
-            success: true,
-            user
-        });
-    } catch (error) {
-        console.error('Error fetching user:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error fetching user'
-        });
-    }
-});
+// Product management routes
+router.get('/products', authenticate, authorize('admin'), productController.getProducts);
+router.post('/products', authenticate, authorize('admin'), productController.createProduct);
+router.get('/products/:id', authenticate, authorize('admin'), productController.getProduct);
+router.put('/products/:id', authenticate, authorize('admin'), productController.updateProduct);
+router.delete('/products/:id', authenticate, authorize('admin'), productController.deleteProduct);
+router.get('/products/categories', authenticate, authorize('admin'), productController.getCategories);
+
+// Order management routes
+router.get('/orders', authenticate, authorize('admin'), orderController.getOrders);
+router.get('/orders/:id', authenticate, authorize('admin'), orderController.getOrder);
+router.put('/orders/:id/status', authenticate, authorize('admin'), orderController.updateOrderStatus);
+router.get('/orders/stats', authenticate, authorize('admin'), orderController.getOrderStats);
+
+// Affiliate management routes
+router.get('/affiliates', authenticate, authorize('admin'), adminController.getAffiliates);
+router.get('/affiliates/:id', authenticate, authorize('admin'), adminController.getAffiliate);
+router.put('/affiliates/:id/status', authenticate, authorize('admin'), adminController.updateAffiliateStatus);
+router.get('/affiliates/:id/commissions', authenticate, authorize('admin'), adminController.getAffiliateCommissions);
+router.post('/affiliates/:id/commission', authenticate, authorize('admin'), adminController.createCommission);
+router.put('/commissions/:id/status', authenticate, authorize('admin'), adminController.updateCommissionStatus);
+
+// Withdrawal management routes
+router.get('/withdrawals', authenticate, authorize('admin'), adminController.getWithdrawals);
+router.put('/withdrawals/:id/status', authenticate, authorize('admin'), adminController.updateWithdrawalStatus);
+
+// System settings routes
+router.get('/settings', authenticate, authorize('admin'), adminController.getSettings);
+router.put('/settings', authenticate, authorize('admin'), adminController.updateSettings);
 
 // Update user role (admin only)
 router.put('/users/:id/role', authenticate, authorize('admin'), async (req, res) => {
@@ -160,4 +160,4 @@ router.get('/users/recent', authenticate, authorize('admin'), async (req, res) =
     }
 });
 
-module.exports = router;
+export default router;

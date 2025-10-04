@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 
-const fs = require('fs');
-const path = require('path');
-const readline = require('readline');
+import fs from 'fs';
+import path from 'path';
+import { createInterface } from 'readline';
+
+const readline = { createInterface };
 
 // Colors for console output
 const colors = {
@@ -84,9 +86,8 @@ async function setupAdminCredentials() {
     }
 }
 
-// Check if script is run directly
-if (require.main === module) {
-    setupAdminCredentials();
-}
+// Run the script
+setupAdminCredentials();
 
-module.exports = { setupAdminCredentials };
+// Export for testing purposes
+export { setupAdminCredentials };

@@ -1,11 +1,9 @@
-/* eslint-disable @typescript-eslint/no-require-imports */
-const express = require('express');
-const router = express.Router();
-const User = require('../models/User');
-const PasswordResetToken = require('../models/PasswordResetToken');
-const { generateToken, verifyToken } = require('../middleware/auth');
-const emailService = require('../services/emailService');
-const { 
+import express from 'express';
+import User from '../models/User.js';
+import PasswordResetToken from '../models/PasswordResetToken.js';
+import { generateToken, verifyToken } from '../middleware/auth.js';
+import emailService from '../services/emailService.js';
+import { 
     validateRegistration, 
     validateLogin, 
     validatePasswordUpdate,
@@ -13,7 +11,9 @@ const {
     validateForgotPassword,
     validateResetPassword,
     handleValidationErrors 
-} = require('../middleware/validation');
+} from '../middleware/validation.js';
+
+const router = express.Router();
 
 // Register new user
 router.post('/register', validateRegistration, handleValidationErrors, async (req, res) => {
@@ -286,7 +286,7 @@ router.get('/profile', async (req, res) => {
 });
 
 // Update user profile
-router.put('/profile', validateProfileUpdate, handleValidationErrors, async (req, res) => {
+router.put('/api/auth/profile', validateProfileUpdate, handleValidationErrors, async (req, res) => {
     try {
         const token = req.header('Authorization')?.replace('Bearer ', '');
         
@@ -348,7 +348,7 @@ router.put('/profile', validateProfileUpdate, handleValidationErrors, async (req
 });
 
 // Change password
-router.put('/password', validatePasswordUpdate, handleValidationErrors, async (req, res) => {
+router.put('/api/auth/password', validatePasswordUpdate, handleValidationErrors, async (req, res) => {
     try {
         const token = req.header('Authorization')?.replace('Bearer ', '');
         
@@ -512,4 +512,5 @@ router.post('/reset-password', validateResetPassword, handleValidationErrors, as
     }
 });
 
-module.exports = router;
+// Export the router as default
+export default router;

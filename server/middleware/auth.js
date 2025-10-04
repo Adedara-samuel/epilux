@@ -1,6 +1,6 @@
-const jwt = require('jsonwebtoken');
-const User = require('../models/User');
-const config = require('../config/environment');
+import jwt from 'jsonwebtoken';
+import User from '../models/User.js';
+import config from '../config/environment.js';
 
 // JWT configuration
 const JWT_SECRET = config.JWT_SECRET;
@@ -106,14 +106,14 @@ const optionalAuth = async (req, res, next) => {
             }
         }
         
-        next();
-    } catch {
-        // Continue without authentication for optional auth
-        next();
+    } catch (error) {
+        // Continue without authentication if there's an error with the token
+        console.error('Optional auth error:', error.message);
     }
+    next();
 };
 
-module.exports = {
+export {
     generateToken,
     verifyToken,
     authenticate,

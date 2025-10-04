@@ -1,6 +1,7 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
+const { Schema, model } = mongoose;
 
-const passwordResetTokenSchema = new mongoose.Schema({
+const passwordResetTokenSchema = new Schema({
     userId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
@@ -31,7 +32,7 @@ passwordResetTokenSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 // Static method to create a new reset token
 passwordResetTokenSchema.statics.createToken = async function(userId) {
-    const crypto = require('crypto');
+    const crypto = await import('crypto');
     const token = crypto.randomBytes(32).toString('hex');
     
     // Delete any existing tokens for this user
@@ -66,4 +67,4 @@ passwordResetTokenSchema.statics.markAsUsed = async function(token) {
     );
 };
 
-module.exports = mongoose.model('PasswordResetToken', passwordResetTokenSchema);
+export default model('PasswordResetToken', passwordResetTokenSchema);

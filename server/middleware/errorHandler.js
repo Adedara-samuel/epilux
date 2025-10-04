@@ -1,6 +1,3 @@
-
-const mongoose = require('mongoose');
-
 // Custom error classes
 class AppError extends Error {
     constructor(message, statusCode = 500, isOperational = true) {
@@ -172,7 +169,7 @@ const notFoundHandler = (req, res, next) => {
     next(error);
 };
 
-module.exports = {
+export {
     AppError,
     ValidationError,
     AuthenticationError,

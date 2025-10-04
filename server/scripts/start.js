@@ -1,11 +1,13 @@
 #!/usr/bin/env node
 
-const fs = require('fs');
-const path = require('path');
-const { spawn } = require('child_process');
-const config = require('../config/environment');
-const { validateConfig, getConfigStatus } = require('../config/validation');
+import { existsSync, mkdirSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+import { spawn } from 'child_process';
+import net from 'net';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 // Colors for console output
 const colors = {
     reset: '\x1b[0m',
@@ -23,11 +25,17 @@ function log(message, color = 'reset') {
     console.log(`${colors[color]}${message}${colors.reset}`);
 }
 
+// Import required modules
+import mongoose from 'mongoose';
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+
+// Load config
+const config = require('../config');
+
 // Helper function to check if MongoDB is running
 function checkMongoDB() {
     return new Promise((resolve) => {
-        const mongoose = require('mongoose');
-        
         mongoose.connect(config.MONGODB_URI, {
             useNewUrlParser: true,
             useUnifiedTopology: true,
@@ -44,10 +52,10 @@ function checkMongoDB() {
     });
 }
 
+
 // Helper function to check if port is available
 function checkPort(port) {
     return new Promise((resolve) => {
-        const net = require('net');
         const server = net.createServer();
         
         server.listen(port, () => {
@@ -64,9 +72,9 @@ function createDirectories() {
     const dirs = ['logs', 'uploads'];
     
     dirs.forEach(dir => {
-        const dirPath = path.join(__dirname, '..', dir);
-        if (!fs.existsSync(dirPath)) {
-            fs.mkdirSync(dirPath, { recursive: true });
+        const dirPath = new URL(`../${dir}`, import.meta.url).pathname;
+        if (!existsSync(dirPath)) {
+            mkdirSync(dirPath, { recursive: true });
             log(`Created directory: ${dir}`, 'green');
         }
     });
@@ -100,9 +108,11 @@ function displayBanner() {
     log('', 'cyan');
 }
 
+// Import OS module for system info
+import os from 'os';
+
 // Helper function to display system info
 function displaySystemInfo() {
-    const os = require('os');
     const nodeVersion = process.version;
     const platform = os.platform();
     const arch = os.arch();
@@ -116,6 +126,9 @@ function displaySystemInfo() {
     log(`   Total Memory: ${totalMemory} GB`, 'blue');
     log('', 'blue');
 }
+
+// Import config functions
+import { getConfigStatus, validateConfig } from '../config/validation.js';
 
 // Helper function to display configuration status
 function displayConfigStatus() {
@@ -220,11 +233,11 @@ async function startup() {
 }
 
 // Check if script is run directly
-if (require.main === module) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
     startup().catch((error) => {
         log(`❌ Startup failed: ${error.message}`, 'red');
         process.exit(1);
     });
 }
 
-module.exports = { startup, checkMongoDB, checkPort, checkDependencies };
+export { startup, checkMongoDB, checkPort, checkDependencies };

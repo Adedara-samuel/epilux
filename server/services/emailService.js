@@ -1,5 +1,5 @@
-const nodemailer = require('nodemailer');
-const config = require('../config/environment');
+import nodemailer from 'nodemailer';
+import config from '../config/environment.js';
 
 class EmailService {
     constructor() {
@@ -136,4 +136,6 @@ class EmailService {
     }
 }
 
-module.exports = new EmailService();
+const emailService = new EmailService();
+
+export default emailService;

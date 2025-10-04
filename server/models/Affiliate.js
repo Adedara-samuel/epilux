@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const affiliateSchema = new mongoose.Schema({
     userId: {
@@ -75,4 +75,6 @@ function generateReferralCode() {
     return result;
 }
 
-module.exports = mongoose.model('Affiliate', affiliateSchema);
+const Affiliate = mongoose.model('Affiliate', affiliateSchema);
+
+export default Affiliate;
