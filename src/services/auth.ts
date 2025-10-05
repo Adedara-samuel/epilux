@@ -51,35 +51,43 @@ const handleResponse = async (response: Response, defaultMessage: string) => {
 
 const authAPI = {
     /**
-     * Registers a new user with the backend API.
-     * @param userData - The user data including firstName, lastName, email, password, and optional role.
-     * @returns A promise that resolves with the API response (e.g., user data or token).
-     */
-    register: async (userData: UserRegistrationData) => {
-        const response = await fetch(`${BASE_URL}/api/auth/register`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(userData),
-        });
-        return handleResponse(response, 'Registration failed');
-    },
-
-    /**
      * Logs in a user with the backend API.
      * @param credentials - The user credentials including email and password.
-     * @returns A promise that resolves with the API response (e.g., auth token).
+     * @returns A promise that resolves with the API response (e.g., auth token and user data).
      */
-    login: async (credentials: UserCredentials) => {
+    async login(credentials: UserCredentials) {
         const response = await fetch(`${BASE_URL}/api/auth/login`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify(credentials),
+            credentials: 'include', // Important for cookies
         });
+
         return handleResponse(response, 'Login failed');
+    },
+    /**
+     * Registers a new user with the backend API.
+     * @param userData - The user data including firstName, lastName, email, password, and optional role.
+     * @returns A promise that resolves with the API response (e.g., user data or token).
+     */
+    register: async (userData: UserRegistrationData) => {
+        console.log('Attempting to register user at:', `${BASE_URL}/api/auth/register`);
+        try {
+            // const response = await fetch(`${BASE_URL}/api/auth/register`, {
+                const response = await fetch("http://localhost:5000/api/auth/register", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(userData),
+            });
+            return await handleResponse(response, 'Registration failed');
+        } catch (error) {
+            console.error('Network error during registration:', error);
+            throw new Error('Failed to Fetch')
+        }
     },
 
     /**
@@ -89,6 +97,7 @@ const authAPI = {
      */
     adminLogin: async (credentials: UserCredentials) => {
         const response = await fetch(`${BASE_URL}/api/auth/admin/login`, {
+        // const response = await fetch("http://localhost:5000/api/auth/admin/login", {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

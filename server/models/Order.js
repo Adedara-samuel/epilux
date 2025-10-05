@@ -1,6 +1,7 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
+const { Schema, model } = mongoose;
 
-const orderSchema = new mongoose.Schema({
+const orderSchema = new Schema({
     userId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
@@ -117,4 +118,4 @@ orderSchema.pre('findOneAndUpdate', function(next) {
     next();
 });
 
-module.exports = mongoose.model('Order', orderSchema);
+export default model('Order', orderSchema);

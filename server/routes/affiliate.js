@@ -1,9 +1,9 @@
-/* eslint-disable @typescript-eslint/no-require-imports */
-const express = require('express');
+import express from 'express';
+import { verifyToken } from '../middleware/auth.js';
+import Affiliate from '../models/Affiliate.js';
+import Transaction from '../models/Transaction.js';
+
 const router = express.Router();
-const Affiliate = require('../models/Affiliate');
-const Transaction = require('../models/Transaction');
-const { verifyToken } = require('../middleware/auth');
 
 // Get affiliate profile
 router.get('/profile', verifyToken, async (req, res) => {
@@ -234,4 +234,4 @@ router.post('/record-sale', verifyToken, async (req, res) => {
     }
 });
 
-module.exports = router;
+export default router;

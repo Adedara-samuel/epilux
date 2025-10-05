@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 
-const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
-const User = require('../models/User');
-const config = require('../config/environment');
+import mongoose from 'mongoose';
+import User from '../models/User.js';
+import config from '../config/environment.js';
+
+// Note: Passwords should be hashed before saving to the database
+// In a production environment, ensure ADMIN_PASSWORD is hashed before this script runs
 
 // Colors for console output
 const colors = {
@@ -76,9 +78,8 @@ async function createAdminUser() {
     }
 }
 
-// Check if script is run directly
-if (require.main === module) {
-    createAdminUser();
-}
+// Run the script
+createAdminUser();
 
-module.exports = { createAdminUser };
+// Export for testing purposes
+export { createAdminUser };

@@ -1,17 +1,17 @@
-/* eslint-disable @typescript-eslint/no-require-imports */
-const express = require('express');
-const router = express.Router();
-const Order = require('../models/Order');
-const Product = require('../models/Product');
-const { authenticate, authorize } = require('../middleware/auth');
-const { catchAsync, AppError, NotFoundError } = require('../middleware/errorHandler');
-const {
+import express from 'express';
+import Order from '../models/Order.js';
+import Product from '../models/Product.js';
+import { authenticate, authorize } from '../middleware/auth.js';
+import { catchAsync, AppError, NotFoundError } from '../middleware/errorHandler.js';
+import {
     validateOrderCreation,
     validateOrderStatusUpdate,
     validateMongoId,
     validatePagination,
     handleValidationErrors
-} = require('../middleware/validation');
+} from '../middleware/validation.js';
+
+const router = express.Router();
 
 
 // Generate unique order number
@@ -272,4 +272,4 @@ router.get('/stats/summary', authenticate, authorize('admin'), catchAsync(async 
     });
 }));
 
-module.exports = router;
+export default router;

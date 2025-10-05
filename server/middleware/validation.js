@@ -1,4 +1,4 @@
-const { body, validationResult, param, query } = require('express-validator');
+import { body, validationResult, param, query } from 'express-validator';
 
 // Validation rules for user registration
 const validateRegistration = [
@@ -368,7 +368,7 @@ const validatePagination = [
         .withMessage('Order must be either "asc" or "desc"')
 ];
 
-module.exports = {
+export {
     validateRegistration,
     validateLogin,
     validateForgotPassword,

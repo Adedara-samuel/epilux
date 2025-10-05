@@ -1,4 +1,4 @@
-const config = require('./environment');
+import config from './environment.js';
 
 // Configuration validation utilities
 const validateConfig = () => {
@@ -107,7 +107,7 @@ const sanitizeConfig = () => {
     return sanitized;
 };
 
-module.exports = {
+export {
     validateConfig,
     getConfigStatus,
     sanitizeConfig

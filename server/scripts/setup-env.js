@@ -1,8 +1,16 @@
 #!/usr/bin/env node
 
-const fs = require('fs');
-const path = require('path');
-const crypto = require('crypto');
+// Core Node.js modules
+import { existsSync, mkdirSync, writeFileSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+// Third-party modules
+import crypto from 'crypto';
+
+// Get __dirname in ES module
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // Colors for console output
 const colors = {
@@ -26,21 +34,6 @@ function generateRandomString(length) {
     return crypto.randomBytes(length).toString('hex');
 }
 
-// Helper function to ask questions
-function askQuestion(question) {
-    const readline = require('readline');
-    const rl = readline.createInterface({
-        input: process.stdin,
-        output: process.stdout
-    });
-
-    return new Promise((resolve) => {
-        rl.question(question, (answer) => {
-            rl.close();
-            resolve(answer);
-        });
-    });
-}
 
 // Environment template
 const envTemplate = `# Server Configuration
@@ -179,9 +172,9 @@ function createDirectories() {
     const dirs = ['logs', 'uploads', 'uploads/test'];
     
     dirs.forEach(dir => {
-        const dirPath = path.join(__dirname, '..', dir);
-        if (!fs.existsSync(dirPath)) {
-            fs.mkdirSync(dirPath, { recursive: true });
+        const dirPath = join(__dirname, '..', dir);
+        if (!existsSync(dirPath)) {
+            mkdirSync(dirPath, { recursive: true });
             log(`Created directory: ${dir}`, 'green');
         }
     });
@@ -196,10 +189,9 @@ function createEnvironmentFiles() {
     ];
 
     envFiles.forEach(({ name, content }) => {
-        const filePath = path.join(__dirname, '..', name);
-        
-        if (!fs.existsSync(filePath)) {
-            fs.writeFileSync(filePath, content);
+        const filePath = join(__dirname, '..', name);
+        if (!existsSync(filePath)) {
+            writeFileSync(filePath, content);
             log(`Created environment file: ${name}`, 'green');
         } else {
             log(`Environment file already exists: ${name}`, 'yellow');
@@ -330,10 +322,10 @@ junit.xml
 deploy/
 `;
 
-    const gitignorePath = path.join(__dirname, '..', '.gitignore');
+    const gitignorePath = join(__dirname, '..', '.gitignore');
     
-    if (!fs.existsSync(gitignorePath)) {
-        fs.writeFileSync(gitignorePath, gitignoreContent);
+    if (!existsSync(gitignorePath)) {
+        writeFileSync(gitignorePath, gitignoreContent);
         log('Created .gitignore file', 'green');
     } else {
         log('.gitignore file already exists', 'yellow');
@@ -345,9 +337,9 @@ function createGitkeepFiles() {
     const dirs = ['logs', 'uploads', 'uploads/test'];
     
     dirs.forEach(dir => {
-        const gitkeepPath = path.join(__dirname, '..', dir, '.gitkeep');
-        if (!fs.existsSync(gitkeepPath)) {
-            fs.writeFileSync(gitkeepPath, '');
+        const gitkeepPath = join(__dirname, '..', dir, '.gitkeep');
+        if (!existsSync(gitkeepPath)) {
+            writeFileSync(gitkeepPath, '');
             log(`Created .gitkeep file in ${dir}`, 'green');
         }
     });
@@ -390,11 +382,8 @@ async function setupEnvironment() {
 }
 
 // Check if script is run directly
-if (require.main === module) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
     setupEnvironment();
 }
 
-module.exports = {
-    setupEnvironment,
-    generateRandomString
-};
+export { setupEnvironment, generateRandomString };
