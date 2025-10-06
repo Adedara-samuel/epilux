@@ -2,8 +2,7 @@
 
 /* eslint-disable react-hooks/rules-of-hooks */
 /* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { createContext, useContext } from 'react';
+import { createContext, useContext, useState } from 'react';
 import { UseMutationResult } from '@tanstack/react-query';
 
 // Define the type for the AuthContext value
