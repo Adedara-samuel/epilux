@@ -23,31 +23,51 @@ const contactFormSchema = z.object({
 });
 
 export default function ContactPage() {
-    const { user } = useAuth();
+    // 1. Get the loading state from useAuth
+    const { user, loading } = useAuth();
     const router = useRouter();
 
+    // 2. Initialize form with a useEffect or conditionally to ensure 'user' is ready.
+    // However, the current conditional logic for defaultValues is usually fine if we handle the loading/redirect correctly.
     const form = useForm<z.infer<typeof contactFormSchema>>({
         resolver: zodResolver(contactFormSchema),
         defaultValues: {
+            // These lines depend on 'user' being available or null/undefined, which is safe.
             name: user ? `${user.firstName} ${user.lastName}` : '',
             email: user?.email || '',
             subject: '',
             message: '',
         },
+        // We will manually reset or re-initialize based on loading state if needed,
+        // but for now, the critical fix is in the render logic.
     });
 
     const [isSubmitting, setIsSubmitting] = React.useState(false);
 
+    // --- CRITICAL FIX START ---
+    // Handle Loading State: Render a loader while authenticating.
+    if (loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
+                <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
+            </div>
+        );
+    }
+
+    // Handle Redirect on Client Side: Only redirect if 'loading' is false and 'user' is null.
+    // This runs only after the authentication state has been resolved on the client.
     if (!user) {
+        // Use a client-side effect if a server-side redirect is still problematic in your setup,
+        // but this direct check after loading is often sufficient.
         router.push('/login');
         return null;
     }
+    // --- CRITICAL FIX END ---
+
     const onSubmit = async () => {
         setIsSubmitting(true);
-
-        // Simulate sending message (Firebase removed)
+        // ... (rest of onSubmit logic remains the same)
         try {
-            // Simulate async operation
             await new Promise(resolve => setTimeout(resolve, 1000));
             toast.success("Your message has been sent successfully!");
             form.reset();

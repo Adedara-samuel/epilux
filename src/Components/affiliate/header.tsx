@@ -14,7 +14,7 @@ const HeaderComponent = React.memo(() => {
 
     const handleLogout = () => {
         logout();
-        window.location.href = '/login';
+        router.push('/login');
     };
 
     const handleProfileClick = () => {

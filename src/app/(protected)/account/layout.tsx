@@ -1,12 +1,10 @@
-import { Metadata } from 'next';
+'use client';
+
 import { SearchProvider } from '@/app/context/search-context';
 import Header from '@/Components/layout/header';
 import ClientSidebarWrapper from '@/Components/layout/client-sibar-wraper';
 
-export const metadata: Metadata = {
-    title: 'All Products | Epilux Water - Order Premium Water',
-    description: 'Browse and order from our wide range of premium sachet water, bottled water, dispensers, and accessories.',
-};
+export const dynamic = 'force-dynamic';
 
 export default function ProductsLayout({
     children,

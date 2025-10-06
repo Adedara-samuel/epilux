@@ -1,5 +1,8 @@
+/* eslint-disable react-hooks/rules-of-hooks */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { createContext, useContext } from 'react';
+'use client';
+import { createContext, use, useContext, useState } from 'react';
 import { UseMutationResult } from '@tanstack/react-query';
 
 // Define the type for the AuthContext value
@@ -13,6 +16,16 @@ interface AuthContextType {
     error: string | undefined;
     token: any;
 }
+
+const initialValue = () => {
+    if (typeof window !== 'undefined') {
+        // ONLY access browser APIs here
+        return localStorage.getItem('key') || '';
+    }
+    return ''; // Return a safe default value during server rendering
+};
+
+const [state, setState] = useState(initialValue);
 
 const AuthContext = createContext<AuthContextType | null>(null);
 

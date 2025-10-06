@@ -3,7 +3,7 @@
 // app/products/page.tsx
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import ProductGrid from '@/Components/products/product-grid';
 import { useSearchStore } from '@/stores/search-store';
@@ -12,7 +12,7 @@ import { useProducts, useCategories, useBrands } from '@/hooks/useProducts';
 // Note: Metadata export is moved to app/layout.tsx for client components.
 // If you need dynamic titles based on filters, you'd update the document title client-side.
 
-export default function ProductsPage() {
+function ProductsPage() {
     const searchParams = useSearchParams();
     const initialCategory = searchParams.get('category') || 'all';
     const { searchQuery } = useSearchStore(); // Get searchQuery from store
@@ -171,5 +171,13 @@ export default function ProductsPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function App() {
+    return (
+        <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading products...</div>}>
+            <ProductsPage />
+        </Suspense>
     );
 }

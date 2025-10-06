@@ -12,7 +12,7 @@ import { FormControl, FormField, FormItem, FormLabel, FormMessage, Form } from '
 import { Button } from '@/Components/ui/button';
 import PaystackButton from '@/Components/payment/paystackbutton';
 import { toast } from 'sonner';
-import { useEffect } from 'react'; // Import useEffect
+import { useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 
 const formSchema = z.object({
