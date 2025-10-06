@@ -13,7 +13,6 @@ const app = express();
 // File URL to path conversion available via import.meta.url if needed
 
 // Enable JSON parsing
-app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 const PORT = config.PORT;
 // const PORT = process.env.PORT || 5000;
@@ -21,8 +20,11 @@ const PORT = config.PORT;
 // CORS Configuration
 const allowedOrigins = [
     'http://localhost:3000',
-    "http://192.168.1.100:3002",
-    "http://192.168.1.100:3000",
+    'http://192.168.1.100:3002',
+    'http://192.168.1.100:3000',
+    'https://epilux48.vercel.app',
+    'https://epilux48.vercel.app:3000',
+    'https://epilux48.vercel.app:443'
 ];
 
 // Middleware - Dynamic CORS handling
@@ -32,7 +34,7 @@ app.use(cors({
         if (!origin) return callback(null, true);
         
         // Check if the origin is in the allowed list
-        if (allowedOrigins.indexOf(origin) !== -1) {
+        if (allowedOrigins.includes(origin)) {
             return callback(null, true);
         }
         
@@ -41,8 +43,8 @@ app.use(cors({
             return callback(null, true);
         }
         
-        // For development, allow any IP address with port 3000
-        if (process.env.NODE_ENV === 'development' && /^https?:\/\/\d+\.\d+\.\d+\.\d+:3000$/.test(origin)) {
+        // For production, allow any subdomain of vercel.app
+        if (process.env.NODE_ENV === 'production' && /^https?:\/\/([a-zA-Z0-9-]+\.)*vercel\.app$/.test(origin)) {
             return callback(null, true);
         }
         
@@ -51,8 +53,11 @@ app.use(cors({
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-    exposedHeaders: ['Content-Length', 'X-Foo', 'X-Bar']
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-CSRF-Token', 'Accept', 'Accept-Version', 'Content-Length', 'X-Api-Version', 'X-Response-Time'],
+    exposedHeaders: ['Content-Length', 'X-Foo', 'X-Bar', 'X-Request-Id'],
+    maxAge: 86400, // 24 hours
+    preflightContinue: false,
+    optionsSuccessStatus: 204
 }));
 
 // Log all incoming requests for debugging
