@@ -1,6 +1,5 @@
-"use client"; // Retained, must be the absolute first line
+"use client";
 
-/* eslint-disable react-hooks/rules-of-hooks */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { createContext, useContext, useState } from 'react';
 import { UseMutationResult } from '@tanstack/react-query';
@@ -18,15 +17,6 @@ export interface AuthContextType {
     token: any;
 }
 
-const initialValue = () => {
-    if (typeof window !== 'undefined') {
-        // ONLY access browser APIs here
-        return localStorage.getItem('key') || '';
-    }
-    return ''; // Return a safe default value during server rendering
-};
-
-const [state, setState] = useState(initialValue);
 
 const AuthContext = createContext<AuthContextType | null>(null);
 

@@ -1,5 +1,9 @@
 "use client"; // MUST be the absolute first line
 
+// Forces the page to be rendered dynamically on every request,
+// preventing static prerendering which triggers SSR errors.
+export const dynamic = 'force-dynamic';
+
 /* eslint-disable @next/next/no-img-element */
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
