@@ -2,7 +2,7 @@
 
 // Use the environment variable, falling back to localhost:5000 if not set.
 // This requires NEXT_PUBLIC_API_URL to be defined in .env.local
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://epilux-backend.vercel.app';
 
 /**
  * Defines the structure for user registration data.
@@ -75,8 +75,8 @@ const authAPI = {
     register: async (userData: UserRegistrationData) => {
         console.log('Attempting to register user at:', `${BASE_URL}/api/auth/register`);
         try {
-            // const response = await fetch(`${BASE_URL}/api/auth/register`, {
-                const response = await fetch("http://localhost:5000/api/auth/register", {
+            const response = await fetch(`${BASE_URL}/api/auth/register`, {
+                // const response = await fetch("http://localhost:5000/api/auth/register", {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
