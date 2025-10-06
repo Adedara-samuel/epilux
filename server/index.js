@@ -21,6 +21,7 @@ const PORT = config.PORT;
 // CORS Configuration
 const allowedOrigins = [
     'http://localhost:3000',
+    "http://192.168.1.100:3002",
 ];
 
 // Middleware - Dynamic CORS handling

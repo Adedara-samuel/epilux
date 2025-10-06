@@ -2,11 +2,12 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
-import { createContext, use, useContext, useState } from 'react';
+import { createContext, useContext } from 'react';
 import { UseMutationResult } from '@tanstack/react-query';
 
 // Define the type for the AuthContext value
-interface AuthContextType {
+export interface AuthContextType {
+    /* eslint-disable @typescript-eslint/no-explicit-any */ 
     user: any;
     loading: boolean;
     register: UseMutationResult<{ user: any; token: any; }, Error, { firstName: string; lastName: string; email: string; password: string; role?: string; }, unknown>;
@@ -14,21 +15,13 @@ interface AuthContextType {
     adminLogin: UseMutationResult<{ user: any; token: any; }, Error, { email: string; password: string; }, unknown>;
     logout: () => void;
     error: string | undefined;
-    token: any;
+    token: string | null;
 }
 
-const initialValue = () => {
-    if (typeof window !== 'undefined') {
-        // ONLY access browser APIs here
-        return localStorage.getItem('key') || '';
-    }
-    return ''; // Return a safe default value during server rendering
-};
+// Create the context with a default value that matches AuthContextType
+export const AuthContext = createContext<AuthContextType | null>(null);
 
-const [state, setState] = useState(initialValue);
-
-const AuthContext = createContext<AuthContextType | null>(null);
-
+// Custom hook to use the auth context
 export const useAuth = (): AuthContextType => {
     const context = useContext(AuthContext);
     if (!context) {
@@ -37,4 +30,10 @@ export const useAuth = (): AuthContextType => {
     return context;
 };
 
-export { AuthContext };
+// Helper function to get initial token from localStorage (for client-side only)
+export const getInitialToken = (): string | null => {
+    if (typeof window !== 'undefined') {
+        return localStorage.getItem('token') || null;
+    }
+    return null;
+};
