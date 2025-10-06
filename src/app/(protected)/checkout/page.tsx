@@ -1,19 +1,33 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+// Forces the page to be rendered dynamically on every request, 
+// preventing static prerendering which triggers the 'window is not defined' error 
+// in certain client-side dependencies.
+export const dynamic = 'force-dynamic';
 
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useCart } from '@/app/context/cart-context';
+import { useCartStore } from '@/stores/cart-store';
 import { useAuth } from '@/app/context/auth-context';
 import { useRouter } from 'next/navigation';
 import { Input } from '@/Components/ui/input';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage, Form } from '@/Components/ui/form';
 import { Button } from '@/Components/ui/button';
-import PaystackButton from '@/Components/payment/paystackbutton';
+// import PaystackButton from '@/Components/payment/paystackbutton';
 import { toast } from 'sonner';
 import { useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
+import ClientPaystackButton from '@/Components/payment/ClientPaystackButton';
+
+interface CartItem {
+    id: string;
+    name: string;
+    price: number;
+    quantity: number;
+}
 
 const formSchema = z.object({
     fullName: z.string().min(2, 'Full name is required'),
@@ -27,15 +41,17 @@ const formSchema = z.object({
 export default function CheckoutPage() {
     const router = useRouter();
     const { user, loading: authLoading } = useAuth();
-    const { cart, clearCart } = useCart();
+    const { cart, clearCart } = useCartStore();
 
-    const subtotal = cart.reduce((total, item) => total + item.price * item.quantity, 0);
+    const subtotal = cart.reduce((total: number, item: CartItem) => total + item.price * item.quantity, 0);
     const deliveryFee = subtotal >= 10000 ? 0 : 1500;
     const totalAmount = subtotal + deliveryFee;
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
+            // Ensure this default value access is safe. useAuth should return a default 
+            // empty/null user during server rendering to prevent errors.
             fullName: user ? `${user.firstName} ${user.lastName}` : '',
             phone: '',
             address: '',
@@ -60,13 +76,13 @@ export default function CheckoutPage() {
             return;
         }
 
+        // Only reset form with user data if the user is available and form hasn't been touched
         if (user && !form.formState.isDirty) {
             form.reset({
                 ...form.getValues(),
-                fullName: user ? `${user.firstName} ${user.lastName}` : form.getValues().fullName,
+                fullName: `${user.firstName} ${user.lastName}`,
             });
         }
-
     }, [user, authLoading, cart.length, router, form]);
 
 
@@ -101,6 +117,7 @@ export default function CheckoutPage() {
         );
     }
 
+    // Redirect or return null only when authentication is complete and conditions met
     if (!user || cart.length === 0) {
         return null;
     }
@@ -240,13 +257,14 @@ export default function CheckoutPage() {
                                         Securely pay for your order using your debit/credit card or through bank transfer via Paystack.
                                     </p>
                                     {user?.email ? (
-                                        <PaystackButton
+                                        <ClientPaystackButton
                                             email={user.email}
                                             amount={totalAmount}
                                             metadata={{
                                                 cart: JSON.stringify(cart),
                                                 userId: user.id,
-                                                deliveryInfo: form.getValues(),
+                                                // Ensure you only pass data that is safe for JSON serialization
+                                                deliveryInfo: JSON.stringify(form.getValues()),
                                             }}
                                             onSuccess={handlePaymentSuccess}
                                             onClose={() => console.log('Payment modal closed')}
@@ -254,7 +272,7 @@ export default function CheckoutPage() {
                                             className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-full transition-colors shadow-md"
                                         >
                                             Pay Now with Paystack
-                                        </PaystackButton>
+                                        </ClientPaystackButton>
                                     ) : (
                                         <Button disabled className="w-full bg-gray-400 text-white py-3 px-6 rounded-full">
                                             Login to Pay Online
@@ -284,7 +302,7 @@ export default function CheckoutPage() {
                             <h2 className="text-2xl font-bold text-gray-800 mb-6 border-b pb-4">Order Summary</h2>
 
                             <div className="space-y-4 mb-6">
-                                {cart.map((item) => (
+                                {cart.map((item: CartItem) => (
                                     <div key={item.id} className="flex justify-between items-center py-2 border-b border-gray-100 last:border-b-0">
                                         <div>
                                             <h3 className="font-medium text-gray-800">{item.name}</h3>

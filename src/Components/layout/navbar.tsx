@@ -7,7 +7,7 @@ import { Search, ShoppingCart, User, ChevronDown, Menu, X } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/app/context/auth-context';
-import { useCart } from '@/app/context/cart-context';
+import { useCartStore } from '@/stores/cart-store';
 import { Avatar, AvatarImage, AvatarFallback } from '@radix-ui/react-avatar';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@radix-ui/react-dropdown-menu';
 import { Button } from '../ui/button';
@@ -17,7 +17,7 @@ import { Badge } from '../ui/badge';
 
 export default function Navbar() {
     const { user, logout } = useAuth();
-    const { cart, totalItems } = useCart();
+    const { cart, totalItems } = useCartStore();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [isScrolled, setIsScrolled] = useState(false);

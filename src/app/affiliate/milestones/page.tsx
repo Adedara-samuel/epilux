@@ -1,6 +1,10 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 'use client';
 
+// Forces the page to be rendered dynamically on every request,
+// preventing static prerendering which triggers SSR errors.
+export const dynamic = 'force-dynamic';
+
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';

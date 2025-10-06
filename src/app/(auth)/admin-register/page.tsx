@@ -1,11 +1,14 @@
+"use client"; // MUST be the absolute first line
+
 /* eslint-disable @next/next/no-img-element */
-"use client";
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 
 const AdminRegisterPage = () => {
+    // The error points to this line, which means useAuth() is being called server-side
+    // The fix is to ensure useAuth.ts also has "use client";
     const { register: registerMutation, loading } = useAuth();
     const router = useRouter();
     const [formData, setFormData] = useState({

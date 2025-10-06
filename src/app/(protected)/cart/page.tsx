@@ -1,9 +1,8 @@
 /* eslint-disable react/no-unescaped-entities */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @next/next/no-img-element */
 // app/cart/page.tsx
 'use client';
-import { useCart } from '@/app/context/cart-context';
+import { useCartStore } from '@/stores/cart-store';
 import EmptyState from '@/Components/empty-state';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
@@ -37,9 +36,8 @@ import Link from 'next/link';
 
 
 export default function CartPage() {
-    const { cart, removeFromCart, updateQuantity, clearCart } = useCart();
-    const totalItems = cart.reduce((total: number, item: any) => total + item.quantity, 0);
-    const subtotal = cart.reduce((total: number, item: any) => total + item.price * item.quantity, 0);
+    const { cart, removeFromCart, updateQuantity, clearCart, totalItems, totalPrice } = useCartStore();
+    const subtotal = totalPrice;
     const deliveryFee = subtotal >= 10000 ? 0 : 1500; // Adjusted for >= 10,000 for consistency
 
     if (cart.length === 0) {

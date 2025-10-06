@@ -5,7 +5,7 @@
 import { notFound, useParams } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { useCart } from '@/app/context/cart-context';
+import { useCartStore } from '@/app/context/cart-context';
 import { Button } from '@/Components/ui/button';
 import { useProduct } from '@/hooks/useProducts';
 
@@ -13,7 +13,7 @@ export default function ProductDetailPage() {
     const params = useParams();
     const id = params.id as string;
     const [quantity, setQuantity] = useState<number>(1);
-    const { addToCart } = useCart();
+    const { addToCart } = useCartStore();
 
     // Use API to fetch product
     const { data: productData, isLoading, error } = useProduct(id);

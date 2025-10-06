@@ -1,8 +1,9 @@
+'use client'; // <-- THIS MUST BE THE FIRST LINE
+
 /* eslint-disable react/no-unescaped-entities */
 // app/account/help/page.tsx
-'use client';
 
-export const dynamic = 'force-dynamic';
+export const dynamic = 'force-dynamic'; // Moved after 'use client'
 
 import React, { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';

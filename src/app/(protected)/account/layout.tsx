@@ -1,5 +1,6 @@
 'use client';
 
+import { Suspense } from 'react';
 import { SearchProvider } from '@/app/context/search-context';
 import Header from '@/Components/layout/header';
 import ClientSidebarWrapper from '@/Components/layout/client-sibar-wraper';
@@ -15,10 +16,14 @@ export default function ProductsLayout({
         <SearchProvider>
             <div className="flex flex-col min-h-screen">
                 <div className="flex flex-1">
-                    <ClientSidebarWrapper />
+                    <Suspense fallback={<div>Loading sidebar...</div>}>
+                        <ClientSidebarWrapper />
+                    </Suspense>
 
                     <main className="flex-1 lg:ml-64">
-                        <Header />
+                        <Suspense fallback={<div>Loading header...</div>}>
+                            <Header />
+                        </Suspense>
                         {children}
                     </main>
                 </div>
