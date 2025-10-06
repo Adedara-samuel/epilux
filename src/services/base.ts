@@ -2,7 +2,7 @@
 // src/services/base.ts
 import axios from 'axios';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://epilux-backend.vercel.app';
 
 // Create axios instance with default config
 export const api = axios.create({
