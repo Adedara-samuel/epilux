@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import cors from 'cors';
 import { globalErrorHandler } from './middleware/errorHandler.js';
 import config from './config/environment.js';
+import User from './models/User.js';
 import { validateConfig, getConfigStatus } from './config/validation.js';
 import { requestLogger } from './middleware/errorHandler.js';
 import supportRoutes from './routes/support.js';
@@ -112,6 +113,33 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/support', supportRoutes);
 app.use('/api/users', userRoutes);
 
+// Temporary admin route to list all users (remove in production)
+app.get('/api/admin/users', async (req, res) => {
+    try {
+        const users = await User.find({}).select('-password -__v');
+        res.json(users);
+    } catch (error) {
+        console.error('Error fetching users:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Temporary admin route to delete a user by email (remove in production)
+app.delete('/api/admin/users/:email', async (req, res) => {
+    try {
+        const { email } = req.params;
+        const result = await User.deleteOne({ email });
+        
+        if (result.deletedCount === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        
+        res.json({ message: 'User deleted successfully' });
+    } catch (error) {
+        console.error('Error deleting user:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
 
 // Basic route for testing
 app.get('/', (req, res) => {
