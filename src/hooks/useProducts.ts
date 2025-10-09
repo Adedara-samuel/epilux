@@ -1,9 +1,9 @@
 // src/hooks/useProducts.ts
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { productsAPI } from '@/services';
+import { adminProductsAPI, productsAPI } from '@/services';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 // Hook for getting products
-export const useProducts = (params?: Parameters<typeof productsAPI.getProducts>[0]) => {
+export const useProducts = (params?: { category?: string; search?: string }) => {
   return useQuery({
     queryKey: ['products', params],
     queryFn: () => productsAPI.getProducts(params),
@@ -19,46 +19,57 @@ export const useProduct = (id: string) => {
   });
 };
 
-// Hook for creating product
+// Hook for creating product (admin)
 export const useCreateProduct = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: productsAPI.createProduct,
+    mutationFn: adminProductsAPI.createProduct,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'products'] });
       queryClient.invalidateQueries({ queryKey: ['admin', 'dashboard', 'stats'] });
     },
   });
 };
 
-// Hook for updating product
+// Hook for updating product (admin)
 export const useUpdateProduct = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Parameters<typeof productsAPI.updateProduct>[1] }) =>
-      productsAPI.updateProduct(id, data),
+    mutationFn: ({ id, data }: { id: string; data: Parameters<typeof adminProductsAPI.updateProduct>[1] }) =>
+      adminProductsAPI.updateProduct(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'products'] });
       queryClient.invalidateQueries({ queryKey: ['product'] });
     },
   });
 };
 
-// Hook for deleting product
+// Hook for deleting product (admin)
 export const useDeleteProduct = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: productsAPI.deleteProduct,
+    mutationFn: adminProductsAPI.deleteProduct,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'products'] });
     },
   });
 };
 
-// Hook for getting categories
+// Hook for getting categories (admin)
+export const useAdminCategories = () => {
+  return useQuery({
+    queryKey: ['admin', 'categories'],
+    queryFn: adminProductsAPI.getCategories,
+  });
+};
+
+// Hook for getting categories (public)
 export const useCategories = () => {
   return useQuery({
     queryKey: ['categories'],
@@ -66,10 +77,37 @@ export const useCategories = () => {
   });
 };
 
-// Hook for getting brands
-export const useBrands = () => {
+// Hook for getting admin products
+export const useAdminProducts = (params?: { limit?: number }) => {
   return useQuery({
-    queryKey: ['brands'],
-    queryFn: productsAPI.getBrands,
+    queryKey: ['admin', 'products', params],
+    queryFn: () => adminProductsAPI.getProducts(params),
+  });
+};
+
+// Hook for getting admin product
+export const useAdminProduct = (id: string) => {
+  return useQuery({
+    queryKey: ['admin', 'product', id],
+    queryFn: () => adminProductsAPI.getProduct(id),
+    enabled: !!id,
+  });
+};
+
+// Hook for searching products
+export const useSearchProducts = (query: string) => {
+  return useQuery({
+    queryKey: ['products', 'search', query],
+    queryFn: () => productsAPI.searchProducts(query),
+    enabled: !!query,
+  });
+};
+
+// Hook for getting products by category
+export const useProductsByCategory = (category: string) => {
+  return useQuery({
+    queryKey: ['products', 'category', category],
+    queryFn: () => productsAPI.getProductsByCategory(category),
+    enabled: !!category,
   });
 };

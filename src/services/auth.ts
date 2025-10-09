@@ -113,7 +113,7 @@ const authAPI = {
      * @returns A promise that resolves with the user profile data.
      */
     getProfile: async (token: string) => {
-        const response = await fetch(`${BASE_URL}/api/auth/profile`, {
+        const response = await fetch(`${BASE_URL}/api/user/profile`, {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -146,7 +146,7 @@ const authAPI = {
      * @returns A promise that resolves with the API response.
      */
     updateProfile: async (token: string, profileData: UserProfileUpdateData) => {
-        const response = await fetch(`${BASE_URL}/api/auth/profile`, {
+        const response = await fetch(`${BASE_URL}/api/user/profile`, {
             method: 'PUT',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -164,7 +164,7 @@ const authAPI = {
      * @returns A promise that resolves with the API response.
      */
     changePassword: async (token: string, passwordData: { currentPassword: string; newPassword: string }) => {
-        const response = await fetch(`${BASE_URL}/api/auth/password`, {
+        const response = await fetch(`${BASE_URL}/api/user/password`, {
             method: 'PUT',
             headers: {
                 'Authorization': `Bearer ${token}`,

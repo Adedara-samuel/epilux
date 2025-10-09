@@ -1,20 +1,71 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // app/settings/page.tsx
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '@/hooks/useAuth';
-import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
 import { Button } from '@/Components/ui/button';
-import { Input } from '@/Components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/Components/ui/form';
-import { Loader2, User, Key } from 'lucide-react';
+import { Input } from '@/Components/ui/input';
+import { useAddAddress, useAddresses, useChangePassword, useDeleteAddress, useUpdateAddress, useUpdateProfile } from '@/hooks';
+import { useAuth } from '@/hooks/useAuth';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Edit, Key, Loader2, MapPin, Trash2, User } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
-import { useUpdateProfile, useChangePassword } from '@/hooks';
+import * as z from 'zod';
+
+// Nigerian states and their major cities
+const NIGERIAN_STATES = [
+    'Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue', 'Borno',
+    'Cross River', 'Delta', 'Ebonyi', 'Edo', 'Ekiti', 'Enugu', 'FCT', 'Gombe',
+    'Imo', 'Jigawa', 'Kaduna', 'Kano', 'Katsina', 'Kebbi', 'Kogi', 'Kwara',
+    'Lagos', 'Nasarawa', 'Niger', 'Ogun', 'Ondo', 'Osun', 'Oyo', 'Plateau',
+    'Rivers', 'Sokoto', 'Taraba', 'Yobe', 'Zamfara'
+];
+
+const STATE_CITIES: Record<string, string[]> = {
+    'Lagos': ['Lagos Island', 'Ikeja', 'Surulere', 'Yaba', 'Lekki', 'Victoria Island', 'Ajah', 'Ikorodu', 'Agege', 'Mushin'],
+    'Abuja': ['Wuse', 'Maitama', 'Asokoro', 'Garki', 'Jabi', 'Utako', 'Wuye', 'Gwarinpa', 'Kubwa', 'Nyanya'],
+    'Kano': ['Kano City', 'Nassarawa', 'Fagge', 'Gwale', 'Dala', 'Tarauni', 'Kumbotso', 'Ungogo', 'Dawakin Tofa'],
+    'Rivers': ['Port Harcourt', 'Obio-Akpor', 'Eleme', 'Oyigbo', 'Okrika', 'Ogu–Bolo', 'Tai', 'Khana', 'Gokana'],
+    'Oyo': ['Ibadan', 'Ogbomosho', 'Iseyin', 'Oyo', 'Eruwa', 'Saki', 'Igboho', 'Kishi', 'Shaki'],
+    'Ogun': ['Abeokuta', 'Ijebu-Ode', 'Sagamu', 'Ota', 'Ifo', 'Sango Ota', 'Ilaro', 'Itori', 'Owode'],
+    'Ondo': ['Akure', 'Ondo', 'Owo', 'Ikare', 'Okitipupa', 'Idanre', 'Ifon', 'Igbotako', 'Ore'],
+    'Osun': ['Osogbo', 'Ile-Ife', 'Ilesa', 'Iwo', 'Ede', 'Ejigbo', 'Ikirun', 'Ila Orangun', 'Gbongan'],
+    'Ekiti': ['Ado-Ekiti', 'Ikere-Ekiti', 'Aramoko-Ekiti', 'Efon-Alaaye', 'Ijero-Ekiti', 'Oye-Ekiti', 'Ikole-Ekiti'],
+    'Kwara': ['Ilorin', 'Offa', 'Omu-Aran', 'Patigi', 'Kaiama', 'Jebba', 'Lafiagi', 'Irepodun'],
+    'Kogi': ['Lokoja', 'Okene', 'Idah', 'Anyigba', 'Dekina', 'Kabba', 'Egbe', 'Isanlu'],
+    'Benue': ['Makurdi', 'Gboko', 'Otukpo', 'Katsina-Ala', 'Zaki Biam', 'Vandeikya', 'Ukum'],
+    'Nassarawa': ['Lafia', 'Keffi', 'Akwanga', 'Nasarawa', 'Wamba', 'Toto', 'Karshi'],
+    'Plateau': ['Jos', 'Bukuru', 'Barkin Ladi', 'Pankshin', 'Shendam', 'Langtang', 'Mangu'],
+    'Kaduna': ['Kaduna', 'Zaria', 'Kafanchan', 'Kagoro', 'Kachia', 'Jema\'a', 'Soba'],
+    'Katsina': ['Katsina', 'Daura', 'Funtua', 'Malumfashi', 'Mani', 'Bakori', 'Dutsin-Ma'],
+    'Kebbi': ['Birnin Kebbi', 'Argungu', 'Yauri', 'Shanga', 'Bagudo', 'Bunza', 'Gwandu'],
+    'Sokoto': ['Sokoto', 'Wurno', 'Rabah', 'Goronyo', 'Illela', 'Tambuwal', 'Kware'],
+    'Zamfara': ['Gusau', 'Kaura Namoda', 'Talata Mafara', 'Zurmi', 'Maradun', 'Shinkafi', 'Bungudu'],
+    'Jigawa': ['Dutse', 'Hadejia', 'Kazaure', 'Gumel', 'Birnin Kudu', 'Ringim', 'Gwaram'],
+    'Yobe': ['Damaturu', 'Potiskum', 'Gashua', 'Nguru', 'Geidam', 'Bade', 'Jakusko'],
+    'Borno': ['Maiduguri', 'Bama', 'Konduga', 'Mafa', 'Dikwa', 'Gwoza', 'Chibok'],
+    'Taraba': ['Jalingo', 'Wukari', 'Bali', 'Takum', 'Serti', 'Ibi', 'Gassol'],
+    'Adamawa': ['Yola', 'Mubi', 'Numan', 'Jimeta', 'Ganye', 'Song', 'Toungo'],
+    'Bauchi': ['Bauchi', 'Azare', 'Misau', 'Jama\'are', 'Katagum', 'Alkaleri', 'Darazo'],
+    'Gombe': ['Gombe', 'Kaltungo', 'Billiri', 'Dukku', 'Funakaye', 'Pindiga', 'Yamaltu/Deba'],
+    'Anambra': ['Awka', 'Onitsha', 'Nnewi', 'Ekwulobia', 'Agulu', 'Ozubulu', 'Ukpo'],
+    'Enugu': ['Enugu', 'Nsukka', 'Awgu', 'Udi', 'Oji River', 'Ezeagu', 'Igbo-Eze'],
+    'Ebonyi': ['Abakaliki', 'Afikpo', 'Onueke', 'Ezza', 'Ishielu', 'Ivo', 'Ohaozara'],
+    'Imo': ['Owerri', 'Orlu', 'Okigwe', 'Oguta', 'Mbaise', 'Nkwerre', 'Njaba'],
+    'Abia': ['Umuahia', 'Aba', 'Ohafia', 'Isiala Ngwa', 'Ukwa', 'Ikwuano', 'Bende'],
+    'Delta': ['Asaba', 'Warri', 'Sapele', 'Agbor', 'Ughelli', 'Ozoro', 'Oleh'],
+    'Edo': ['Benin City', 'Auchi', 'Ekpoma', 'Igarra', 'Uromi', 'Irrua', 'Sabongida Ora'],
+    'Cross River': ['Calabar', 'Ikom', 'Ogoja', 'Ugep', 'Obudu', 'Akamkpa', 'Biase'],
+    'Akwa Ibom': ['Uyo', 'Eket', 'Ikot Ekpene', 'Oron', 'Abak', 'Ikot Abasi', 'Etinan'],
+    'Bayelsa': ['Yenagoa', 'Brass', 'Ogbia', 'Sagbama', 'Ekeremor', 'Kolokuma/Opokuma'],
+    'FCT': ['Abuja', 'Gwagwalada', 'Kuje', 'Bwari', 'Abaji'],
+    'Niger': ['Minna', 'Suleja', 'Kontagora', 'Bida', 'Lapai', 'Mokwa', 'Agaie']
+};
 
 // Zod schemas for validation
 const profileSchema = z.object({
@@ -31,6 +82,15 @@ const passwordSchema = z.object({
     path: ["confirmNewPassword"],
 });
 
+const addressSchema = z.object({
+    type: z.string().optional(),
+    street: z.string().min(5, 'Street address is required'),
+    city: z.string().min(2, 'City is required'),
+    state: z.string().min(2, 'State is required'),
+    zipCode: z.string().optional(),
+    country: z.string().min(2, 'Country is required'),
+});
+
 
 export default function SettingsPage() {
     const { user, loading: authLoading, logout } = useAuth();
@@ -38,6 +98,10 @@ export default function SettingsPage() {
 
     const updateProfileMutation = useUpdateProfile();
     const changePasswordMutation = useChangePassword();
+    const { data: addressesData, isLoading: addressesLoading } = useAddresses();
+    const addAddressMutation = useAddAddress();
+    const updateAddressMutation = useUpdateAddress();
+    const deleteAddressMutation = useDeleteAddress();
 
     // Forms for different sections
     const profileForm = useForm<z.infer<typeof profileSchema>>({
@@ -57,6 +121,21 @@ export default function SettingsPage() {
         },
     });
 
+    const addressForm = useForm<z.infer<typeof addressSchema>>({
+        resolver: zodResolver(addressSchema),
+        defaultValues: {
+            type: 'home',
+            street: '',
+            city: '',
+            state: '',
+            zipCode: '',
+            country: 'Nigeria',
+        },
+    });
+
+    const [editingAddress, setEditingAddress] = useState<any>(null);
+    const [availableCities, setAvailableCities] = useState<string[]>([]);
+
 
     useEffect(() => {
         if (!authLoading && !user) {
@@ -66,6 +145,22 @@ export default function SettingsPage() {
             profileForm.reset({ firstName: user.firstName || '', lastName: user.lastName || '' });
         }
     }, [user, authLoading, router, profileForm]);
+
+    // Update available cities when state changes
+    useEffect(() => {
+        const stateValue = addressForm.watch('state');
+        if (stateValue && STATE_CITIES[stateValue]) {
+            setAvailableCities(STATE_CITIES[stateValue]);
+            // Reset city if current city is not in the new state's cities
+            const currentCity = addressForm.getValues('city');
+            if (currentCity && !STATE_CITIES[stateValue].includes(currentCity)) {
+                addressForm.setValue('city', '');
+            }
+        } else {
+            setAvailableCities([]);
+            addressForm.setValue('city', '');
+        }
+    }, [addressForm.watch('state'), addressForm]);
 
 
     const handleProfileUpdate = async (values: z.infer<typeof profileSchema>) => {
@@ -96,6 +191,60 @@ export default function SettingsPage() {
                 console.error("Error updating password:", error);
                 toast.error(`Failed to update password: ${error.message}`);
             },
+        });
+    };
+
+    const handleAddAddress = async (values: z.infer<typeof addressSchema>) => {
+        addAddressMutation.mutate(values, {
+            onSuccess: () => {
+                toast.success("Address added successfully!");
+                addressForm.reset();
+            },
+            onError: (error: any) => {
+                console.error("Error adding address:", error);
+                toast.error(`Failed to add address: ${error.message}`);
+            },
+        });
+    };
+
+    const handleUpdateAddress = async (values: z.infer<typeof addressSchema>) => {
+        if (!editingAddress) return;
+        updateAddressMutation.mutate({ id: editingAddress.id, data: values }, {
+            onSuccess: () => {
+                toast.success("Address updated successfully!");
+                setEditingAddress(null);
+                addressForm.reset();
+            },
+            onError: (error: any) => {
+                console.error("Error updating address:", error);
+                toast.error(`Failed to update address: ${error.message}`);
+            },
+        });
+    };
+
+    const handleDeleteAddress = async (addressId: string) => {
+        if (confirm('Are you sure you want to delete this address?')) {
+            deleteAddressMutation.mutate(addressId, {
+                onSuccess: () => {
+                    toast.success("Address deleted successfully!");
+                },
+                onError: (error: any) => {
+                    console.error("Error deleting address:", error);
+                    toast.error(`Failed to delete address: ${error.message}`);
+                },
+            });
+        }
+    };
+
+    const startEditingAddress = (address: any) => {
+        setEditingAddress(address);
+        addressForm.reset({
+            type: address.type || 'home',
+            street: address.street || '',
+            city: address.city || '',
+            state: address.state || '',
+            zipCode: address.zipCode || '',
+            country: address.country || 'Nigeria',
         });
     };
 
@@ -321,6 +470,175 @@ export default function SettingsPage() {
                                             'Change Password'
                                         )}
                                     </Button>
+                                </form>
+                            </Form>
+                        </div>
+                    </div>
+
+                    {/* Addresses Card */}
+                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                        <div className="p-8 border-b border-gray-100">
+                            <div className="flex items-center gap-4">
+                                <div className="p-3 bg-green-100 rounded-lg">
+                                    <MapPin className="h-6 w-6 text-green-600" />
+                                </div>
+                                <div>
+                                    <h2 className="text-2xl font-bold text-gray-900">Delivery Addresses</h2>
+                                    <p className="text-gray-600">Manage your shipping addresses</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="p-8">
+                            {/* Existing Addresses */}
+                            {addressesData?.addresses?.length > 0 && (
+                                <div className="space-y-4 mb-8">
+                                    <h3 className="text-lg font-semibold text-gray-800">Your Addresses</h3>
+                                    {addressesData.addresses.map((address: any) => (
+                                        <div key={address.id} className="bg-gray-50 rounded-xl p-6 border border-gray-200">
+                                            <div className="flex justify-between items-start">
+                                                <div>
+                                                    <p className="font-medium text-gray-800">{address.street}</p>
+                                                    <p className="text-gray-600">{address.city}, {address.state}, {address.country}</p>
+                                                    {address.zipCode && <p className="text-gray-600">ZIP: {address.zipCode}</p>}
+                                                </div>
+                                                <div className="flex gap-2">
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => startEditingAddress(address)}
+                                                        className="rounded-lg"
+                                                    >
+                                                        <Edit className="w-4 h-4 mr-1" />
+                                                        Edit
+                                                    </Button>
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => handleDeleteAddress(address.id)}
+                                                        className="text-red-600 border-red-300 hover:bg-red-50 rounded-lg"
+                                                    >
+                                                        <Trash2 className="w-4 h-4 mr-1" />
+                                                        Delete
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* Add/Edit Address Form */}
+                            <Form {...addressForm}>
+                                <form onSubmit={addressForm.handleSubmit(editingAddress ? handleUpdateAddress : handleAddAddress)} className="space-y-6">
+                                    <h3 className="text-lg font-semibold text-gray-800">
+                                        {editingAddress ? 'Edit Address' : 'Add New Address'}
+                                    </h3>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <FormField
+                                            control={addressForm.control}
+                                            name="street"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel className="text-gray-700 font-medium">Street Address</FormLabel>
+                                                    <FormControl>
+                                                        <Input
+                                                            placeholder="Enter street address"
+                                                            className="rounded-xl border-gray-200 focus:border-green-500 focus:ring-green-500 h-12"
+                                                            {...field}
+                                                        />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+
+                                        <FormField
+                                            control={addressForm.control}
+                                            name="city"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel className="text-gray-700 font-medium">City</FormLabel>
+                                                    <FormControl>
+                                                        <Input
+                                                            placeholder="Enter city"
+                                                            className="rounded-xl border-gray-200 focus:border-green-500 focus:ring-green-500 h-12"
+                                                            {...field}
+                                                        />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+
+                                        <FormField
+                                            control={addressForm.control}
+                                            name="state"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel className="text-gray-700 font-medium">State</FormLabel>
+                                                    <FormControl>
+                                                        <Input
+                                                            placeholder="Enter state"
+                                                            className="rounded-xl border-gray-200 focus:border-green-500 focus:ring-green-500 h-12"
+                                                            {...field}
+                                                        />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+
+                                        <FormField
+                                            control={addressForm.control}
+                                            name="country"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel className="text-gray-700 font-medium">Country</FormLabel>
+                                                    <FormControl>
+                                                        <Input
+                                                            placeholder="Enter country"
+                                                            className="rounded-xl border-gray-200 focus:border-green-500 focus:ring-green-500 h-12"
+                                                            {...field}
+                                                        />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                    </div>
+
+                                    <div className="flex gap-4">
+                                        <Button
+                                            type="submit"
+                                            disabled={addressForm.formState.isSubmitting || addAddressMutation.isPending || updateAddressMutation.isPending}
+                                            className="bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg shadow-md hover:shadow-lg transition-colors"
+                                        >
+                                            {addressForm.formState.isSubmitting || addAddressMutation.isPending || updateAddressMutation.isPending ? (
+                                                <>
+                                                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                                                    {editingAddress ? 'Updating...' : 'Adding...'}
+                                                </>
+                                            ) : (
+                                                editingAddress ? 'Update Address' : 'Add Address'
+                                            )}
+                                        </Button>
+
+                                        {editingAddress && (
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                onClick={() => {
+                                                    setEditingAddress(null);
+                                                    addressForm.reset();
+                                                }}
+                                                className="rounded-lg"
+                                            >
+                                                Cancel
+                                            </Button>
+                                        )}
+                                    </div>
                                 </form>
                             </Form>
                         </div>

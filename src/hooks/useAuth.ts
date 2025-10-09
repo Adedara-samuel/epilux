@@ -6,7 +6,7 @@ import { UseMutationResult } from '@tanstack/react-query';
 
 // Define the type for the AuthContext value
 export interface AuthContextType {
-    /* eslint-disable @typescript-eslint/no-explicit-any */ 
+    /* eslint-disable @typescript-eslint/no-explicit-any */
     user: any;
     loading: boolean;
     register: UseMutationResult<{ user: any; token: any; }, Error, { firstName: string; lastName: string; email: string; password: string; role?: string; }, unknown>;

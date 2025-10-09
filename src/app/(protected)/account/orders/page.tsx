@@ -56,7 +56,7 @@ export default function MyOrdersPage() {
                     <Button
                         variant="outline"
                         onClick={() => router.push('/account')}
-                        className="flex items-center gap-2"
+                        className="flex items-center gap-2 cursor-pointer"
                     >
                         <ArrowLeft className="h-4 w-4" />
                         Back to Account
@@ -115,7 +115,7 @@ export default function MyOrdersPage() {
                         </p>
                         <Button
                             onClick={() => router.push('/products')}
-                            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg shadow-md hover:shadow-lg transition-colors"
+                            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg shadow-md hover:shadow-lg transition-colors cursor-pointer"
                         >
                             Start Shopping
                         </Button>
@@ -179,16 +179,16 @@ export default function MyOrdersPage() {
 
                                     <div className="flex items-center justify-between mt-6 pt-6 border-t border-gray-100">
                                         <div className="flex gap-3">
-                                            <Button variant="outline" size="sm" className="flex items-center gap-2">
+                                            <Button variant="outline" size="sm" className="flex items-center gap-2 cursor-pointer">
                                                 <Eye className="w-4 h-4" />
                                                 View Details
                                             </Button>
-                                            <Button variant="outline" size="sm">
+                                            <Button variant="outline" size="sm" className="cursor-pointer">
                                                 Track Order
                                             </Button>
                                         </div>
                                         {order.status.toLowerCase() === 'delivered' && (
-                                            <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white">
+                                            <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white cursor-pointer">
                                                 Buy Again
                                             </Button>
                                         )}

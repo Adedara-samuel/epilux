@@ -14,16 +14,16 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '@/Components/ui/dropdown-menu';
-import { useAllOrders, useOrderStats } from '@/hooks/useOrders';
+import { useAdminOrders, useOrderStats } from '@/hooks/useOrders';
 
 export default function AdminOrdersPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
 
-    const { data: ordersData, isLoading } = useAllOrders({ status: statusFilter !== 'all' ? statusFilter : undefined });
+    const { data: ordersData, isLoading } = useAdminOrders();
     const { data: statsData } = useOrderStats();
 
-    const orders = ordersData?.orders || [];
+    const orders = ordersData?.data || [];
     const stats = statsData?.stats || {
         totalOrders: 0,
         pendingOrders: 0,
@@ -32,7 +32,7 @@ export default function AdminOrdersPage() {
     };
 
     const filteredOrders = orders.filter((order: any) => {
-        const matchesSearch = order.id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        const matchesSearch = order._id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             order.customer?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             order.customer?.email?.toLowerCase().includes(searchTerm.toLowerCase());
         return matchesSearch;
@@ -115,9 +115,9 @@ export default function AdminOrdersPage() {
                             </thead>
                             <tbody>
                                 {filteredOrders.map((order: any) => (
-                                    <tr key={order.id} className="border-b border-gray-100 hover:bg-gray-50">
+                                    <tr key={order._id} className="border-b border-gray-100 hover:bg-gray-50">
                                         <td className="py-4 px-4">
-                                            <div className="font-medium text-gray-900">{order.id}</div>
+                                            <div className="font-medium text-gray-900">{order._id}</div>
                                         </td>
                                         <td className="py-4 px-4">
                                             <div>

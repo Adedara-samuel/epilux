@@ -1,31 +1,79 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/Components/ui/card';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
-import { Save, Mail, Shield, Store } from 'lucide-react';
+import { Label } from '@/Components/ui/label';
+import { Save, Mail, Shield, Store, Loader2 } from 'lucide-react';
+import { useAdminSettings, useUpdateAdminSettings } from '@/hooks/useAdmin';
+import { useChangePassword } from '@/hooks';
 
 export default function AdminSettingsPage() {
+  const { data: settingsData } = useAdminSettings();
+  const updateSettingsMutation = useUpdateAdminSettings();
+  const changePasswordMutation = useChangePassword();
+
+  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
+
   const [settings, setSettings] = useState({
-    storeName: 'Epilux Water',
-    storeEmail: 'admin@epilux.com',
-    storePhone: '+234 123 456 7890',
-    currency: 'NGN',
-    timezone: 'Africa/Lagos',
+    storeName: '',
+    storeEmail: '',
+    storePhone: '',
+    currency: '',
+    timezone: '',
     smtpHost: '',
     smtpPort: '',
     smtpUser: '',
     smtpPassword: ''
   });
 
+  useEffect(() => {
+    if (settingsData?.settings) {
+      setSettings(settingsData.settings);
+    }
+  }, [settingsData]);
+
   const handleSave = () => {
-    // TODO: Implement save functionality
-    console.log('Saving settings:', settings);
+    updateSettingsMutation.mutate(settings, {
+      onSuccess: () => {
+        console.log('Settings saved successfully');
+      },
+      onError: (error) => {
+        console.error('Failed to save settings:', error);
+      }
+    });
   };
 
   const handleInputChange = (field: string, value: string) => {
     setSettings(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handlePasswordChange = () => {
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      alert('Passwords do not match');
+      return;
+    }
+
+    changePasswordMutation.mutate({
+      currentPassword: passwordData.currentPassword,
+      newPassword: passwordData.newPassword,
+    }, {
+      onSuccess: () => {
+        setPasswordDialogOpen(false);
+        setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+        alert('Password changed successfully');
+      },
+      onError: (error: any) => {
+        alert(`Failed to change password: ${error.message}`);
+      },
+    });
   };
 
   return (
@@ -36,7 +84,7 @@ export default function AdminSettingsPage() {
           <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
           <p className="text-gray-600">Manage your store settings and preferences</p>
         </div>
-        <Button onClick={handleSave} className="flex items-center gap-2">
+        <Button onClick={handleSave} className="flex items-center gap-2 cursor-pointer">
           <Save className="w-4 h-4" />
           Save Changes
         </Button>
@@ -141,7 +189,7 @@ export default function AdminSettingsPage() {
               />
             </div>
           </div>
-          <Button variant="outline" className="mt-4">
+          <Button variant="outline" className="mt-4 cursor-pointer">
             Test Email Configuration
           </Button>
         </CardContent>
@@ -181,12 +229,89 @@ export default function AdminSettingsPage() {
             </div>
           </div>
           <div className="pt-4 border-t">
-            <Button variant="outline" className="text-red-600 border-red-200 hover:bg-red-50">
+            <Button
+              variant="outline"
+              className="text-red-600 border-red-200 hover:bg-red-50 cursor-pointer"
+              onClick={() => setPasswordDialogOpen(true)}
+            >
               Change Admin Password
             </Button>
           </div>
         </CardContent>
       </Card>
+
+      {/* Password Change Dialog */}
+      {passwordDialogOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md" onClick={() => setPasswordDialogOpen(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4" onClick={(e) => e.stopPropagation()}>
+            <div className="p-6">
+              <h3 className="text-xl font-bold text-gray-900 mb-6">Change Admin Password</h3>
+
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="currentPassword" className="text-gray-700 font-medium">Current Password</Label>
+                  <Input
+                    id="currentPassword"
+                    type="password"
+                    value={passwordData.currentPassword}
+                    onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+                    className="mt-1"
+                    placeholder="Enter current password"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="newPassword" className="text-gray-700 font-medium">New Password</Label>
+                  <Input
+                    id="newPassword"
+                    type="password"
+                    value={passwordData.newPassword}
+                    onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                    className="mt-1"
+                    placeholder="Enter new password"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="confirmPassword" className="text-gray-700 font-medium">Confirm New Password</Label>
+                  <Input
+                    id="confirmPassword"
+                    type="password"
+                    value={passwordData.confirmPassword}
+                    onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                    className="mt-1"
+                    placeholder="Confirm new password"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3 mt-6">
+                <Button
+                  variant="outline"
+                  onClick={() => setPasswordDialogOpen(false)}
+                  className="flex-1 cursor-pointer"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handlePasswordChange}
+                  disabled={changePasswordMutation.isPending}
+                  className="flex-1 bg-red-600 hover:bg-red-700 text-white cursor-pointer"
+                >
+                  {changePasswordMutation.isPending ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Changing...
+                    </>
+                  ) : (
+                    'Change Password'
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

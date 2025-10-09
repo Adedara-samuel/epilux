@@ -8,6 +8,7 @@ interface Testimonial {
     role: string;
     content: string;
     rating: number;
+    avatarColor: string;
 }
 
 const Testimonials: React.FC = () => {
@@ -16,19 +17,22 @@ const Testimonials: React.FC = () => {
             name: "Adeola Johnson",
             role: "Restaurant Owner",
             content: "Epilux Water has been a game-changer for my business. The subscription service ensures I never run out of water for my customers. Highly recommended!",
-            rating: 5
+            rating: 5,
+            avatarColor: "from-amber-500 to-orange-600"
         },
         {
-            name: "Michael Brown",
+            name: "Kofi Mensah",
             role: "Office Manager",
             content: "Our staff absolutely loves the consistent quality of Epilux water. Their bulk ordering system is incredibly efficient and keeps our office well-hydrated.",
-            rating: 4
+            rating: 4,
+            avatarColor: "from-emerald-500 to-teal-600"
         },
         {
-            name: "Sarah Williams",
+            name: "Jelani Williams",
             role: "Home User & Affiliate",
             content: "As an affiliate, I've not only secured premium water for my family but also generated significant extra income by referring others. It's a win-win!",
-            rating: 5
+            rating: 5,
+            avatarColor: "from-purple-500 to-indigo-600"
         }
     ];
 
@@ -46,6 +50,15 @@ const Testimonials: React.FC = () => {
                     {testimonials.map((testimonial, index) => (
                         <Card key={index} className="p-8 bg-white rounded-xl shadow-lg text-gray-800 flex flex-col justify-between">
                             <div>
+                                <div className="flex items-center gap-4 mb-6">
+                                    <div className={`w-16 h-16 rounded-full bg-gradient-to-br ${testimonial.avatarColor} flex items-center justify-center text-white text-xl font-bold shadow-lg`}>
+                                        {testimonial.name.split(' ').map(n => n[0]).join('')}
+                                    </div>
+                                    <div>
+                                        <h4 className="font-bold text-blue-600 text-xl">{testimonial.name}</h4>
+                                        <p className="text-sm text-gray-500">{testimonial.role}</p>
+                                    </div>
+                                </div>
                                 <div className="flex mb-4">
                                     {[...Array(5)].map((_, i) => (
                                         <svg
@@ -58,11 +71,7 @@ const Testimonials: React.FC = () => {
                                         </svg>
                                     ))}
                                 </div>
-                                <p className="text-lg mb-6 italic leading-relaxed">"{testimonial.content}"</p>
-                            </div>
-                            <div>
-                                <h4 className="font-bold text-blue-600 text-xl">{testimonial.name}</h4>
-                                <p className="text-sm text-gray-500">{testimonial.role}</p>
+                                <p className="text-lg italic leading-relaxed">"{testimonial.content}"</p>
                             </div>
                         </Card>
                     ))}

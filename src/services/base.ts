@@ -2,7 +2,7 @@
 // src/services/base.ts
 import axios from 'axios';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://epilux-backend.vercel.app';
+const API_BASE_URL = 'https://epilux-backend.vercel.app';
 
 // Create axios instance with default config
 export const api = axios.create({
@@ -13,9 +13,10 @@ export const api = axios.create({
     timeout: 10000,
 });
 
-// Override baseURL for Next.js API routes
+// Request interceptor to handle different base URLs
 api.interceptors.request.use((config) => {
-    if (config.url?.startsWith('/api/')) {
+    // Admin routes and user routes use local server, others use configured base URL
+    if (config.url?.startsWith('/api/admin/') || config.url?.startsWith('/api/user/')) {
         config.baseURL = '';
     }
     return config;
@@ -41,6 +42,13 @@ api.interceptors.request.use(
 api.interceptors.response.use(
     (response) => response,
     (error) => {
+        // Ensure error.response exists to prevent "Cannot read properties of undefined" errors
+        if (!error.response) {
+            error.response = {
+                status: 0,
+                data: { message: 'Network error or server unreachable' }
+            };
+        }
         // Don't automatically clear auth on 401, let components handle it
         return Promise.reject(error);
     }
