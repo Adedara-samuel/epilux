@@ -5,7 +5,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/app/context/auth-context';
+import { useAuth } from '@/hooks/useAuth';
+import { useSupportTickets, useSupportTicket } from '@/hooks/useSupport';
 import { Loader2, Mail, ArrowLeft, Inbox, MessageSquare, Bell, X } from 'lucide-react';
 import { Card } from '@/Components/ui/card';
 import { Button } from '@/Components/ui/button';
@@ -17,62 +18,52 @@ interface Message {
     message: string;
     date: string;
     read: boolean;
+    type?: string;
 }
 
 export default function MyInboxPage() {
-    const { user, loading: authLoading } = useAuth();
+    const { user } = useAuth();
     const router = useRouter();
-    const [loadingMessages, setLoadingMessages] = useState(true);
-    const [error, setError] = useState<string | null>(null);
     const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
     const [showModal, setShowModal] = useState(false);
-    const [messages, setMessages] = useState<Message[]>([]);
 
-    // Initialize messages
-    useEffect(() => {
-        setMessages([
-            {
-                id: '1',
-                subject: 'Welcome to Epilux Water!',
-                message: 'Thank you for joining us. Your account has been successfully created. We\'re excited to have you as part of our community!\n\nHere\'s what you can expect:\n• Premium quality water products\n• Fast and reliable delivery\n• 24/7 customer support\n• Exclusive member discounts\n\nIf you have any questions, feel free to reach out to our support team.',
-                date: new Date().toISOString(),
-                read: false,
-            },
-            {
-                id: '2',
-                subject: 'Order Confirmation',
-                message: 'Your order has been confirmed and is being processed. We\'ll send you another notification once your order ships.\n\nOrder Details:\n• Order ID: EPX-2024-001\n• Estimated delivery: 2-3 business days\n• Tracking information will be available soon\n\nThank you for choosing Epilux Water!',
-                date: new Date(Date.now() - 86400000).toISOString(),
-                read: true,
-            },
-        ]);
-    }, []);
+    const { data: ticketsData, isLoading: loadingMessages } = useSupportTickets();
+    const tickets = ticketsData?.tickets || [];
 
-    useEffect(() => {
-        if (authLoading) {
-            return;
+    // Convert tickets to messages format
+    const ticketMessages: Message[] = tickets.map((ticket: { id: string; subject: string; message: string; createdAt: string; status: string }) => ({
+        id: ticket.id,
+        subject: ticket.subject,
+        message: ticket.message,
+        date: ticket.createdAt,
+        read: ticket.status === 'read' || ticket.status === 'resolved',
+        type: 'support'
+    }));
+
+    // Add system notifications
+    const systemMessages: Message[] = [
+        {
+            id: 'welcome-1',
+            subject: 'Welcome to Epilux Water!',
+            message: 'Thank you for joining us. Your account has been successfully created. We\'re excited to have you as part of our community!\n\nHere\'s what you can expect:\n• Premium quality water products\n• Fast and reliable delivery\n• 24/7 customer support\n• Exclusive member discounts\n\nIf you have any questions, feel free to reach out to our support team.',
+            date: user?.createdAt || new Date().toISOString(),
+            read: true,
+            type: 'system'
         }
+    ];
 
+    const allMessages = [...systemMessages, ...ticketMessages];
+
+    useEffect(() => {
         if (!user) {
             router.push('/login');
             return;
         }
-
-        // Simulate API call
-        setTimeout(() => {
-            setLoadingMessages(false);
-        }, 1000);
-    }, [user, authLoading, router]);
+    }, [user, router]);
 
     const handleViewDetails = (message: Message) => {
         setSelectedMessage(message);
         setShowModal(true);
-        // Mark as read
-        if (!message.read) {
-            setMessages(prev => prev.map(m =>
-                m.id === message.id ? { ...m, read: true } : m
-            ));
-        }
     };
 
     const closeModal = () => {
@@ -80,20 +71,11 @@ export default function MyInboxPage() {
         setSelectedMessage(null);
     };
 
-
-    if (authLoading || loadingMessages) {
+    if (loadingMessages) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-100">
                 <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
                 <p className="ml-3 text-lg text-gray-700">Loading inbox...</p>
-            </div>
-        );
-    }
-
-    if (error) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-100">
-                <p className="text-red-600 text-xl">{error}</p>
             </div>
         );
     }
@@ -136,7 +118,7 @@ export default function MyInboxPage() {
                         <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-4">
                             <Inbox className="w-6 h-6 text-blue-600" />
                         </div>
-                        <h3 className="text-2xl font-bold text-gray-900">{messages.length}</h3>
+                        <h3 className="text-2xl font-bold text-gray-900">{allMessages.length}</h3>
                         <p className="text-gray-600">Total Messages</p>
                     </div>
 
@@ -145,7 +127,7 @@ export default function MyInboxPage() {
                             <Bell className="w-6 h-6 text-orange-600" />
                         </div>
                         <h3 className="text-2xl font-bold text-gray-900">
-                            {messages.filter((m: Message) => !m.read).length}
+                            {allMessages.filter((m: Message) => !m.read).length}
                         </h3>
                         <p className="text-gray-600">Unread Messages</p>
                     </div>
@@ -155,7 +137,7 @@ export default function MyInboxPage() {
                             <MessageSquare className="w-6 h-6 text-green-600" />
                         </div>
                         <h3 className="text-2xl font-bold text-gray-900">
-                            {messages.filter((m: Message) => m.read).length}
+                            {allMessages.filter((m: Message) => m.read).length}
                         </h3>
                         <p className="text-gray-600">Read Messages</p>
                     </div>
@@ -170,7 +152,7 @@ export default function MyInboxPage() {
                         </div>
 
                         <div className="divide-y divide-gray-100">
-                            {messages.map((message: Message) => (
+                            {allMessages.map((message: Message) => (
                                 <div
                                     key={message.id}
                                     className={`p-6 hover:bg-gray-50/50 transition-colors cursor-pointer ${
@@ -225,7 +207,7 @@ export default function MyInboxPage() {
                             ))}
                         </div>
 
-                        {messages.length === 0 && (
+                        {allMessages.length === 0 && (
                             <div className="p-12 text-center">
                                 <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-4">
                                     <Inbox className="w-8 h-8 text-gray-400" />

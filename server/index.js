@@ -23,6 +23,7 @@ const allowedOrigins = [
     'http://localhost:3000',
     'http://192.168.1.100:3002',
     'http://192.168.1.100:3000',
+    'https://epilux-backend.vercel.app',
     'https://epilux48.vercel.app',
     'https://epilux48.vercel.app:3000',
     'https://epilux48.vercel.app:443'
@@ -111,7 +112,7 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/affiliate', affiliateRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/support', supportRoutes);
-app.use('/api/users', userRoutes);
+app.use('/api/user', userRoutes);
 
 // Temporary admin route to list all users (remove in production)
 app.get('/api/admin/users', async (req, res) => {

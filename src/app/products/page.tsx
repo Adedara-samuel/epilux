@@ -7,7 +7,7 @@ import { useState, useMemo, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import ProductGrid from '@/Components/products/product-grid';
 import { useSearchStore } from '@/stores/search-store';
-import { useProducts, useCategories, useBrands } from '@/hooks/useProducts';
+import { useProducts, useCategories } from '@/hooks/useProducts';
 
 // Note: Metadata export is moved to app/layout.tsx for client components.
 // If you need dynamic titles based on filters, you'd update the document title client-side.
@@ -43,14 +43,12 @@ function ProductsPage() {
         search: searchQuery || undefined,
     });
 
-    const products = productsData?.products || [];
+    const products = productsData?.data || [];
 
-    // Get categories and brands for filters
+    // Get categories for filters
     const { data: categoriesData } = useCategories();
-    const { data: brandsData } = useBrands();
 
     const categories = categoriesData?.categories || [];
-    const brands = brandsData?.brands || [];
 
     return (
         <div className="min-h-screen bg-gray-50">

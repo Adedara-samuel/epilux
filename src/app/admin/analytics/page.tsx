@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 'use client';
 
@@ -14,25 +15,14 @@ export default function AdminAnalyticsPage() {
   const stats = dashboardStats?.stats || {};
   const orderStatsData = orderStats?.stats || {};
 
-  // Use real data where available, fallback to defaults
+  // Use only real data from backend
   const analytics = {
-    totalRevenue: stats.totalRevenue || 2850000,
-    totalOrders: stats.totalOrders || 456,
-    totalUsers: stats.totalUsers || 1247,
-    conversionRate: stats.totalOrders && stats.totalUsers ? ((stats.totalOrders / stats.totalUsers) * 100).toFixed(1) : '3.2',
-    topProducts: [
-      { name: 'Premium Sachet Water 50cl', sales: 234, revenue: 35100 },
-      { name: 'Bottled Water 1.5L', sales: 189, revenue: 47250 },
-      { name: 'Water Dispenser 20L', sales: 45, revenue: 675000 },
-    ], // Would need a separate API for this
-    monthlyData: [
-      { month: 'Jan', revenue: 245000, orders: 38 },
-      { month: 'Feb', revenue: 289000, orders: 42 },
-      { month: 'Mar', revenue: 312000, orders: 48 },
-      { month: 'Apr', revenue: 278000, orders: 41 },
-      { month: 'May', revenue: 345000, orders: 52 },
-      { month: 'Jun', revenue: 398000, orders: 58 },
-    ] // Would need a separate API for this
+    totalRevenue: stats.totalRevenue,
+    totalOrders: stats.totalOrders,
+    totalUsers: stats.totalUsers,
+    conversionRate: stats.totalOrders && stats.totalUsers ? ((stats.totalOrders / stats.totalUsers) * 100).toFixed(1) : undefined,
+    topProducts: stats.topProducts || [],
+    monthlyData: stats.monthlyData || []
   };
 
     return (
@@ -51,7 +41,7 @@ export default function AdminAnalyticsPage() {
                         <DollarSign className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">₦{(analytics.totalRevenue / 1000000).toFixed(1)}M</div>
+                        <div className="text-2xl font-bold">₦{(analytics.totalRevenue ? (analytics.totalRevenue / 1000000).toFixed(1) : '0')}M</div>
                         <div className="flex items-center text-xs text-green-600">
                             <TrendingUp className="w-3 h-3 mr-1" />
                             +12.5% from last month
@@ -65,7 +55,7 @@ export default function AdminAnalyticsPage() {
                         <ShoppingCart className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{analytics.totalOrders}</div>
+                        <div className="text-2xl font-bold">{analytics.totalOrders || 0}</div>
                         <div className="flex items-center text-xs text-green-600">
                             <TrendingUp className="w-3 h-3 mr-1" />
                             +8.2% from last month
@@ -79,7 +69,7 @@ export default function AdminAnalyticsPage() {
                         <Users className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{analytics.totalUsers.toLocaleString()}</div>
+                        <div className="text-2xl font-bold">{analytics.totalUsers ? analytics.totalUsers.toLocaleString() : '0'}</div>
                         <div className="flex items-center text-xs text-green-600">
                             <TrendingUp className="w-3 h-3 mr-1" />
                             +15.3% from last month
@@ -93,7 +83,7 @@ export default function AdminAnalyticsPage() {
                         <TrendingUp className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{analytics.conversionRate}%</div>
+                        <div className="text-2xl font-bold">{analytics.conversionRate || '0'}%</div>
                         <div className="flex items-center text-xs text-red-600">
                             <TrendingDown className="w-3 h-3 mr-1" />
                             -2.1% from last month
@@ -111,7 +101,7 @@ export default function AdminAnalyticsPage() {
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-4">
-                            {analytics.monthlyData.map((data) => (
+                            {analytics.monthlyData.length > 0 ? analytics.monthlyData.map((data: any) => (
                                 <div key={data.month} className="flex items-center justify-between">
                                     <div className="flex items-center gap-3">
                                         <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-sm font-medium text-blue-600">
@@ -124,7 +114,11 @@ export default function AdminAnalyticsPage() {
                                         <div className="text-sm text-gray-500">{data.orders} orders</div>
                                     </div>
                                 </div>
-                            ))}
+                            )) : (
+                                <div className="text-center py-8 text-gray-500">
+                                    No monthly data available
+                                </div>
+                            )}
                         </div>
                     </CardContent>
                 </Card>
@@ -136,7 +130,7 @@ export default function AdminAnalyticsPage() {
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-4">
-                            {analytics.topProducts.map((product, index) => (
+                            {analytics.topProducts.length > 0 ? analytics.topProducts.map((product: any, index: number) => (
                                 <div key={product.name} className="flex items-center justify-between">
                                     <div className="flex items-center gap-3">
                                         <Badge variant="outline" className="w-6 h-6 rounded-full p-0 flex items-center justify-center text-xs">
@@ -151,7 +145,11 @@ export default function AdminAnalyticsPage() {
                                         ₦{product.revenue.toLocaleString()}
                                     </div>
                                 </div>
-                            ))}
+                            )) : (
+                                <div className="text-center py-8 text-gray-500">
+                                    No top products data available
+                                </div>
+                            )}
                         </div>
                     </CardContent>
                 </Card>

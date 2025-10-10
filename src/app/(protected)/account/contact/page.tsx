@@ -44,7 +44,13 @@ export default function ContactPage() {
 
     const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-    // --- CRITICAL FIX START ---
+    // Handle redirect in useEffect to avoid setState during render
+    React.useEffect(() => {
+        if (!loading && !user) {
+            router.push('/account/contact');
+        }
+    }, [user, loading, router]);
+
     // Handle Loading State: Render a loader while authenticating.
     if (loading) {
         return (
@@ -54,15 +60,10 @@ export default function ContactPage() {
         );
     }
 
-    // Handle Redirect on Client Side: Only redirect if 'loading' is false and 'user' is null.
-    // This runs only after the authentication state has been resolved on the client.
+    // Don't render if redirecting
     if (!user) {
-        // Use a client-side effect if a server-side redirect is still problematic in your setup,
-        // but this direct check after loading is often sufficient.
-        router.push('/login');
         return null;
     }
-    // --- CRITICAL FIX END ---
 
     const onSubmit = async () => {
         setIsSubmitting(true);

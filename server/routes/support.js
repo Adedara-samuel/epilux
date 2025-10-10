@@ -22,21 +22,21 @@ const supportUpload = upload.fields([
 router.use(protect);
 
 // Create a new support ticket
-router.post('/', supportUpload, createTicket);
+router.post('/tickets', supportUpload, createTicket);
 
 // Get all tickets (filterable by status and category)
-router.get('/', getTickets);
+router.get('/tickets', getTickets);
 
 // Get single ticket by ID
-router.get('/:id', getTicketById);
+router.get('/tickets/:id', getTicketById);
 
 // Add message to ticket
-router.post('/:id/messages', supportUpload, addMessage);
+router.post('/tickets/:id/messages', supportUpload, addMessage);
 
 // Update ticket status (admin/support only)
-router.put('/:id/status', authorize(['admin', 'support']), updateTicketStatus);
+router.put('/tickets/:id/status', authorize(['admin', 'support']), updateTicketStatus);
 
 // Assign ticket to support staff (admin only)
-router.put('/:id/assign', authorize(['admin']), assignTicket);
+router.put('/tickets/:id/assign', authorize(['admin']), assignTicket);
 
 export default router;

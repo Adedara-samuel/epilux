@@ -1,10 +1,11 @@
+/* eslint-disable react/no-unescaped-entities */
 /* eslint-disable @next/next/no-img-element */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 'use client';
 
 import { useState } from 'react';
-import { Search, Filter, Plus, MoreHorizontal, Edit, Trash2 } from 'lucide-react';
+import { Search, Filter, Plus, MoreHorizontal, Edit, Trash2, Book } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/Components/ui/card';
@@ -15,15 +16,88 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/Components/ui/dropdown-menu';
+import { Label } from '@/Components/ui/label';
+import { Textarea } from '@/Components/ui/textarea';
 import Link from 'next/link';
-import { useProducts } from '@/hooks/useProducts';
+import { useAdminProducts, useAdminProduct, useUpdateProduct, useDeleteProduct } from '@/hooks/useProducts';
+import { useQueryClient } from '@tanstack/react-query';
 
 export default function AdminProductsPage() {
   const [searchTerm, setSearchTerm] = useState('');
+  const [viewOpen, setViewOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<any>(null);
+  const [editForm, setEditForm] = useState({
+    name: '',
+    description: '',
+    price: '',
+    category: '',
+    stock: '',
+    image: '',
+  });
 
-  const { data: productsData, isLoading } = useProducts({ limit: 100 });
+  const queryClient = useQueryClient();
+
+  const { data: productsData, isLoading } = useAdminProducts({ limit: 100 });
+  const updateMutation = useUpdateProduct();
+  const deleteMutation = useDeleteProduct();
 
   const products = productsData?.products || [];
+
+  const handleViewProduct = (product: any) => {
+    setSelectedProduct(product);
+    setViewOpen(true);
+  };
+
+  const handleEditProduct = (product: any) => {
+    setSelectedProduct(product);
+    setEditForm({
+      name: product.name || '',
+      description: product.description || '',
+      price: product.price?.toString() || '',
+      category: product.category || '',
+      stock: product.stock?.toString() || '',
+      image: product.image || '',
+    });
+    setEditOpen(true);
+  };
+
+  const handleDeleteProduct = (product: any) => {
+    setSelectedProduct(product);
+    setDeleteOpen(true);
+  };
+
+  const handleUpdateProduct = () => {
+    updateMutation.mutate(
+      {
+        id: selectedProduct.id,
+        data: {
+          name: editForm.name,
+          description: editForm.description,
+          price: parseFloat(editForm.price),
+          category: editForm.category,
+          stock: parseInt(editForm.stock),
+          image: editForm.image,
+        },
+      },
+      {
+        onSuccess: () => {
+          setEditOpen(false);
+          queryClient.invalidateQueries({ queryKey: ['admin', 'products'] });
+        },
+      }
+    );
+  };
+
+  const handleConfirmDelete = () => {
+    deleteMutation.mutate(selectedProduct.id, {
+      onSuccess: () => {
+        setDeleteOpen(false);
+        queryClient.invalidateQueries({ queryKey: ['admin', 'products'] });
+      },
+    });
+  };
 
   const filteredProducts = products.filter((product: any) =>
     product.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -51,7 +125,7 @@ export default function AdminProductsPage() {
           <h1 className="text-2xl font-bold text-gray-900">Products Management</h1>
           <p className="text-gray-600">Manage your product catalog and inventory</p>
         </div>
-        <Button asChild className="flex items-center gap-2">
+        <Button asChild className="flex items-center gap-2 cursor-pointer">
           <Link href="/admin/products/new">
             <Plus className="w-4 h-4" />
             Add Product
@@ -72,7 +146,7 @@ export default function AdminProductsPage() {
                 className="pl-10"
               />
             </div>
-            <Button variant="outline" className="flex items-center gap-2">
+            <Button variant="outline" className="flex items-center gap-2 cursor-pointer">
               <Filter className="w-4 h-4" />
               Filter
             </Button>
@@ -86,11 +160,13 @@ export default function AdminProductsPage() {
           <Card key={product.id} className="overflow-hidden hover:shadow-lg transition-shadow">
             <div className="aspect-square bg-gray-100 relative">
               <img
-                src={product.images?.[0] || '/images/placeholder.jpg'}
+                src={product.images?.[0]}
                 alt={product.name}
                 className="w-full h-full object-cover"
                 onError={(e) => {
-                  e.currentTarget.src = '/images/placeholder.jpg';
+                  if (e.currentTarget.src !== '/images/placeholder.jpg') {
+                    e.currentTarget.src = '/images/placeholder.jpg';
+                  }
                 }}
               />
               <div className="absolute top-2 right-2">
@@ -114,19 +190,20 @@ export default function AdminProductsPage() {
                   </Badge>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm">
+                      <Button variant="ghost" size="sm" className='cursor-pointer'>
                         <MoreHorizontal className="w-4 h-4" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem>
+                      <DropdownMenuItem className='cursor-pointer' onClick={() => handleEditProduct(product)}>
                         <Edit className="w-4 h-4 mr-2" />
                         Edit Product
                       </DropdownMenuItem>
-                      <DropdownMenuItem>
+                      <DropdownMenuItem className='cursor-pointer' onClick={() => handleViewProduct(product)}>
+                        <Book className="w-4 h-4 mr-2" />
                         View Details
                       </DropdownMenuItem>
-                      <DropdownMenuItem className="text-red-600">
+                      <DropdownMenuItem className="text-red-600 cursor-pointer" onClick={() => handleDeleteProduct(product)}>
                         <Trash2 className="w-4 h-4 mr-2" />
                         Delete
                       </DropdownMenuItem>
@@ -149,7 +226,7 @@ export default function AdminProductsPage() {
             <p className="text-gray-600 mb-4">
               {searchTerm ? 'Try adjusting your search terms.' : 'Get started by adding your first product.'}
             </p>
-            <Button asChild>
+            <Button asChild className="cursor-pointer">
               <Link href="/admin/products/new">
                 <Plus className="w-4 h-4 mr-2" />
                 Add Product
@@ -157,6 +234,109 @@ export default function AdminProductsPage() {
             </Button>
           </CardContent>
         </Card>
+      )}
+
+      {/* View Product Dialog */}
+      {viewOpen && selectedProduct && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md" onClick={() => setViewOpen(false)}>
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold mb-4">Product Details</h3>
+            <div className="space-y-2">
+              <p><strong>Name:</strong> {selectedProduct.name}</p>
+              <p><strong>Description:</strong> {selectedProduct.description}</p>
+              <p><strong>Price:</strong> ₦{selectedProduct.price?.toLocaleString()}</p>
+              <p><strong>Category:</strong> {selectedProduct.category}</p>
+              <p><strong>Stock:</strong> {selectedProduct.stock}</p>
+              <p><strong>Created:</strong> {new Date(selectedProduct.createdAt).toLocaleDateString()}</p>
+            </div>
+            <div className="flex justify-end mt-4">
+              <Button onClick={() => setViewOpen(false)} className="cursor-pointer">Close</Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Product Dialog */}
+      {editOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md" onClick={() => setEditOpen(false)}>
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold mb-4">Edit Product</h3>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="name">Name</Label>
+                <Input
+                  id="name"
+                  value={editForm.name}
+                  onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  value={editForm.description}
+                  onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label htmlFor="price">Price</Label>
+                <Input
+                  id="price"
+                  type="number"
+                  value={editForm.price}
+                  onChange={(e) => setEditForm({ ...editForm, price: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label htmlFor="category">Category</Label>
+                <Input
+                  id="category"
+                  value={editForm.category}
+                  onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label htmlFor="stock">Stock</Label>
+                <Input
+                  id="stock"
+                  type="number"
+                  value={editForm.stock}
+                  onChange={(e) => setEditForm({ ...editForm, stock: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label htmlFor="image">Image URL</Label>
+                <Input
+                  id="image"
+                  value={editForm.image}
+                  onChange={(e) => setEditForm({ ...editForm, image: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 mt-4">
+              <Button variant="outline" onClick={() => setEditOpen(false)} className="cursor-pointer">Cancel</Button>
+              <Button onClick={handleUpdateProduct} disabled={updateMutation.isPending} className="cursor-pointer">
+                {updateMutation.isPending ? 'Updating...' : 'Update'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      {deleteOpen && selectedProduct && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md" onClick={() => setDeleteOpen(false)}>
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold mb-4">Delete Product</h3>
+            <p>Are you sure you want to delete "{selectedProduct.name}"? This action cannot be undone.</p>
+            <div className="flex justify-end gap-2 mt-4">
+              <Button variant="outline" onClick={() => setDeleteOpen(false)} className="cursor-pointer">Cancel</Button>
+              <Button variant="destructive" onClick={handleConfirmDelete} disabled={deleteMutation.isPending} className="cursor-pointer">
+                {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
