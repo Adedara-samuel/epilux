@@ -1,30 +1,29 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unused-vars */
 'use client';
 
-import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/Components/ui/card';
-import { Button } from '@/Components/ui/button';
 import { Badge } from '@/Components/ui/badge';
+import { Button } from '@/Components/ui/button';
+import { Card, CardContent } from '@/Components/ui/card';
 import { Input } from '@/Components/ui/input';
-import { Textarea } from '@/Components/ui/textarea';
 import { Label } from '@/Components/ui/label';
+import { Textarea } from '@/Components/ui/textarea';
 import {
-  Bell,
-  Search,
-  Filter,
-  CheckCircle,
   AlertTriangle,
-  ShoppingCart,
+  Bell,
+  CheckCircle,
   DollarSign,
-  Package,
-  Trash2,
   Eye,
   EyeOff,
   MessageSquare,
+  Package,
+  Search,
   Send,
+  ShoppingCart,
+  Trash2,
+  UserPlus,
   X
 } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 // TODO: Fetch notifications from database/API
 // For now, using empty array until backend integration
@@ -39,6 +38,17 @@ export default function AdminNotificationsPage() {
   const [replyDialogOpen, setReplyDialogOpen] = useState(false);
   const [replyMessage, setReplyMessage] = useState('');
 
+  // Load notifications from localStorage on component mount
+  useEffect(() => {
+    const storedNotifications = JSON.parse(localStorage.getItem('adminNotifications') || '[]');
+    // Add IDs to notifications if they don't have them
+    const notificationsWithIds = storedNotifications.map((notification: any, index: number) => ({
+      ...notification,
+      id: notification.id || `notification-${Date.now()}-${index}`
+    }));
+    setNotifications(notificationsWithIds);
+  }, []);
+
   const getNotificationIcon = (type: string) => {
     switch (type) {
       case 'order':
@@ -47,6 +57,8 @@ export default function AdminNotificationsPage() {
         return <DollarSign className="w-5 h-5 text-green-600" />;
       case 'inventory':
         return <Package className="w-5 h-5 text-orange-600" />;
+      case 'subscription':
+        return <UserPlus className="w-5 h-5 text-indigo-600" />;
       case 'system':
         return <AlertTriangle className="w-5 h-5 text-purple-600" />;
       default:
@@ -150,7 +162,7 @@ export default function AdminNotificationsPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
@@ -210,6 +222,22 @@ export default function AdminNotificationsPage() {
             </div>
           </CardContent>
         </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-indigo-100 rounded-lg">
+                <UserPlus className="w-5 h-5 text-indigo-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-gray-900">
+                  {notifications.filter(n => n.type === 'subscription').length}
+                </p>
+                <p className="text-sm text-gray-600">Subscriptions</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Filters and Search */}
@@ -234,6 +262,7 @@ export default function AdminNotificationsPage() {
               <option value="all">All Types</option>
               <option value="order">Orders</option>
               <option value="payment">Payments</option>
+              <option value="subscription">Subscriptions</option>
               <option value="inventory">Inventory</option>
               <option value="system">System</option>
             </select>
@@ -372,8 +401,9 @@ export default function AdminNotificationsPage() {
 
                       <span className={`text-xs px-2 py-1 rounded-full ${notification.type === 'order' ? 'bg-blue-100 text-blue-800' :
                           notification.type === 'payment' ? 'bg-green-100 text-green-800' :
-                            notification.type === 'inventory' ? 'bg-orange-100 text-orange-800' :
-                              'bg-purple-100 text-purple-800'
+                            notification.type === 'subscription' ? 'bg-indigo-100 text-indigo-800' :
+                              notification.type === 'inventory' ? 'bg-orange-100 text-orange-800' :
+                                'bg-purple-100 text-purple-800'
                         }`}>
                         {notification.type.charAt(0).toUpperCase() + notification.type.slice(1)}
                       </span>

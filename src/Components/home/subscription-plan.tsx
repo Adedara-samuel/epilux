@@ -85,7 +85,7 @@ const SubscriptionPlans: React.FC = () => {
                                 </ul>
                             </div>
                             <Button asChild className={`w-full ${plan.popular ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-500 hover:bg-blue-600'} text-white px-6 py-3 text-lg rounded-full transition-all duration-300 shadow-md hover:shadow-lg mt-auto`}>
-                                <Link href="/login?redirect=/subscribe-checkout">Subscribe Now</Link>
+                                <Link href={`/subscriptions/${plan.name.toLowerCase().replace(' plan', '')}`}>Subscribe Now</Link>
                             </Button>
                         </Card>
                     ))}

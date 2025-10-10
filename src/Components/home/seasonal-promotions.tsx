@@ -1,7 +1,6 @@
 /* eslint-disable react/no-unescaped-entities */
 // components/home/SeasonalPromotions.tsx
 /* eslint-disable @next/next/no-img-element */
-import { productImages } from '@/constants/images';
 import { Button } from '../ui/button';
 import React from 'react';
 import Link from 'next/link';
@@ -20,7 +19,7 @@ const SeasonalPromotions: React.FC = () => {
         {
             title: "Dry Season Special",
             description: "Get 10% off all bulk orders during the dry season!",
-            image: productImages.sachetWater[1] || "https://via.placeholder.com/600x400/FF5733/FFFFFF?text=Dry+Season+Promo",
+            image: "/images/dry-season.jpeg",
             cta: "Shop Now",
             endDate: "2025-04-30",
             redirectPath: "/products?promo=dry-season"
@@ -28,10 +27,10 @@ const SeasonalPromotions: React.FC = () => {
         {
             title: "Festival Hydration Bundle",
             description: "Buy 5 bags, get 1 free for all festive periods!",
-            image: productImages.bottledWater[0] || "https://via.placeholder.com/600x400/33FF57/FFFFFF?text=Festival+Bundle",
+            image: "/images/hero-image.jpeg",
             cta: "View Offer",
             endDate: "2025-12-31",
-            redirectPath: "/products?promo=festival-bundle"
+            redirectPath: "/offers/festival-bundle"
         }
     ];
 
@@ -61,7 +60,7 @@ const SeasonalPromotions: React.FC = () => {
                                 <p className="text-white text-lg mb-6 opacity-90">{promo.description}</p>
                                 <div className="flex justify-between items-center">
                                     <Button asChild variant="outline" className="bg-white text-blue-700 hover:bg-gray-100 px-6 py-3 text-base rounded-full shadow-md">
-                                        <Link href={`/login?redirect=${encodeURIComponent(promo.redirectPath)}`}>
+                                        <Link href={promo.redirectPath}>
                                             {promo.cta}
                                         </Link>
                                     </Button>

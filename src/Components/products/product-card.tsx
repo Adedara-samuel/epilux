@@ -38,7 +38,7 @@ export default function ProductCard({ product }: ProductCardProps) {
                         alt={product.name}
                         className="w-full h-full object-cover"
                         onError={(e) => {
-                            (e.target as HTMLImageElement).src = 'https://via.placeholder.com/150/CCCCCC/000000?text=No+Image'; // Fallback image
+                            (e.target as HTMLImageElement).src = '/images/product-1.jpeg'; // Fallback image
                         }}
                     />
                 </div>

@@ -5,7 +5,7 @@ import { api } from './base';
 export const ordersAPI = {
   // Get user's orders
   getOrders: async () => {
-    const response = await api.get('/api/orders');
+    const response = await api.get('/api/orders/my-orders');
     return response.data;
   },
 

@@ -164,8 +164,8 @@ const authAPI = {
      * @returns A promise that resolves with the API response.
      */
     changePassword: async (token: string, passwordData: { currentPassword: string; newPassword: string }) => {
-        const response = await fetch(`${BASE_URL}/api/user/password`, {
-            method: 'PUT',
+        const response = await fetch(`${BASE_URL}/api/auth/change-password`, {
+            method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json',

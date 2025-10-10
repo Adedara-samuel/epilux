@@ -5,7 +5,7 @@ import { api } from './base';
 export const userAPI = {
   // Get user profile
   getProfile: async () => {
-    const response = await api.get('/api/user/profile');
+    const response = await api.get('/api/users/profile');
     return response.data;
   },
 
@@ -15,7 +15,7 @@ export const userAPI = {
     lastName?: string;
     email?: string;
   }) => {
-    const response = await api.put('/api/user/profile', profileData);
+    const response = await api.put('/api/users/profile', profileData);
     return response.data;
   },
 
@@ -24,13 +24,13 @@ export const userAPI = {
     currentPassword: string;
     newPassword: string;
   }) => {
-    const response = await api.put('/api/user/password', passwordData);
+    const response = await api.put('/api/auth/change-password', passwordData);
     return response.data;
   },
 
   // Get user's orders
   getOrders: async () => {
-    const response = await api.get('/api/user/orders');
+    const response = await api.get('/api/users/orders');
     return response.data;
   },
 
