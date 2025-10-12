@@ -8,7 +8,7 @@ interface Commission {
     amount: number;
     status: string;
     type: string;
-    transactionId: string;
+    transactionId?: string;
 }
 
 const getStatusBadge = (status: string) => {

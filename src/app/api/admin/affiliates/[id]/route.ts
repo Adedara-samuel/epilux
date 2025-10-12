@@ -3,7 +3,10 @@ import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
     try {
         // Verify admin token
         const authHeader = request.headers.get('authorization');
@@ -23,13 +26,12 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
             return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
         }
 
-        const { id } = params;
+        const { id } = await params;
 
         // Mock affiliate lookup - in real app, fetch from database
         const mockAffiliate = {
             id,
             userId: 'user-1',
-            user: { firstName: 'John', lastName: 'Doe', email: 'john@example.com' },
             status: 'active',
             totalEarnings: 2500,
             totalReferrals: 15,
