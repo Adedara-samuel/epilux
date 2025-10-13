@@ -3,7 +3,10 @@ import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
     try {
         // Verify admin token
         const authHeader = request.headers.get('authorization');
@@ -23,7 +26,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
             return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
         }
 
-        const { id } = params;
+        const { id } = await params;
         const { role } = await request.json();
 
         if (!role) {

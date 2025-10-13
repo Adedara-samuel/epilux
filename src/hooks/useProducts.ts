@@ -3,7 +3,7 @@ import { adminProductsAPI, productsAPI } from '@/services';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 // Hook for getting products
-export const useProducts = (params?: { category?: string; search?: string }) => {
+export const useProducts = (params?: { category?: string; search?: string; limit?: number }) => {
   return useQuery({
     queryKey: ['products', params],
     queryFn: () => productsAPI.getProducts(params),
