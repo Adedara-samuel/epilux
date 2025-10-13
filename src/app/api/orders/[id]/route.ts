@@ -1,92 +1,19 @@
-// import { NextRequest, NextResponse } from 'next/server';
-
-// const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://epilux-backend.vercel.app';
-
-// export async function GET(
-//   request: NextRequest,
-//   { params }: { params: { id: string } }
-// ): Promise<NextResponse> {
-//   try {
-//     const { id } = params;
-
-//     const response = await fetch(`${BASE_URL}/api/orders/${id}`, {
-//       method: 'GET',
-//       headers: {
-//         'Authorization': request.headers.get('authorization') || '',
-//       },
-//       cache: 'no-store'
-//     });
-
-//     const data = await response.json();
-//     return NextResponse.json(data, { status: response.status });
-//   } catch (error) {
-//     console.error('Get order proxy error:', error);
-//     return NextResponse.json(
-//       { error: 'Internal server error' },
-//       { status: 500 }
-//     );
-//   }
-// }
-
-// export async function PUT(
-//   request: NextRequest,
-//   { params }: { params: { id: string } }
-// ): Promise<NextResponse> {
-//   try {
-//     const { id } = params;
-//     const url = new URL(request.url);
-//     const action = url.searchParams.get('action');
-
-//     if (action === 'cancel') {
-//       const response = await fetch(`${BASE_URL}/api/orders/${id}/cancel`, {
-//         method: 'PUT',
-//         headers: {
-//           'Authorization': request.headers.get('authorization') || '',
-//         },
-//         cache: 'no-store'
-//       });
-
-//       const data = await response.json();
-//       return NextResponse.json(data, { status: response.status });
-//     }
-
-//     const body = await request.json();
-//     const response = await fetch(`${BASE_URL}/api/orders/${id}`, {
-//       method: 'PUT',
-//       headers: {
-//         'Content-Type': 'application/json',
-//         'Authorization': request.headers.get('authorization') || '',
-//       },
-//       body: JSON.stringify(body),
-//       cache: 'no-store'
-//     });
-
-//     const data = await response.json();
-//     return NextResponse.json(data, { status: response.status });
-//   } catch (error) {
-//     console.error('Update order proxy error:', error);
-//     return NextResponse.json(
-//       { error: 'Internal server error' },
-//       { status: 500 }
-//     );
-//   }
-// }
-
-
-
-
 import { NextRequest, NextResponse } from 'next/server';
 
-const BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || 'https://epilux-backend.vercel.app';
+type RouteContext = {
+  params: Promise<{
+    id: string;
+  }>;
+};
 
-// ✅ Correct typing for Next.js 15
-export async function GET(
-  request: NextRequest,
-  context: { params: { id: string } }
-): Promise<NextResponse> {
+/**
+ * GET /api/orders/[id]
+ * Retrieve a specific order
+ */
+export async function GET(request: NextRequest, context: RouteContext) {
   try {
-    const { id } = context.params;
+    const { id } = await context.params;
+    const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://epilux-backend.vercel.app';
 
     const response = await fetch(`${BASE_URL}/api/orders/${id}`, {
       method: 'GET',
@@ -107,15 +34,18 @@ export async function GET(
   }
 }
 
-export async function PUT(
-  request: NextRequest,
-  context: { params: { id: string } }
-): Promise<NextResponse> {
+/**
+ * PUT /api/orders/[id]
+ * Update an order or cancel it (with ?action=cancel)
+ */
+export async function PUT(request: NextRequest, context: RouteContext) {
   try {
-    const { id } = context.params;
+    const { id } = await context.params;
+    const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://epilux-backend.vercel.app';
     const url = new URL(request.url);
     const action = url.searchParams.get('action');
 
+    // Handle cancel action
     if (action === 'cancel') {
       const response = await fetch(`${BASE_URL}/api/orders/${id}/cancel`, {
         method: 'PUT',
@@ -129,6 +59,7 @@ export async function PUT(
       return NextResponse.json(data, { status: response.status });
     }
 
+    // Handle regular update
     const body = await request.json();
     const response = await fetch(`${BASE_URL}/api/orders/${id}`, {
       method: 'PUT',
@@ -150,3 +81,5 @@ export async function PUT(
     );
   }
 }
+
+

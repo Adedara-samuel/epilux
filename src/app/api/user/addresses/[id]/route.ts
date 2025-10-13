@@ -1,7 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// Mock user addresses - in real app, fetch from database
-const mockUserAddresses = [
+type Address = {
+  id: string;
+  type: string;
+  street: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  country: string;
+};
+
+type RouteContext = {
+  params: Promise<{
+    id: string;
+  }>;
+};
+
+// Mock user addresses - In production, replace with database queries
+const mockUserAddresses: Address[] = [
   {
     id: 'addr-1',
     type: 'home',
@@ -22,18 +38,30 @@ const mockUserAddresses = [
   },
 ];
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+/**
+ * PUT /api/user/addresses/[id]
+ * Update a user address
+ */
+export async function PUT(request: NextRequest, context: RouteContext) {
   try {
-    const { id } = params;
+    const { id } = await context.params;
     const body = await request.json();
 
-    // In real app, update in database
-    const index = mockUserAddresses.findIndex(addr => addr.id === id);
+    const index = mockUserAddresses.findIndex((addr) => addr.id === id);
+    
     if (index === -1) {
-      return NextResponse.json({ error: 'Address not found' }, { status: 404 });
+      return NextResponse.json(
+        { error: 'Address not found' },
+        { status: 404 }
+      );
     }
 
-    mockUserAddresses[index] = { ...mockUserAddresses[index], ...body };
+    // Update address while preserving the ID
+    mockUserAddresses[index] = {
+      ...mockUserAddresses[index],
+      ...body,
+      id, // Ensure ID cannot be changed
+    };
 
     return NextResponse.json({
       success: true,
@@ -42,20 +70,31 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     });
   } catch (error) {
     console.error('Update user address error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+/**
+ * DELETE /api/user/addresses/[id]
+ * Delete a user address
+ */
+export async function DELETE(request: NextRequest, context: RouteContext) {
   try {
-    const { id } = params;
+    const { id } = await context.params;
 
-    // In real app, delete from database
-    const index = mockUserAddresses.findIndex(addr => addr.id === id);
+    const index = mockUserAddresses.findIndex((addr) => addr.id === id);
+    
     if (index === -1) {
-      return NextResponse.json({ error: 'Address not found' }, { status: 404 });
+      return NextResponse.json(
+        { error: 'Address not found' },
+        { status: 404 }
+      );
     }
 
+    // Remove address from array
     mockUserAddresses.splice(index, 1);
 
     return NextResponse.json({
@@ -64,6 +103,9 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     });
   } catch (error) {
     console.error('Delete user address error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
