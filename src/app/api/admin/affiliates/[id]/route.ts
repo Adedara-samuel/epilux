@@ -29,7 +29,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         const mockAffiliate = {
             id,
             userId: 'user-1',
-            user: { firstName: 'John', lastName: 'Doe', email: 'john@example.com' },
             status: 'active',
             totalEarnings: 2500,
             totalReferrals: 15,

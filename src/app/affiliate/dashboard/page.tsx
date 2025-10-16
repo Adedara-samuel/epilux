@@ -109,11 +109,17 @@ export default function AffiliateDashboard() {
 
                 {/* ROW 1: KEY PERFORMANCE INDICATORS (4-column grid) */}
                 <section className="mb-8">
-                    <AffiliateStats
+                    {/* <AffiliateStats
                         totalSales={dashboard?.totalEarnings || 0}
                         totalCommission={profile?.totalEarnings || 0}
                         activeReferrals={profile?.activeReferrals || 0}
                         referralBonus={profile?.availableBalance || 0}
+                    /> */}
+                    <AffiliateStats
+                        totalSales={dashboard?.totalEarnings ?? 0}
+                        totalCommission={profile?.totalEarned ?? 0}
+                        activeReferrals={dashboard?.totalReferrals ?? 0}
+                        referralBonus={profile?.availableBalance ?? 0}
                     />
                 </section>
 
@@ -137,8 +143,7 @@ export default function AffiliateDashboard() {
                     </div>
                     {/* Commission History (1/2 width) */}
                     <div className="lg:col-span-1">
-                        <CommissionHistory commissions={sales} />
-                    </div>
+                                            </div>
                 </section>
 
                 {/* ROW 4: QUICK ACTIONS (Full Width Footer card) */}
