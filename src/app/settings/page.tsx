@@ -99,7 +99,9 @@ export default function SettingsPage() {
 
     const updateProfileMutation = useUpdateProfile();
     const changePasswordMutation = useChangePassword();
+    
     const { data: addressesData, isLoading: addressesLoading } = useAddresses();
+    
     const addAddressMutation = useAddAddress();
     const updateAddressMutation = useUpdateAddress();
     const deleteAddressMutation = useDeleteAddress();
@@ -214,6 +216,7 @@ export default function SettingsPage() {
     const handleAddAddress = async (values: z.infer<typeof addressSchema>) => {
         addAddressMutation.mutate(values, {
             onSuccess: () => {
+                // SUCCESS MESSAGE 1: ADD
                 toast.success("Address added successfully!");
                 addressForm.reset(defaultAddressFormValues);
                 setIsFormVisible(false);
@@ -228,8 +231,10 @@ export default function SettingsPage() {
 
     const handleUpdateAddress = async (values: z.infer<typeof addressSchema>) => {
         if (!editingAddress) return;
+        
         updateAddressMutation.mutate({ id: editingAddress.id, data: values }, {
             onSuccess: () => {
+                // SUCCESS MESSAGE 2: UPDATE
                 toast.success("Address updated successfully!");
                 setEditingAddress(null);
                 addressForm.reset(defaultAddressFormValues);
@@ -243,24 +248,33 @@ export default function SettingsPage() {
         });
     };
 
+    // FIX: Replace JavaScript 'confirm' with 'sonner' toast with action button
     const handleDeleteAddress = async (addressId: string) => {
-        if (confirm('Are you sure you want to delete this address?')) {
-            deleteAddressMutation.mutate(addressId, {
-                onSuccess: () => {
-                    toast.success("Address deleted successfully!");
-                    if (editingAddress?.id === addressId) {
-                        setEditingAddress(null);
-                        addressForm.reset(defaultAddressFormValues);
-                        setIsFormVisible(false);
-                    }
+        toast('Are you sure you want to delete this address?', {
+            description: 'This action is irreversible.',
+            duration: 5000, // Duration for the user to confirm
+            action: {
+                label: 'Confirm Delete',
+                onClick: () => {
+                    // Execute mutation only upon user confirmation via toast action
+                    deleteAddressMutation.mutate(addressId, {
+                        onSuccess: () => {
+                            toast.success("Address deleted successfully!");
+                            if (editingAddress?.id === addressId) {
+                                setEditingAddress(null);
+                                addressForm.reset(defaultAddressFormValues);
+                                setIsFormVisible(false);
+                            }
+                        },
+                        onError: (error: any) => {
+                            console.error("Error deleting address:", error);
+                            const errorMessage = error.response?.data?.message || error.message || "An unknown error occurred.";
+                            toast.error(`Failed to delete address: ${errorMessage}`);
+                        },
+                    });
                 },
-                onError: (error: any) => {
-                    console.error("Error deleting address:", error);
-                    const errorMessage = error.response?.data?.message || error.message || "An unknown error occurred.";
-                    toast.error(`Failed to delete address: ${errorMessage}`);
-                },
-            });
-        }
+            },
+        });
     };
 
     const startEditingAddress = (address: any) => {
@@ -275,6 +289,7 @@ export default function SettingsPage() {
             setAvailableCities([]);
         }
 
+        // This part is correct for pre-populating the form
         addressForm.reset({
             type: address.type || 'home',
             street: address.street || '',
@@ -548,10 +563,11 @@ export default function SettingsPage() {
                                     <Loader2 className="h-6 w-6 animate-spin text-green-600" />
                                     <p className="ml-2 text-gray-600">Loading addresses...</p>
                                 </div>
-                            ) : addressesData?.addresses?.length > 0 ? (
+                            ) : (addressesData?.addresses?.length ?? 0) > 0 ? (
                                 <div className="space-y-4 mb-8">
                                     <h3 className="text-lg font-semibold text-gray-800">Your Saved Addresses</h3>
-                                    {addressesData.addresses.map((address: any) => (
+                                    
+                                    {(addressesData?.addresses || []).map((address: any) => (
                                         <div key={address.id} className="bg-gray-50 rounded-xl p-6 border border-gray-200">
                                             <div className="flex justify-between items-start">
                                                 <div>
@@ -573,20 +589,6 @@ export default function SettingsPage() {
                                                         <Edit className="w-4 h-4 mr-1" />
                                                         Edit
                                                     </Button>
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        onClick={() => handleDeleteAddress(address.id)}
-                                                        className="text-red-600 border-red-300 hover:bg-red-50 rounded-lg"
-                                                        disabled={deleteAddressMutation.isPending && deleteAddressMutation.variables === address.id}
-                                                    >
-                                                        {deleteAddressMutation.isPending && deleteAddressMutation.variables === address.id ? (
-                                                            <Loader2 className="w-4 h-4 animate-spin" />
-                                                        ) : (
-                                                            <Trash2 className="w-4 h-4 mr-1" />
-                                                        )}
-                                                        Delete
-                                                    </Button>
                                                 </div>
                                             </div>
                                         </div>
@@ -599,7 +601,7 @@ export default function SettingsPage() {
                             )}
 
                             {/* Add/Edit Address Form - Conditional Display */}
-                            {(isFormVisible || addressesData?.addresses?.length === 0) && (
+                            {(isFormVisible || (addressesData?.addresses?.length ?? 0) === 0) && (
                                 <Form {...addressForm}>
                                     <form onSubmit={addressForm.handleSubmit(handleAddressSubmit)} className="space-y-6 pt-4">
                                         <h3 className="text-xl font-bold text-gray-800 border-b pb-2 mb-4">

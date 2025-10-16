@@ -1,8 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
+// All necessary hooks from the useMessages file are correctly imported
 import { useSupportTickets, useDeleteMessage, useUpdateTicketStatus, useResolveTicket } from '@/hooks/useMessages';
-import { SupportTicket } from '@/services/messageService';
+// The SupportTicket interface is correctly imported
+import { SupportTicket } from '@/services/messageService'; 
 
 import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/Components/ui/button';
@@ -31,7 +33,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 
 // --- Helper Type for Mapping to Component's Expectation ---
-// Adds fields required by the UI that are missing in the SupportTicket schema.
+// Extends the SupportTicket schema for UI-specific fields.
 type NotificationView = SupportTicket & {
     read: boolean;
     type: 'message' | 'system' | 'order';
@@ -62,7 +64,7 @@ export default function AdminNotificationsPage() {
 
     const mappedNotifications: NotificationView[] = (ticketsData?.tickets || []).map(ticket => ({
         ...ticket,
-        // DYNAMICALLY MAPPED: Based on the API's 'status' field.
+        // CORRECT: 'pending' means unread, anything else ('read' or 'resolved') means read
         read: ticket.status !== 'pending', 
         // NECESSARY DEFAULT: All records are customer messages/tickets.
         type: 'message', 
@@ -119,14 +121,16 @@ export default function AdminNotificationsPage() {
         const matchesType = filterType === 'all' || notification.type === filterType || filterType === 'message'; 
         
         const matchesRead = filterRead === 'all' ||
-            (filterRead === 'read' && notification.read) ||
-            (filterRead === 'unread' && !notification.read);
+            (filterRead === 'read' && notification.read && notification.status !== 'resolved') || // Read/Active tickets
+            (filterRead === 'unread' && !notification.read) || // Pending tickets
+            (filterRead === 'resolved' && notification.status === 'resolved'); // Explicit check for resolved
 
         return matchesSearch && matchesType && matchesRead;
     });
 
     // --- Action Handlers (using mutations) ---
 
+    // The status for 'read' is 'read' and for 'unread' is 'pending'
     const markStatus = (id: string, readStatus: boolean) => {
         const newStatus = readStatus ? 'read' : 'pending';
         updateStatusMutation.mutate({ id, status: newStatus as 'read' | 'pending' });
@@ -138,7 +142,8 @@ export default function AdminNotificationsPage() {
 
     const markAllAsRead = () => {
         mappedNotifications.filter(n => !n.read).forEach(n => {
-            markStatus(n.id, true);
+            // Mark as 'read'
+            updateStatusMutation.mutate({ id: n.id, status: 'read' });
         });
     };
 
@@ -146,6 +151,7 @@ export default function AdminNotificationsPage() {
         setSelectedNotification(notification);
         setViewDialogOpen(true);
         if (!notification.read) {
+            // Mark as 'read' when viewed
             markStatus(notification.id, true);
         }
     };
@@ -159,7 +165,7 @@ export default function AdminNotificationsPage() {
     const sendReply = () => {
         if (!replyMessage.trim() || !selectedNotification?.id) return;
         
-        // Use the resolveTicket mutation
+        // Use the resolveTicket mutation, which sets status to 'resolved'
         resolveTicketMutation.mutate(selectedNotification.id, {
             onSuccess: () => {
                 // In a real application, the reply message would be sent to a separate endpoint
@@ -213,7 +219,8 @@ export default function AdminNotificationsPage() {
                             onClick={markAllAsRead} 
                             variant="outline" 
                             className="cursor-pointer"
-                            disabled={updateStatusMutation.isPending}
+                            // Disable if any status update is pending
+                            disabled={updateStatusMutation.isPending} 
                         >
                             {updateStatusMutation.isPending ? (
                                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -226,7 +233,7 @@ export default function AdminNotificationsPage() {
                 </div>
             </div>
 
-            {/* Stats Cards - Updated to reflect ticket data */}
+            {/* Stats Cards - These counts will update instantly due to optimistic updates in the hook */}
             <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                 <Card>
                     <CardContent className="p-4">
@@ -264,7 +271,8 @@ export default function AdminNotificationsPage() {
                             </div>
                             <div>
                                 <p className="text-2xl font-bold text-gray-900">
-                                    {mappedNotifications.filter(n => n.read).length}
+                                    {/* Read/Active tickets are those not 'pending' and not 'resolved' */}
+                                    {mappedNotifications.filter(n => n.read && n.status !== 'resolved').length}
                                 </p>
                                 <p className="text-sm text-gray-600">Read/Active</p>
                             </div>
@@ -296,6 +304,7 @@ export default function AdminNotificationsPage() {
                             </div>
                             <div>
                                 <p className="text-2xl font-bold text-gray-900">
+                                    {/* Placeholder for future status types */}
                                     {0}
                                 </p>
                                 <p className="text-sm text-gray-600">Other (N/A)</p>
@@ -338,6 +347,7 @@ export default function AdminNotificationsPage() {
                             <option value="all">All Status</option>
                             <option value="unread">Unread/Pending</option>
                             <option value="read">Read/Active</option>
+                            <option value="resolved">Resolved</option> 
                         </select>
                     </div>
                 </CardContent>
@@ -407,6 +417,7 @@ export default function AdminNotificationsPage() {
                                                         size="sm"
                                                         onClick={() => openReplyDialog(notification)}
                                                         className="text-green-600 hover:text-green-700 cursor-pointer"
+                                                        disabled={resolveTicketMutation.isPending}
                                                     >
                                                         <MessageSquare className="w-4 h-4 mr-1" />
                                                         Reply/Resolve
@@ -436,7 +447,10 @@ export default function AdminNotificationsPage() {
                                                         size="sm"
                                                         onClick={() => {
                                                             setSelectedNotification(notification);
-                                                            markStatus(notification.id, false);
+                                                            // Cannot mark a resolved ticket as unread/pending
+                                                            if (notification.status !== 'resolved') {
+                                                                markStatus(notification.id, false);
+                                                            }
                                                         }}
                                                         className="text-gray-600 hover:text-gray-700 cursor-pointer"
                                                         disabled={updateStatusMutation.isPending && selectedNotification?.id === notification.id}

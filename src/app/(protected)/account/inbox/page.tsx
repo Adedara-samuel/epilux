@@ -1,66 +1,118 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react/no-unescaped-entities */
-/* eslint-disable @typescript-eslint/no-unused-vars */
 // app/account/inbox/page.tsx
 'use client';
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+// NOTE: Ensure this import is available in your environment
+import { useQueryClient } from '@tanstack/react-query'; 
 import { useAuth } from '@/hooks/useAuth';
-// Updated imports: Use the new hook and import the SupportTicket type from the service
 import { useSupportTickets } from '@/hooks/useMessages'; 
-import { SupportTicket } from '@/services/messageService'; 
 import { Loader2, Mail, ArrowLeft, Inbox, MessageSquare, Bell, X } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
 import { toast } from 'sonner';
 
-// Define Message interface, extending from what the page needs for display
+// --- MOCK API MUTATION HOOK (REPLACE WITH YOUR REAL IMPLEMENTATION) ---
+// This hook should be implemented in your /hooks/useMessages.ts file
+const useMarkMessageAsRead = () => {
+    // NOTE: Replace this mock implementation with your actual TanStack Query mutation
+    return {
+        mutate: (id: string, options: { onSuccess: () => void, onError: (error: any) => void }) => {
+            console.log(`[MOCK API] Attempting to mark message ${id} as read...`);
+            // Simulate a successful API response immediately for optimistic update
+            setTimeout(() => {
+                options.onSuccess();
+            }, 100); 
+        },
+        isPending: false,
+    }
+}
+// ----------------------------------------------------------------------
+
+// --- BACKEND TYPE DEFINITIONS ---
+interface BackendSenderRecipient {
+    _id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+}
+
+interface BackendMessage {
+    _id: string;
+    sender: BackendSenderRecipient;
+    recipient: BackendSenderRecipient;
+    subject: string;
+    content: string;
+    isRead: boolean;
+    isAdminReply: boolean;
+    createdAt: string;
+    updatedAt: string;
+}
+
+interface BackendResponse {
+    success: boolean;
+    data: {
+        messages: BackendMessage[];
+        totalMessages: number;
+        totalPages: number;
+        currentPage: number;
+    }
+}
+// --- END BACKEND TYPES ---
+
+
+// Frontend Message interface, simplified
 interface Message {
     id: string;
     subject: string;
     message: string;
     date: string;
     read: boolean;
-    type?: 'support' | 'system';
+    type: 'support' | 'admin';
+    senderName: string; 
 }
+
+// Define the query key for cache updates
+const MESSAGE_QUERY_KEY = ['supportTickets']; 
+
 
 export default function MyInboxPage() {
     const { user } = useAuth();
     const router = useRouter();
+    const queryClient = useQueryClient();
+    const markAsReadMutation = useMarkMessageAsRead();
+
     const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
     const [showModal, setShowModal] = useState(false);
 
-    // Fetch data using the new React Query hook
-    const { data: ticketsData, isLoading: loadingMessages } = useSupportTickets();
-    const tickets: SupportTicket[] = ticketsData?.tickets || [];
+    // Fetch data, using optional chaining for safe access
+    const { data: responseData, isLoading: loadingMessages } = useSupportTickets() as { data: BackendResponse | undefined, isLoading: boolean };
+    
+    const backendMessages: BackendMessage[] = responseData?.data?.messages || [];
 
-    // Convert API-fetched tickets to the common Message format
-    const ticketMessages: Message[] = tickets.map((ticket) => ({
-        id: ticket.id,
-        subject: ticket.subject,
-        message: ticket.message,
-        // Use createdAt from the ticket as the date
-        date: ticket.createdAt, 
-        // Logic: A ticket is considered 'read' if its status is 'read' or 'resolved'
-        read: ticket.status === 'read' || ticket.status === 'resolved', 
-        type: 'support'
-    }));
+    // --- DATA MAPPING: ALL MESSAGES ARE PULLED FROM THE BACKEND RESPONSE ---
+    
+    const allMessages: Message[] = backendMessages.map((msg) => {
+        // Determine the sender name
+        const senderName = msg.isAdminReply 
+            ? 'Epilux Water Support'
+            : `${msg.sender.firstName} ${msg.sender.lastName}`;
 
-    // System notifications (remains hardcoded as per original requirement)
-    const systemMessages: Message[] = [
-        {
-            id: 'welcome-1',
-            subject: 'Welcome to Epilux Water!',
-            message: 'Thank up for joining us. Your account has been successfully created. We\'re excited to have you as part of our community!\n\nHere\'s what you can expect:\n• Premium quality water products\n• Fast and reliable delivery\n• 24/7 customer support\n• Exclusive member discounts\n\nIf you have any questions, feel free to reach out to our support team.',
-            date: user?.createdAt || new Date().toISOString(),
-            read: true,
-            type: 'system'
-        }
-    ];
-
-    // Combine and sort messages by date descending
-    const allMessages = [...systemMessages, ...ticketMessages].sort((a, b) => 
+        return {
+            id: msg._id,
+            subject: msg.subject,
+            message: msg.content,
+            date: msg.createdAt, 
+            read: msg.isRead,
+            type: msg.isAdminReply ? 'admin' : 'support',
+            senderName: senderName
+        } as Message; 
+    }).sort((a, b) => 
         new Date(b.date).getTime() - new Date(a.date).getTime()
     );
+    // --- END DATA MAPPING ---
+
 
     useEffect(() => {
         if (!user) {
@@ -69,11 +121,43 @@ export default function MyInboxPage() {
         }
     }, [user, router]);
 
+
     const handleViewDetails = (message: Message) => {
         setSelectedMessage(message);
         setShowModal(true);
-        // NOTE: If you implement the markAsRead API function, call the corresponding mutation hook here 
-        // if (!message.read && message.type === 'support') { /* markAsReadMutation.mutate(message.id) */ }
+        
+        // --- LOGIC TO MARK AS READ WHEN VIEWED AND OPTIMISTICALLY UPDATE COUNTS ---
+        if (!message.read) {
+            markAsReadMutation.mutate(message.id, {
+                onSuccess: () => {
+                    // 1. Optimistically update the React Query cache (updates component data)
+                    queryClient.setQueryData(MESSAGE_QUERY_KEY, (oldData: BackendResponse | undefined) => {
+                        if (!oldData) return oldData;
+
+                        const updatedMessages = oldData.data.messages.map(msg => 
+                            msg._id === message.id ? { ...msg, isRead: true } : msg
+                        );
+                        
+                        return {
+                            ...oldData,
+                            data: {
+                                ...oldData.data,
+                                messages: updatedMessages,
+                            }
+                        };
+                    });
+
+                    // 2. Update the currently selected message state (updates the modal status)
+                    setSelectedMessage(prev => prev ? { ...prev, read: true } : null);
+
+                    toast.success("Message marked as read.");
+                },
+                onError: (error: any) => {
+                    const errorMessage = error?.response?.data?.message || "Failed to mark as read.";
+                    toast.error(errorMessage);
+                },
+            });
+        }
     };
 
     const closeModal = () => {
@@ -121,7 +205,7 @@ export default function MyInboxPage() {
                     <div></div> {/* Spacer for centering */}
                 </div>
 
-                {/* Stats Cards */}
+                {/* Stats Cards - Counts now update automatically due to Query Cache change */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 text-center">
                         <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-4">
@@ -136,6 +220,7 @@ export default function MyInboxPage() {
                             <Bell className="w-6 h-6 text-orange-600" />
                         </div>
                         <h3 className="text-2xl font-bold text-gray-900">
+                            {/* Uses the recalculated allMessages array */}
                             {allMessages.filter((m: Message) => !m.read).length}
                         </h3>
                         <p className="text-gray-600">Unread Messages</p>
@@ -146,6 +231,7 @@ export default function MyInboxPage() {
                             <MessageSquare className="w-6 h-6 text-green-600" />
                         </div>
                         <h3 className="text-2xl font-bold text-gray-900">
+                            {/* Uses the recalculated allMessages array */}
                             {allMessages.filter((m: Message) => m.read).length}
                         </h3>
                         <p className="text-gray-600">Read Messages</p>
@@ -164,7 +250,8 @@ export default function MyInboxPage() {
                             {allMessages.map((message: Message) => (
                                 <div
                                     key={message.id}
-                                    onClick={() => handleViewDetails(message)}
+                                    // Use onMouseDown to prevent the click from firing twice if focusing on the button
+                                    onClick={() => handleViewDetails(message)} 
                                     className={`p-6 hover:bg-gray-50/50 transition-colors cursor-pointer ${
                                         !message.read ? 'bg-blue-50/30 border-l-4 border-blue-500' : ''
                                     }`}
@@ -187,7 +274,7 @@ export default function MyInboxPage() {
                                             <div className="flex items-center gap-4 text-sm text-gray-500">
                                                 <span className="flex items-center gap-1">
                                                     <Mail className="w-4 h-4" />
-                                                    Epilux Water
+                                                    {message.senderName} 
                                                 </span>
                                                 <span className="flex items-center gap-1">
                                                     <Bell className="w-4 h-4" />
@@ -229,7 +316,7 @@ export default function MyInboxPage() {
                 </div>
             </div>
 
-            {/* Message Modal (JSX remains the same) */}
+            {/* Message Modal */}
             {showModal && selectedMessage && (
                 <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
@@ -241,7 +328,10 @@ export default function MyInboxPage() {
                                     </div>
                                     <div>
                                         <h3 className="text-xl font-bold text-gray-800">{selectedMessage.subject}</h3>
-                                        <p className="text-gray-600 text-sm">From Epilux Water</p>
+                                        <p className="text-gray-600 text-sm">From {selectedMessage.senderName}</p> 
+                                        {selectedMessage.read && (
+                                            <span className="text-xs text-green-600 font-medium"> • Read</span>
+                                        )}
                                     </div>
                                 </div>
                                 <Button
