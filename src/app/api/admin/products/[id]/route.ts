@@ -1,57 +1,118 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
-// Define the expected type for route parameters
-type RouteContext = {
-    params: {
-        id: string;
-    };
+// Define the direct type for the context argument, though we are avoiding its use per request
+// type RouteContext = {
+//     params: {
+//         id: string;
+//     };
+// };
+
+// --- START: Placeholder Admin Product Service ---
+// This is your mock API layer that needs a guaranteed string token.
+const adminProductAPI = {
+    // Requires a guaranteed string token
+    getProduct: async (token: string, productId: string) => {
+        console.log(`API Call: GET product ${productId} using token: ${token.substring(0, 10)}...`);
+        // Replace with actual API call
+        return {
+            id: productId,
+            name: 'Fetched Product Name',
+            price: 100,
+            stock: 500
+        };
+    },
+    // Requires a guaranteed string token
+    updateProduct: async (token: string, productId: string, updates: any) => {
+        console.log(`API Call: PUT product ${productId} with updates:`, updates);
+        // Replace with actual API call
+        return {
+            id: productId,
+            ...updates,
+            updatedAt: new Date().toISOString()
+        };
+    },
+    // Requires a guaranteed string token
+    deleteProduct: async (token: string, productId: string) => {
+        console.log(`API Call: DELETE product ${productId} using token: ${token.substring(0, 10)}...`);
+        // Replace with actual API call
+        return { message: 'Product deleted successfully' };
+    }
+};
+// --- END: Placeholder Admin Product Service ---
+
+// --- FIX: Refactored Utility Function for Type Safety ---
+// The return type is narrowed to be either an error object OR an object with a guaranteed string token.
+const validateAdminRequest = (request: NextRequest): { token: string } | { error: string, status: number } => {
+    const authHeader = request.headers.get('authorization');
+
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return { error: 'Unauthorized: Missing or malformed Authorization header', status: 401 };
+    }
+
+    // The token extracted here is definitely a string
+    const token = authHeader.substring(7);
+    let decoded: jwt.JwtPayload;
+
+    try {
+        // Here, jwt.verify expects a string, which 'token' is.
+        decoded = jwt.verify(token, JWT_SECRET) as jwt.JwtPayload;
+    } catch {
+        return { error: 'Unauthorized: Invalid token', status: 401 };
+    }
+
+    if (decoded.role !== 'admin') {
+        return { error: 'Forbidden: Admin access required', status: 403 };
+    }
+
+    // When returning success, TypeScript knows the return object MUST contain a string token.
+    return { token };
 };
 
-export async function GET(request: NextRequest, { params }: RouteContext) {
+// Utility to extract ID from URL (since we avoided the 'params' argument)
+const getProductIdFromUrl = (request: NextRequest): string | null => {
+    const pathSegments = request.nextUrl.pathname.split('/');
+    // Assumes URL structure is /api/admin/products/[id]
+    const id = pathSegments.pop();
+
+    // Ensures the segment is not empty and is likely the ID
+    return id && id !== 'products' && id !== 'api' && id !== 'admin' ? id : null;
+};
+
+
+// ----------------------------------------------------------------------
+
+/**
+ * GET /api/admin/products/[id]
+ * Fetches a single product by ID (Admin-only)
+ */
+export async function GET(request: NextRequest) {
     try {
-        // Verify admin token
-        const authHeader = request.headers.get('authorization');
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        const validation = validateAdminRequest(request);
+        if ('error' in validation) { // Check if the utility returned an error object
+            return NextResponse.json({ error: validation.error }, { status: validation.status });
+        }
+        // TypeScript now knows 'validation' is { token: string }
+        const { token } = validation;
+
+        const id = getProductIdFromUrl(request);
+        if (!id) {
+            return NextResponse.json({ error: 'Missing product ID in URL' }, { status: 400 });
         }
 
-        const token = authHeader.substring(7);
-        let decoded: jwt.JwtPayload;
-        try {
-            decoded = jwt.verify(token, JWT_SECRET) as jwt.JwtPayload;
-        } catch {
-            return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
-        }
+        // FIX: 'token' is now guaranteed to be a string, resolving the type error.
+        const product = await adminProductAPI.getProduct(token, id);
 
-        if (decoded.role !== 'admin') {
-            return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
-        }
-
-        // FIX: Access params directly. No 'await' is needed.
-        const { id } = params;
-
-        // Mock product lookup - in real app, fetch from database
-        const mockProduct = {
-            id,
-            name: 'Epilux Pure Water 75cl',
-            description: 'Premium quality sachet water',
-            price: 50,
-            category: 'water',
-            stock: 1000,
-            image: '/images/product1.jpg',
-            createdAt: '2024-01-01T00:00:00Z'
-        };
-
-        if (!mockProduct) {
+        if (!product) {
             return NextResponse.json({ error: 'Product not found' }, { status: 404 });
         }
 
         return NextResponse.json({
             success: true,
-            product: mockProduct
+            product
         });
     } catch (error) {
         console.error('Get product error:', error);
@@ -59,36 +120,29 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
     }
 }
 
-export async function PUT(request: NextRequest, { params }: RouteContext) {
+// ----------------------------------------------------------------------
+
+/**
+ * PUT /api/admin/products/[id]
+ * Updates an existing product by ID (Admin-only)
+ */
+export async function PUT(request: NextRequest) {
     try {
-        // Verify admin token
-        const authHeader = request.headers.get('authorization');
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        const validation = validateAdminRequest(request);
+        if ('error' in validation) { // Check if the utility returned an error object
+            return NextResponse.json({ error: validation.error }, { status: validation.status });
+        }
+        const { token } = validation;
+
+        const id = getProductIdFromUrl(request);
+        if (!id) {
+            return NextResponse.json({ error: 'Missing product ID in URL' }, { status: 400 });
         }
 
-        const token = authHeader.substring(7);
-        let decoded: jwt.JwtPayload;
-        try {
-            decoded = jwt.verify(token, JWT_SECRET) as jwt.JwtPayload;
-        } catch {
-            return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
-        }
-
-        if (decoded.role !== 'admin') {
-            return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
-        }
-
-        // FIX: Access params directly. No 'await' is needed.
-        const { id } = params;
         const updates = await request.json();
 
-        // Mock product update - in real app, update in database
-        const updatedProduct = {
-            id,
-            ...updates,
-            updatedAt: new Date().toISOString()
-        };
+        // FIX: 'token' is now guaranteed to be a string.
+        const updatedProduct = await adminProductAPI.updateProduct(token, id, updates);
 
         return NextResponse.json({
             success: true,
@@ -101,31 +155,27 @@ export async function PUT(request: NextRequest, { params }: RouteContext) {
     }
 }
 
-export async function DELETE(request: NextRequest, { params }: RouteContext) {
+// ----------------------------------------------------------------------
+
+/**
+ * DELETE /api/admin/products/[id]
+ * Deletes a product by ID (Admin-only)
+ */
+export async function DELETE(request: NextRequest) {
     try {
-        // Verify admin token
-        const authHeader = request.headers.get('authorization');
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        const validation = validateAdminRequest(request);
+        if ('error' in validation) { // Check if the utility returned an error object
+            return NextResponse.json({ error: validation.error }, { status: validation.status });
+        }
+        const { token } = validation;
+
+        const id = getProductIdFromUrl(request);
+        if (!id) {
+            return NextResponse.json({ error: 'Missing product ID in URL' }, { status: 400 });
         }
 
-        const token = authHeader.substring(7);
-        let decoded: jwt.JwtPayload;
-        try {
-            decoded = jwt.verify(token, JWT_SECRET) as jwt.JwtPayload;
-        } catch {
-            return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
-        }
-
-        if (decoded.role !== 'admin') {
-            return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
-        }
-
-        // FIX: Access params directly.
-        const { id } = params; 
-
-        // Mock product deletion - in real app, delete from database
-        // Use 'id' here to delete the specific product
+        // FIX: 'token' is now guaranteed to be a string.
+        await adminProductAPI.deleteProduct(token, id);
 
         return NextResponse.json({
             success: true,

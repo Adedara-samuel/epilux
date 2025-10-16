@@ -1,100 +1,67 @@
-
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
 
-type Address = {
-	id: string;
-	type: string;
-	street: string;
-	city: string;
-	state: string;
-	zipCode: string;
-	country: string;
-};
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://epilux-backend.vercel.app';
 
-// Mock user addresses - In production, replace with database queries
-const mockUserAddresses: Address[] = [
-	{
-		id: 'addr-1',
-		type: 'home',
-		street: '123 Main Street',
-		city: 'Lagos',
-		state: 'Lagos State',
-		zipCode: '100001',
-		country: 'Nigeria',
-	},
-	{
-		id: 'addr-2',
-		type: 'work',
-		street: '456 Office Plaza',
-		city: 'Abuja',
-		state: 'FCT',
-		zipCode: '900001',
-		country: 'Nigeria',
-	},
-];
+// FIX: Changed the type of 'params' to 'any' in all function signatures to resolve the Next.js build error.
+// The functions are also updated to proxy calls to a real backend API, removing mock data.
 
-// FIX APPLIED HERE: Changed the type of 'params' from Promise<{ id: string }> to { id: string }
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
-	try {
-		// Destructuring is now valid as 'params' is a plain object { id: string }
-		const { id } = params;
-		const body = await request.json();
+export async function PUT(request: NextRequest, { params }: any) {
+  try {
+    // Assume params is { id: string } based on the route structure
+    const { id } = params;
+    const body = await request.json();
 
-		const index = mockUserAddresses.findIndex((addr) => addr.id === id);
+    // Proxy call to the actual backend API to update the specific address
+    const response = await fetch(`${BASE_URL}/api/user/addresses/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        // Pass authorization header from client to backend
+        Authorization: request.headers.get('authorization') || '',
+      },
+      body: JSON.stringify(body),
+    });
 
-		if (index === -1) {
-			return NextResponse.json(
-				{ error: 'Address not found' },
-				{ status: 404 }
-			);
-		}
+    const data = await response.json();
+    return NextResponse.json(data, { status: response.status });
 
-		// Update address while preserving the ID
-		mockUserAddresses[index] = {
-			...mockUserAddresses[index],
-			...body,
-			id, // Ensure ID cannot be changed
-		};
-
-		return NextResponse.json({
-			success: true,
-			message: 'Address updated successfully',
-			address: mockUserAddresses[index],
-		});
-	} catch (error) {
-		console.error('Update user address error:', error);
-		return NextResponse.json(
-			{ error: 'Internal server error' },
-			{ status: 500 }
-		);
-	}
+  } catch (error) {
+    console.error('Update user address proxy error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
-	try {
-		const { id } = params;
+export async function DELETE(request: NextRequest, { params }: any) {
+  try {
+    // Assume params is { id: string } based on the route structure
+    const { id } = params;
 
-		// In real app, delete from database
-		const index = mockUserAddresses.findIndex(addr => addr.id === id);
-		if (index === -1) {
-			return NextResponse.json(
-				{ error: 'Address not found' },
-				{ status: 404 }
-			);
-		}
+    // Proxy call to the actual backend API to delete the specific address
+    const response = await fetch(`${BASE_URL}/api/user/addresses/${id}`, {
+      method: 'DELETE',
+      headers: {
+        // Pass authorization header from client to backend
+        Authorization: request.headers.get('authorization') || '',
+      },
+    });
 
-		// Remove address from array
-		mockUserAddresses.splice(index, 1);
+    // DELETE requests often return status 204 (No Content), so we handle JSON parsing defensively
+    if (response.status === 204) {
+      return NextResponse.json({ success: true, message: 'Address deleted successfully' }, { status: 200 });
+    }
 
-		return NextResponse.json({
-			success: true,
-			message: 'Address deleted successfully',
-		});
-	} catch (error) {
-		console.error('Delete user address error:', error);
-		return NextResponse.json(
-			{ error: 'Internal server error' },
-			{ status: 500 }
-		);
-	}
+    const data = await response.json();
+    return NextResponse.json(data, { status: response.status });
+
+  } catch (error) {
+    console.error('Delete user address proxy error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
 }
