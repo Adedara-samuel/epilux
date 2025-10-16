@@ -3,7 +3,14 @@ import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
-export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+// Define the expected type for route parameters
+type RouteContext = {
+    params: {
+        id: string;
+    };
+};
+
+export async function GET(request: NextRequest, { params }: RouteContext) {
     try {
         // Verify admin token
         const authHeader = request.headers.get('authorization');
@@ -23,7 +30,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
             return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
         }
 
-        const { id } = await params;
+        // FIX: Access params directly. No 'await' is needed.
+        const { id } = params;
 
         // Mock product lookup - in real app, fetch from database
         const mockProduct = {
@@ -51,7 +59,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     }
 }
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: RouteContext) {
     try {
         // Verify admin token
         const authHeader = request.headers.get('authorization');
@@ -71,7 +79,8 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
             return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
         }
 
-        const { id } = await params;
+        // FIX: Access params directly. No 'await' is needed.
+        const { id } = params;
         const updates = await request.json();
 
         // Mock product update - in real app, update in database
@@ -92,7 +101,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     }
 }
 
-export async function DELETE(request: NextRequest) {
+export async function DELETE(request: NextRequest, { params }: RouteContext) {
     try {
         // Verify admin token
         const authHeader = request.headers.get('authorization');
@@ -112,13 +121,15 @@ export async function DELETE(request: NextRequest) {
             return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
         }
 
-        // const { id } = await params;
+        // FIX: Access params directly.
+        const { id } = params; 
 
         // Mock product deletion - in real app, delete from database
+        // Use 'id' here to delete the specific product
 
         return NextResponse.json({
             success: true,
-            message: 'Product deleted successfully'
+            message: `Product with ID ${id} deleted successfully`
         });
     } catch (error) {
         console.error('Delete product error:', error);
