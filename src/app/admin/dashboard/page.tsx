@@ -6,6 +6,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
+// NOTE: Assuming your hook is correctly imported as useAdminDashboardStats
 import { useAdminDashboardStats } from '@/hooks/useAdmin';
 import {
   Users,
@@ -15,19 +16,58 @@ import {
   TrendingUp,
   AlertCircle,
   CheckCircle,
-  Clock
+  Clock,
+  XCircle // Added for potential error status
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/Components/ui/card';
 import { Button } from '@/Components/ui/button';
 import { Badge } from '@/Components/ui/badge';
 import Link from 'next/link';
+import { Skeleton } from '@/Components/ui/skeleton';
+
+// 1. Define the expected API Response structure (Conceptual Interface)
+interface DashboardStats {
+  totalUsers: number;
+  totalProducts: number;
+  totalOrders: number;
+  totalRevenue: number;
+  pendingOrders: number;
+  lowStockItems: number;
+}
+
+interface RecentActivity {
+  id: string | number;
+  type: 'order' | 'user' | 'product' | 'system';
+  message: string;
+  time: string;
+  status: 'success' | 'info' | 'warning' | 'error';
+}
+
+interface TransformedDashboardData {
+  stats: DashboardStats;
+  recentActivities: RecentActivity[];
+}
+
+const DEFAULT_STATS: DashboardStats = {
+  totalUsers: 0,
+  totalProducts: 0,
+  totalOrders: 0,
+  totalRevenue: 0,
+  pendingOrders: 0,
+  lowStockItems: 0,
+};
 
 export default function AdminDashboard() {
   const { user } = useAuth();
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
+  const [authLoading, setAuthLoading] = useState(true);
 
-  const { data: statsData, isLoading: statsLoading } = useAdminDashboardStats();
+  const {
+    data: statsData,
+    isLoading: statsLoading,
+    isError: statsError,
+    error
+  } = useAdminDashboardStats();
 
   useEffect(() => {
     if (!user) {
@@ -35,33 +75,72 @@ export default function AdminDashboard() {
     } else if (user.role !== 'admin') {
       router.push('/');
     } else {
-      setLoading(false);
+      setAuthLoading(false);
     }
   }, [user, router]);
 
-  if (loading || statsLoading) {
+  // Combined loading state
+  if (authLoading || statsLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
+      <div className="space-y-6 p-4">
+        <div className="h-24 bg-gray-200 rounded-lg animate-pulse"></div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <Skeleton className="h-[120px]" />
+          <Skeleton className="h-[120px]" />
+          <Skeleton className="h-[120px]" />
+          <Skeleton className="h-[120px]" />
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <Skeleton className="h-64" />
+          <Skeleton className="h-64" />
+          <Skeleton className="h-64" />
+        </div>
       </div>
     );
   }
 
-  const stats = statsData?.stats || {
-    totalUsers: 0,
-    totalProducts: 0,
-    totalOrders: 0,
-    totalRevenue: 0,
-    pendingOrders: 0,
-    lowStockItems: 0
-  };
+  if (statsError) {
+    return (
+      <div className="p-8 text-center">
+        <XCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+        <h2 className="text-xl font-bold text-gray-900">Error Loading Data</h2>
+        <p className="text-gray-600 mt-2">Could not fetch dashboard statistics. Please try again.</p>
+        <p className="text-sm text-red-400 mt-1">Details: {error ? (error as Error).message : 'Unknown error'}</p>
+      </div>
+    );
+  }
 
-  const recentActivities = [
-    { id: 1, type: 'order', message: 'New order #1234 placed', time: '2 minutes ago', status: 'success' },
-    { id: 2, type: 'user', message: 'New user registered: john@example.com', time: '15 minutes ago', status: 'info' },
-    { id: 3, type: 'product', message: 'Product "Premium Water 5L" stock low', time: '1 hour ago', status: 'warning' },
-    { id: 4, type: 'order', message: 'Order #1230 delivered', time: '2 hours ago', status: 'success' },
-  ];
+  // 2. Destructure data from the hook response, providing fallbacks
+  const stats: DashboardStats = statsData?.stats ?? DEFAULT_STATS;
+  // This line is now fixed because RecentActivity[] type is now compatible
+  const recentActivities: RecentActivity[] = statsData?.recentActivities ?? [];
+
+  // Safety check for critical data (optional, but good practice)
+  if (!stats) {
+    return (
+      <div className="p-8 text-center">
+        <AlertCircle className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
+        <h2 className="text-xl font-bold text-gray-900">Missing Data</h2>
+        <p className="text-gray-600 mt-2">Received unexpected data format from the server.</p>
+      </div>
+    );
+  }
+
+
+  // Helper function for activity icon
+  const getActivityIcon = (status: RecentActivity['status']) => {
+    switch (status) {
+      case 'success':
+        return <CheckCircle className="w-4 h-4 text-green-600" />;
+      case 'warning':
+        return <AlertCircle className="w-4 h-4 text-yellow-600" />;
+      case 'info':
+      case 'error':
+        return <Clock className="w-4 h-4 text-blue-600" />; // Or adjust for error status if needed
+      default:
+        return <Clock className="w-4 h-4 text-gray-500" />;
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -71,7 +150,7 @@ export default function AdminDashboard() {
         <p className="text-blue-100">Here's what's happening with your store today.</p>
       </div>
 
-      {/* Stats Cards */}
+      {/* Stats Cards - NOW USING API DATA */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -92,7 +171,7 @@ export default function AdminDashboard() {
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalProducts}</div>
+            <div className="text-2xl font-bold">{stats.totalProducts.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">
               <span className="text-green-600">+3</span> new this week
             </p>
@@ -105,7 +184,7 @@ export default function AdminDashboard() {
             <ShoppingCart className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalOrders}</div>
+            <div className="text-2xl font-bold">{stats.totalOrders.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">
               <span className="text-green-600">+8%</span> from last month
             </p>
@@ -128,7 +207,7 @@ export default function AdminDashboard() {
 
       {/* Quick Actions & Alerts */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Quick Actions */}
+        {/* Quick Actions (Unchanged) */}
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">Quick Actions</CardTitle>
@@ -161,7 +240,7 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
 
-        {/* Alerts */}
+        {/* Alerts - NOW USING API DATA */}
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">Alerts</CardTitle>
@@ -173,6 +252,7 @@ export default function AdminDashboard() {
                 <p className="text-sm font-medium text-yellow-800">{stats.pendingOrders} Pending Orders</p>
                 <p className="text-xs text-yellow-600">Require attention</p>
               </div>
+              <Link href="/admin/orders" className="ml-auto text-sm text-yellow-600 hover:text-yellow-700">View</Link>
             </div>
             <div className="flex items-center gap-3 p-3 bg-red-50 border border-red-200 rounded-lg">
               <AlertCircle className="w-5 h-5 text-red-600" />
@@ -180,36 +260,39 @@ export default function AdminDashboard() {
                 <p className="text-sm font-medium text-red-800">{stats.lowStockItems} Low Stock Items</p>
                 <p className="text-xs text-red-600">Restock needed</p>
               </div>
+              <Link href="/admin/products" className="ml-auto text-sm text-red-600 hover:text-red-700">View</Link>
             </div>
           </CardContent>
         </Card>
 
-        {/* Recent Activity */}
+        {/* Recent Activity - NOW USING API DATA */}
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">Recent Activity</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {recentActivities.map((activity) => (
-                <div key={activity.id} className="flex items-start gap-3">
-                  <div className="mt-0.5">
-                    {activity.status === 'success' && <CheckCircle className="w-4 h-4 text-green-600" />}
-                    {activity.status === 'warning' && <AlertCircle className="w-4 h-4 text-yellow-600" />}
-                    {activity.status === 'info' && <Clock className="w-4 h-4 text-blue-600" />}
+              {recentActivities.length > 0 ? (
+                recentActivities.map((activity, index) => (
+                  <div key={activity.id || index} className="flex items-start gap-3">
+                    <div className="mt-0.5">
+                      {getActivityIcon(activity.status)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-gray-900">{activity.message}</p>
+                      <p className="text-xs text-gray-500">{activity.time}</p>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-gray-900">{activity.message}</p>
-                    <p className="text-xs text-gray-500">{activity.time}</p>
-                  </div>
-                </div>
-              ))}
+                ))
+              ) : (
+                <p className="text-sm text-gray-500">No recent activity to display.</p>
+              )}
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Performance Overview */}
+      {/* Performance Overview (Unchanged, still hardcoded) */}
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">Performance Overview</CardTitle>

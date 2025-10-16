@@ -20,7 +20,7 @@ const Header: React.FC = () => {
                         Epilux <span className="text-blue-300">Water</span>
                     </span>
                 </Link>
-                <Button asChild variant="secondary" className="bg-blue-700 hover:bg-blue-800 text-white px-6 py-2 rounded-full shadow-md">
+                <Button asChild variant="secondary" className="bg-blue-700 hover:bg-blue-800 text-white px-6 py-2 rounded-full shadow-md cursor-pointer">
                     <Link href="/login">
                     <LogIn/>
                     Login

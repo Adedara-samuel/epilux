@@ -1,14 +1,18 @@
 // src/hooks/useOrders.ts
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ordersAPI } from '@/services';
+import { ordersAPI, adminOrdersAPI } from '@/services';
 
+// Public order hooks
 // Hook for getting user's orders
-export const useMyOrders = (params?: Parameters<typeof ordersAPI.getMyOrders>[0]) => {
-  return useQuery({
-    queryKey: ['my-orders', params],
-    queryFn: () => ordersAPI.getMyOrders(params),
-  });
+export const useOrders = () => {
+  return useQuery({
+    queryKey: ['orders'],
+    queryFn: () => ordersAPI.getOrders(),
+  });
 };
+
+// Alias for useOrders
+export const useMyOrders = useOrders;
 
 // Hook for getting single order
 export const useOrder = (id: string) => {
@@ -26,53 +30,62 @@ export const useCreateOrder = () => {
   return useMutation({
     mutationFn: ordersAPI.createOrder,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['my-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
     },
   });
 };
 
-// Hook for getting all orders (admin)
-export const useAllOrders = (params?: Parameters<typeof ordersAPI.getAllOrders>[0]) => {
-  return useQuery({
-    queryKey: ['all-orders', params],
-    queryFn: () => ordersAPI.getAllOrders(params),
+// Hook for canceling order
+export const useCancelOrder = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => ordersAPI.cancelOrder(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ['order'] });
+    },
   });
 };
 
-// Hook for updating order status
+// Admin order hooks
+// Hook for getting all orders (admin)
+export const useAdminOrders = () => {
+  return useQuery({
+    queryKey: ['admin', 'orders'],
+    queryFn: () => adminOrdersAPI.getOrders(),
+  });
+};
+
+// Hook for getting single order (admin)
+export const useAdminOrder = (id: string) => {
+  return useQuery({
+    queryKey: ['admin', 'order', id],
+    queryFn: () => adminOrdersAPI.getOrder(id),
+    enabled: !!id,
+  });
+};
+
+// Hook for updating order status (admin)
 export const useUpdateOrderStatus = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: ({ id, status }: { id: string; status: string }) =>
-      ordersAPI.updateOrderStatus(id, status),
+      adminOrdersAPI.updateOrderStatus(id, status),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['my-orders'] });
-      queryClient.invalidateQueries({ queryKey: ['all-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'orders'] });
       queryClient.invalidateQueries({ queryKey: ['order'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'order'] });
     },
   });
 };
 
-// Hook for updating payment status
-export const useUpdatePaymentStatus = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ id, paymentStatus }: { id: string; paymentStatus: string }) =>
-      ordersAPI.updatePaymentStatus(id, paymentStatus),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['my-orders'] });
-      queryClient.invalidateQueries({ queryKey: ['all-orders'] });
-      queryClient.invalidateQueries({ queryKey: ['order'] });
-    },
-  });
-};
-
-// Hook for getting order stats
+// Hook for getting order stats (admin)
 export const useOrderStats = () => {
   return useQuery({
-    queryKey: ['order-stats'],
-    queryFn: ordersAPI.getOrderStats,
+    queryKey: ['admin', 'orders', 'stats'],
+    queryFn: () => adminOrdersAPI.getOrderStats(),
   });
 };

@@ -18,7 +18,7 @@ export const products: Product[] = [
     {
         id: 'sachet-water-small',
         name: 'Epilux Sachet Water (Small Pack)',
-        image: 'https://images.pexels.com/photos/6146977/pexels-photo-6146977.jpeg?auto=compress&cs=tinysrgb&w=500&q=60',
+        image: '/images/sachet-water-1.jpeg',
         price: 350,
         originalPrice: 400,
         description: 'A convenient pack of refreshing Epilux sachet water, perfect for individual consumption.',
@@ -30,7 +30,7 @@ export const products: Product[] = [
     {
         id: 'sachet-water-bulk',
         name: 'Epilux Sachet Water (Bulk Order)',
-        image: 'https://images.pexels.com/photos/6146978/pexels-photo-6146978.jpeg?auto=compress&cs=tinysrgb&w=500&q=60',
+        image: '/images/sachet-water-2.jpeg',
         price: 3200,
         originalPrice: 3500,
         description: 'Economical bulk package of Epilux sachet water for events or large households.',
@@ -42,7 +42,7 @@ export const products: Product[] = [
     {
         id: 'bottled-water-500ml',
         name: 'Epilux Bottled Water (500ml)',
-        image: 'https://images.pexels.com/photos/327090/pexels-photo-327090.jpeg?auto=compress&cs=tinysrgb&w=500&q=60',
+        image: '/images/product1.jpeg',
         price: 150,
         description: 'Single serving 500ml Epilux bottled water, ideal for on-the-go hydration.',
         category: 'bottled',
@@ -53,7 +53,7 @@ export const products: Product[] = [
     {
         id: 'bottled-water-15l',
         name: 'Epilux Bottled Water (1.5L)',
-        image: 'https://images.pexels.com/photos/1028600/pexels-photo-1028600.jpeg?auto=compress&cs=tinysrgb&w=500&q=60',
+        image: '/images/product-2.jpeg',
         price: 300,
         originalPrice: 350,
         description: 'Large 1.5L bottle of Epilux water, perfect for daily hydration needs.',
@@ -65,7 +65,7 @@ export const products: Product[] = [
     {
         id: 'water-dispenser',
         name: 'Premium Water Dispenser',
-        image: 'https://images.pexels.com/photos/439147/pexels-photo-439147.jpeg?auto=compress&cs=tinysrgb&w=500&q=60',
+        image: '/images/product-3.jpeg',
         price: 25000,
         description: 'High-quality water dispenser for home or office, hot and cold options.',
         category: 'dispenser',
@@ -76,7 +76,7 @@ export const products: Product[] = [
     {
         id: 'dispenser-bottle-19l',
         name: '19L Refillable Dispenser Bottle',
-        image: 'https://images.pexels.com/photos/4246102/pexels-photo-4246102.jpeg?auto=compress&cs=tinysrgb&w=500&q=60',
+        image: '/images/dry-season.jpeg',
         price: 1800,
         description: 'Large 19L bottle, compatible with standard water dispensers.',
         category: 'bulk',
@@ -87,7 +87,7 @@ export const products: Product[] = [
     {
         id: 'water-filter-set',
         name: 'Epilux Water Filter Set',
-        image: 'https://images.pexels.com/photos/373548/pexels-photo-373548.jpeg?auto=compress&cs=tinysrgb&w=500&q=60', // Using factory image as a placeholder
+        image: '/images/dry-season-2.jpeg',
         price: 7500,
         description: 'Advanced filtration system for purer drinking water at home.',
         category: 'accessories',

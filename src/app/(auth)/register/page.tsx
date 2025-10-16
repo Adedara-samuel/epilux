@@ -26,14 +26,45 @@ const RegisterForm = () => {
     useEffect(() => {
         if (registerMutation.isSuccess) {
             const redirect = searchParams.get('redirect');
+            const plan = searchParams.get('plan');
+
+            // If user registered with a plan, create a subscription notification for admins
+            if (plan) {
+                createSubscriptionNotification(plan, formData.firstName, formData.lastName, formData.email);
+            }
+
             const loginUrl = redirect ? `/login?redirect=${encodeURIComponent(redirect)}` : '/login';
             router.push(loginUrl);
         }
-    }, [registerMutation.isSuccess, router, searchParams]);
+    }, [registerMutation.isSuccess, router, searchParams, formData]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const createSubscriptionNotification = async (plan: string, firstName: string, lastName: string, email: string) => {
+        try {
+            const notificationData = {
+                type: 'subscription',
+                title: `New ${plan.charAt(0).toUpperCase() + plan.slice(1)} Plan Subscription`,
+                message: `${firstName} ${lastName} (${email}) has subscribed to the ${plan} plan.`,
+                priority: 'medium',
+                read: false,
+                timestamp: new Date().toISOString(),
+                details: `Customer: ${firstName} ${lastName}\nEmail: ${email}\nPlan: ${plan.charAt(0).toUpperCase() + plan.slice(1)}\nTime: ${new Date().toLocaleString()}`
+            };
+
+            // For now, we'll store in localStorage as a demo
+            // In production, this would be sent to the backend API
+            const existingNotifications = JSON.parse(localStorage.getItem('adminNotifications') || '[]');
+            existingNotifications.unshift(notificationData);
+            localStorage.setItem('adminNotifications', JSON.stringify(existingNotifications));
+
+            console.log('Subscription notification created for admins');
+        } catch (error) {
+            console.error('Failed to create subscription notification:', error);
+        }
     };
 
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {

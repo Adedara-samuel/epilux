@@ -9,7 +9,7 @@ import { useProducts } from '@/hooks/useProducts';
 import { Product } from '@/types/product';
 
 const FeaturedProducts: React.FC = () => {
-    const { data: productsData, isLoading } = useProducts({ limit: 6 });
+    const { data: productsData, isLoading } = useProducts();
     const products = productsData?.products || [];
 
     // Filter for featured products (you can adjust the criteria)
