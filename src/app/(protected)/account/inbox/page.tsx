@@ -1,24 +1,26 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable react/no-unescaped-entities */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 // app/account/inbox/page.tsx
 'use client';
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
-import { useSupportTickets, useSupportTicket } from '@/hooks/useSupport';
+// Updated imports: Use the new hook and import the SupportTicket type from the service
+import { useSupportTickets } from '@/hooks/useMessages'; 
+import { SupportTicket } from '@/services/messageService'; 
 import { Loader2, Mail, ArrowLeft, Inbox, MessageSquare, Bell, X } from 'lucide-react';
-import { Card } from '@/Components/ui/card';
 import { Button } from '@/Components/ui/button';
 import { toast } from 'sonner';
 
+// Define Message interface, extending from what the page needs for display
 interface Message {
     id: string;
     subject: string;
     message: string;
     date: string;
     read: boolean;
-    type?: string;
+    type?: 'support' | 'system';
 }
 
 export default function MyInboxPage() {
@@ -27,32 +29,38 @@ export default function MyInboxPage() {
     const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
     const [showModal, setShowModal] = useState(false);
 
+    // Fetch data using the new React Query hook
     const { data: ticketsData, isLoading: loadingMessages } = useSupportTickets();
-    const tickets = ticketsData?.tickets || [];
+    const tickets: SupportTicket[] = ticketsData?.tickets || [];
 
-    // Convert tickets to messages format
-    const ticketMessages: Message[] = tickets.map((ticket: { id: string; subject: string; message: string; createdAt: string; status: string }) => ({
+    // Convert API-fetched tickets to the common Message format
+    const ticketMessages: Message[] = tickets.map((ticket) => ({
         id: ticket.id,
         subject: ticket.subject,
         message: ticket.message,
-        date: ticket.createdAt,
-        read: ticket.status === 'read' || ticket.status === 'resolved',
+        // Use createdAt from the ticket as the date
+        date: ticket.createdAt, 
+        // Logic: A ticket is considered 'read' if its status is 'read' or 'resolved'
+        read: ticket.status === 'read' || ticket.status === 'resolved', 
         type: 'support'
     }));
 
-    // Add system notifications
+    // System notifications (remains hardcoded as per original requirement)
     const systemMessages: Message[] = [
         {
             id: 'welcome-1',
             subject: 'Welcome to Epilux Water!',
-            message: 'Thank you for joining us. Your account has been successfully created. We\'re excited to have you as part of our community!\n\nHere\'s what you can expect:\n• Premium quality water products\n• Fast and reliable delivery\n• 24/7 customer support\n• Exclusive member discounts\n\nIf you have any questions, feel free to reach out to our support team.',
+            message: 'Thank up for joining us. Your account has been successfully created. We\'re excited to have you as part of our community!\n\nHere\'s what you can expect:\n• Premium quality water products\n• Fast and reliable delivery\n• 24/7 customer support\n• Exclusive member discounts\n\nIf you have any questions, feel free to reach out to our support team.',
             date: user?.createdAt || new Date().toISOString(),
             read: true,
             type: 'system'
         }
     ];
 
-    const allMessages = [...systemMessages, ...ticketMessages];
+    // Combine and sort messages by date descending
+    const allMessages = [...systemMessages, ...ticketMessages].sort((a, b) => 
+        new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
 
     useEffect(() => {
         if (!user) {
@@ -64,6 +72,8 @@ export default function MyInboxPage() {
     const handleViewDetails = (message: Message) => {
         setSelectedMessage(message);
         setShowModal(true);
+        // NOTE: If you implement the markAsRead API function, call the corresponding mutation hook here 
+        // if (!message.read && message.type === 'support') { /* markAsReadMutation.mutate(message.id) */ }
     };
 
     const closeModal = () => {
@@ -85,7 +95,6 @@ export default function MyInboxPage() {
             <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 p-4">
                 <h2 className="text-2xl font-bold text-gray-800 mb-4">Access Denied</h2>
                 <p className="text-lg text-gray-700 text-center">Please log in to view your inbox and messages.</p>
-                {/* Optional: Add a login button */}
             </div>
         );
     }
@@ -155,6 +164,7 @@ export default function MyInboxPage() {
                             {allMessages.map((message: Message) => (
                                 <div
                                     key={message.id}
+                                    onClick={() => handleViewDetails(message)}
                                     className={`p-6 hover:bg-gray-50/50 transition-colors cursor-pointer ${
                                         !message.read ? 'bg-blue-50/30 border-l-4 border-blue-500' : ''
                                     }`}
@@ -196,7 +206,6 @@ export default function MyInboxPage() {
                                             <Button
                                                 variant="ghost"
                                                 size="sm"
-                                                onClick={() => handleViewDetails(message)}
                                                 className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 cursor-pointer"
                                             >
                                                 View Details →
@@ -220,7 +229,7 @@ export default function MyInboxPage() {
                 </div>
             </div>
 
-            {/* Message Modal */}
+            {/* Message Modal (JSX remains the same) */}
             {showModal && selectedMessage && (
                 <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden">

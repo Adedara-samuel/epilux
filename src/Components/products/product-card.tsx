@@ -2,27 +2,19 @@
 // components/products/product-card.tsx
 'use client';
 import { ShoppingCart } from 'lucide-react';
-import { toast } from 'sonner';
 import Link from 'next/link';
-import { useCartStore } from '@/stores/cart-store';
 import { Button } from '../ui/button';
-import { Product } from '@/types/product'; // Import Product interface
+import { Product } from '@/types/product';
 
 interface ProductCardProps {
     product: Product;
 }
 
 export default function ProductCard({ product }: ProductCardProps) {
-    const { addToCart } = useCartStore();
 
     if (!product) {
         return <div className="bg-white rounded-lg shadow p-4">Product not available</div>;
     }
-
-    const handleAddToCart = () => {
-        addToCart(product);
-        toast.success(`${product.name} added to cart`);
-    };
 
     // Construct the redirect URL for the product detail page
     const productDetailRedirectUrl = `/products/${product.id}`;
@@ -60,14 +52,16 @@ export default function ProductCard({ product }: ProductCardProps) {
                             </span>
                         )}
                     </div>
-                    <Button
-                        size="sm"
-                        onClick={handleAddToCart}
-                        className="gap-1 bg-blue-600 hover:bg-blue-700 transition-colors"
-                    >
-                        <ShoppingCart className="h-4 w-4" />
-                        <span className="hidden sm:inline">Add</span>
-                    </Button>
+                    <a href="/login?redirect=/products">
+                        <Button
+                            size="sm"
+                            // onClick={handleAddToCart}
+                            className="gap-1 bg-blue-600 hover:bg-blue-700 transition-colors cursor-pointer"
+                        >
+                            <ShoppingCart className="h-4 w-4" />
+                            <span className="hidden sm:inline">Add</span>
+                        </Button>
+                    </a>
                 </div>
             </div>
         </div>

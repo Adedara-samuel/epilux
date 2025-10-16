@@ -43,7 +43,13 @@ export default function AdminProductsPage() {
   const updateMutation = useUpdateProduct();
   const deleteMutation = useDeleteProduct();
 
-  const products = productsData?.products || [];
+  // Deduplicate the products array based on 'id' or '_id' for unique keys.
+  // Assuming the unique identifier for mapping is 'id' OR '_id' if 'id' is missing.
+  const uniqueProducts = productsData?.products
+    ? Array.from(new Map(productsData.products.map((product: any) => [product.id || product._id, product])).values())
+    : [];
+
+  const products = uniqueProducts || [];
 
   const handleViewProduct = (product: any) => {
     setSelectedProduct(product);
@@ -71,7 +77,9 @@ export default function AdminProductsPage() {
   const handleUpdateProduct = () => {
     updateMutation.mutate(
       {
-        id: selectedProduct.id,
+        // FIX: Use selectedProduct._id to get the unique identifier, 
+        // and pass it as 'id' as the backend service expects.
+        id: selectedProduct._id, 
         data: {
           name: editForm.name,
           description: editForm.description,
@@ -91,7 +99,8 @@ export default function AdminProductsPage() {
   };
 
   const handleConfirmDelete = () => {
-    deleteMutation.mutate(selectedProduct.id, {
+    // Also ensuring delete uses the correct _id, though you only mentioned update.
+    deleteMutation.mutate(selectedProduct._id, { 
       onSuccess: () => {
         setDeleteOpen(false);
         queryClient.invalidateQueries({ queryKey: ['admin', 'products'] });
@@ -157,7 +166,8 @@ export default function AdminProductsPage() {
       {/* Products Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredProducts.map((product: any) => (
-          <Card key={product.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+          // Using product.id || product._id for the key ensures a unique key is used.
+          <Card key={product.id || product._id} className="overflow-hidden hover:shadow-lg transition-shadow">
             <div className="aspect-square bg-gray-100 relative">
               <img
                 src={product.images?.[0]}

@@ -111,7 +111,15 @@ export const adminSettingsAPI = {
 export const adminDashboardAPI = {
   // Get dashboard statistics
   getStats: async () => {
-    const response = await api.get('/api/admin/dashboard/stats');
-    return response.data;
+    try {
+      // API call executes here
+      const response = await api.get('/api/admin/dashboard/stats');
+      // This returns the whole response object: { "success": true, "data": { ... } }
+      return response.data;
+    } catch (error) {
+      // Critical: Re-throw the error so React Query catches it.
+      console.error("Error fetching admin dashboard stats:", error);
+      throw error;
+    }
   },
 };

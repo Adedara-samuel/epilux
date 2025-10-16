@@ -12,7 +12,7 @@ export async function PUT(request: NextRequest) {
         const body = await request.json();
 
         const response = await fetch(`${BASE_URL}/api/auth/password`, {
-            method: 'PUT',
+            method: 'POST',
             headers: {
                 'Authorization': authHeader,
                 'Content-Type': 'application/json',

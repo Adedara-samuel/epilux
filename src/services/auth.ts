@@ -146,7 +146,7 @@ const authAPI = {
      * @returns A promise that resolves with the API response.
      */
     updateProfile: async (token: string, profileData: UserProfileUpdateData) => {
-        const response = await fetch(`${BASE_URL}/api/user/profile`, {
+        const response = await fetch(`${BASE_URL}/api/users/me`, {
             method: 'PUT',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -165,7 +165,7 @@ const authAPI = {
      */
     changePassword: async (token: string, passwordData: { currentPassword: string; newPassword: string }) => {
         const response = await fetch(`${BASE_URL}/api/auth/change-password`, {
-            method: 'POST',
+            method: 'PUT',
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json',

@@ -15,3 +15,4 @@ export {
 } from './admin';
 export { supportAPI } from './support';
 export { healthAPI } from './health';
+export * from "./messageService";

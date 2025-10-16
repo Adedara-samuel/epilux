@@ -7,7 +7,7 @@ export const useAddresses = () => {
   return useQuery({
     queryKey: ['addresses'],
     queryFn: async () => {
-      const response = await api.get('/api/user/addresses');
+      const response = await api.get('/api/users/me/address');
       return response.data;
     },
   });
@@ -26,7 +26,7 @@ export const useAddAddress = () => {
       zipCode?: string;
       country: string;
     }) => {
-      const response = await api.post('/api/user/addresses', addressData);
+      const response = await api.post('/api/users/me/address', addressData);
       return response.data;
     },
     onSuccess: () => {
@@ -48,7 +48,7 @@ export const useUpdateAddress = () => {
       zipCode?: string;
       country: string;
     }> }) => {
-      const response = await api.put(`/api/user/addresses/${id}`, data);
+      const response = await api.put(`/api/users/me/address/${id}`, data);
       return response.data;
     },
     onSuccess: () => {
@@ -63,7 +63,7 @@ export const useDeleteAddress = () => {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const response = await api.delete(`/api/user/addresses/${id}`);
+      const response = await api.delete(`/api/users/me/address/${id}`);
       return response.data;
     },
     onSuccess: () => {

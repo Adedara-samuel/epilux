@@ -14,18 +14,18 @@ export const api = axios.create({
 });
 
 // Request interceptor to handle different base URLs
-api.interceptors.request.use((config) => {
-    // Admin routes and user routes use local server, others use configured base URL
-    if (config.url?.startsWith('/api/admin/') || config.url?.startsWith('/api/user/')) {
-        config.baseURL = '';
-    }
-    return config;
-});
+// api.interceptors.request.use((config) => {
+//     // Admin routes and user routes use local server, others use configured base URL
+//     if (config.url?.startsWith('/api/admin/') || config.url?.startsWith('/api/user/')) {
+//         config.baseURL = '';
+//     }
+//     return config;
+// });
 
 // Request interceptor to add auth token
 api.interceptors.request.use(
     (config) => {
-        const token = tokenManager.getToken();
+        const token = tokenManager.getToken(); // <-- Gets token from localStorage
         if (token && typeof window !== 'undefined') {
             config.headers.Authorization = `Bearer ${token}`;
             // Also set token as cookie for backend compatibility

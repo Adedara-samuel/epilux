@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
         // Verify admin token
         const authHeader = request.headers.get('authorization');
@@ -23,7 +23,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
             return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
         }
 
-        const { id } = params;
+        const { id } = await params;
 
         // Mock product lookup - in real app, fetch from database
         const mockProduct = {
@@ -51,7 +51,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     }
 }
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
         // Verify admin token
         const authHeader = request.headers.get('authorization');
@@ -71,7 +71,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
             return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
         }
 
-        const { id } = params;
+        const { id } = await params;
         const updates = await request.json();
 
         // Mock product update - in real app, update in database
@@ -112,7 +112,7 @@ export async function DELETE(request: NextRequest) {
             return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
         }
 
-        // const { id } = params;
+        // const { id } = await params;
 
         // Mock product deletion - in real app, delete from database
 
