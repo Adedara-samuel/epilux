@@ -1,12 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/Components/ui/card';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
-import { Save, Mail, Shield, Store, Loader2, DollarSign, Percent } from 'lucide-react'; 
+import { Save, Mail, Shield, Store, Loader2, DollarSign, Percent } from 'lucide-react';
 import { useAdminSettings, useUpdateAdminSettings } from '@/hooks/useAdmin';
 import { useChangePassword } from '@/hooks';
 // FIXED IMPORT: Using sonner for toast messages
@@ -49,8 +49,45 @@ export default function AdminSettingsPage() {
         currency: 'USD',
         commissionRate: 0.1,
         minWithdrawal: 50,
-        paymentMethods: 'bank_transfer, paypal, crypto', 
+        paymentMethods: 'bank_transfer, paypal, crypto',
     });
+
+    // Add global animations
+    useEffect(() => {
+        const styleSheet = document.createElement('style');
+        styleSheet.textContent = `
+          @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+          @keyframes scaleIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+          @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+          @keyframes bounceIn { from { transform: scale(0.3); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+          @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+          .animate-fadeIn { animation: fadeIn 0.5s ease-out; }
+          .animate-scaleIn { animation: scaleIn 0.3s ease-out; }
+          .animate-slideUp { animation: slideUp 0.4s ease-out; }
+          .animate-bounceIn { animation: bounceIn 0.6s ease-out; }
+          .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+
+          * { cursor: default; }
+          button, a, input, textarea, select { cursor: pointer; }
+
+          .scroll-smooth { scroll-behavior: smooth; }
+          .transition-all { transition: all 0.3s ease; }
+          .hover-lift { transition: transform 0.2s ease; }
+          .hover-lift:hover { transform: translateY(-2px); }
+          .hover-glow { transition: box-shadow 0.3s ease; }
+          .hover-glow:hover { box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); }
+        `;
+        document.head.appendChild(styleSheet);
+
+        // Add smooth scrolling to body
+        document.body.classList.add('scroll-smooth');
+
+        return () => {
+          document.head.removeChild(styleSheet);
+          document.body.classList.remove('scroll-smooth');
+        };
+    }, []);
 
     useEffect(() => {
         if (settingsData?.data) {
@@ -128,36 +165,44 @@ export default function AdminSettingsPage() {
     };
 
     return (
-        <div className="space-y-6">
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
             {/* Header */}
-            <div className="flex justify-between items-center">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
-                    <p className="text-gray-600">Manage your store settings and preferences</p>
+            <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-40">
+                <div className="container mx-auto px-6 py-6">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent animate-bounceIn">
+                                Settings
+                            </h1>
+                            <p className="text-gray-600 mt-1 animate-fadeIn animation-delay-300">Manage your store settings and preferences</p>
+                        </div>
+                        <Button
+                            onClick={handleSave}
+                            disabled={updateSettingsMutation.isPending}
+                            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg shadow-md hover:shadow-lg transition-all hover-lift animate-fadeIn animation-delay-500"
+                        >
+                            {updateSettingsMutation.isPending ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                                <Save className="w-4 h-4" />
+                            )}
+                            {updateSettingsMutation.isPending ? 'Saving...' : 'Save Changes'}
+                        </Button>
+                    </div>
                 </div>
-                <Button 
-                    onClick={handleSave} 
-                    disabled={updateSettingsMutation.isPending}
-                    className="flex items-center gap-2 cursor-pointer"
-                >
-                    {updateSettingsMutation.isPending ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                        <Save className="w-4 h-4" />
-                    )}
-                    {updateSettingsMutation.isPending ? 'Saving...' : 'Save Changes'}
-                </Button>
             </div>
 
-            {/* Store Information */}
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <Store className="w-5 h-5" />
-                        Store Information
-                    </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
+            <div className="container mx-auto px-6 py-8">
+
+                {/* Store Information */}
+                <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl animate-fadeIn animation-delay-700">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <Store className="w-5 h-5" />
+                            Store Information
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label htmlFor="storeName" className="block text-sm font-medium text-gray-700 mb-1">Store Name</label>
@@ -201,15 +246,15 @@ export default function AdminSettingsPage() {
                 </CardContent>
             </Card>
 
-            {/* Affiliate & Financial Settings Card */}
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <DollarSign className="w-5 h-5" />
-                        Affiliate & Financial Settings
-                    </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
+                {/* Affiliate & Financial Settings Card */}
+                <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl animate-fadeIn animation-delay-900">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <DollarSign className="w-5 h-5" />
+                            Affiliate & Financial Settings
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label htmlFor="commissionRate" className="block text-sm font-medium text-gray-700 mb-1">
@@ -258,15 +303,15 @@ export default function AdminSettingsPage() {
                 </CardContent>
             </Card>
 
-            {/* Email Configuration */}
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <Mail className="w-5 h-5" />
-                        Email Configuration
-                    </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
+                {/* Email Configuration */}
+                <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl animate-fadeIn animation-delay-1100">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <Mail className="w-5 h-5" />
+                            Email Configuration
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label htmlFor="smtpHost" className="block text-sm font-medium text-gray-700 mb-1">SMTP Host</label>
@@ -312,15 +357,15 @@ export default function AdminSettingsPage() {
                 </CardContent>
             </Card>
 
-            {/* Security Settings */}
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <Shield className="w-5 h-5" />
-                        Security Settings
-                    </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
+                {/* Security Settings */}
+                <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl animate-fadeIn animation-delay-1300">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <Shield className="w-5 h-5" />
+                            Security Settings
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
                     <div className="space-y-4">
                         <div>
                             <h4 className="text-sm font-medium text-gray-900 mb-2">Password Requirements</h4>
@@ -429,6 +474,7 @@ export default function AdminSettingsPage() {
                     </div>
                 </div>
             )}
+            </div>
         </div>
     );
 }

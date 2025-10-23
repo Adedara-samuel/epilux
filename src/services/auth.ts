@@ -1,8 +1,17 @@
 // src/services/auth.ts
 
-// Use the environment variable, falling back to localhost:5000 if not set.
-// This requires NEXT_PUBLIC_API_URL to be defined in .env.local
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://epilux-backend.vercel.app';
+// Use production backend URL
+const BASE_URL = 'https://epilux-backend.vercel.app';
+
+// For client-side requests, use relative URLs to leverage Next.js rewrites
+const getBaseUrl = () => {
+  if (typeof window !== 'undefined') {
+    // Client-side: use relative URLs
+    return '';
+  }
+  // Server-side: use full URL
+  return BASE_URL;
+};
 
 /**
  * Defines the structure for user registration data.
@@ -56,7 +65,7 @@ const authAPI = {
      * @returns A promise that resolves with the API response (e.g., auth token and user data).
      */
     async login(credentials: UserCredentials) {
-        const response = await fetch(`${BASE_URL}/api/auth/login`, {
+        const response = await fetch(`${getBaseUrl()}/api/auth/login`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -73,10 +82,9 @@ const authAPI = {
      * @returns A promise that resolves with the API response (e.g., user data or token).
      */
     register: async (userData: UserRegistrationData) => {
-        console.log('Attempting to register user at:', `${BASE_URL}/api/auth/register`);
+        console.log('Attempting to register user at:', `${getBaseUrl()}/api/auth/register`);
         try {
-            const response = await fetch(`${BASE_URL}/api/auth/register`, {
-                // const response = await fetch("http://localhost:5000/api/auth/register", {
+            const response = await fetch(`${getBaseUrl()}/api/auth/register`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -96,8 +104,7 @@ const authAPI = {
      * @returns A promise that resolves with the API response (e.g., auth token).
      */
     adminLogin: async (credentials: UserCredentials) => {
-        const response = await fetch(`${BASE_URL}/api/auth/admin/login`, {
-        // const response = await fetch("http://localhost:5000/api/auth/admin/login", {
+        const response = await fetch(`${getBaseUrl()}/api/auth/admin/login`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -113,7 +120,7 @@ const authAPI = {
      * @returns A promise that resolves with the user profile data.
      */
     getProfile: async (token: string) => {
-        const response = await fetch(`${BASE_URL}/api/user/profile`, {
+        const response = await fetch(`${getBaseUrl()}/api/user/profile`, {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -129,7 +136,7 @@ const authAPI = {
      * @returns A promise that resolves with the API response.
      */
     logout: async (token: string) => {
-        const response = await fetch(`${BASE_URL}/api/auth/logout`, {
+        const response = await fetch(`${getBaseUrl()}/api/auth/logout`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -146,7 +153,7 @@ const authAPI = {
      * @returns A promise that resolves with the API response.
      */
     updateProfile: async (token: string, profileData: UserProfileUpdateData) => {
-        const response = await fetch(`${BASE_URL}/api/users/me`, {
+        const response = await fetch(`${getBaseUrl()}/api/users/me`, {
             method: 'PUT',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -164,7 +171,7 @@ const authAPI = {
      * @returns A promise that resolves with the API response.
      */
     changePassword: async (token: string, passwordData: { currentPassword: string; newPassword: string }) => {
-        const response = await fetch(`${BASE_URL}/api/auth/change-password`, {
+        const response = await fetch(`${getBaseUrl()}/api/auth/change-password`, {
             method: 'PUT',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -176,12 +183,49 @@ const authAPI = {
     },
 
     /**
+     * Creates a new user (admin only).
+     * @param token - The authorization token.
+     * @param userData - The user data including firstName, lastName, email, password, and role.
+     * @returns A promise that resolves with the API response.
+     */
+    createUser: async (token: string, userData: UserRegistrationData) => {
+        const response = await fetch(`${getBaseUrl()}/api/auth/admin/users`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(userData),
+        });
+        return handleResponse(response, 'User creation failed');
+    },
+
+    /**
+     * Updates a user's role (admin only).
+     * @param token - The authorization token.
+     * @param userId - The user ID to update.
+     * @param role - The new role for the user.
+     * @returns A promise that resolves with the API response.
+     */
+    updateUserRole: async (token: string, userId: string, role: string) => {
+        const response = await fetch(`${getBaseUrl()}/api/auth/admin/users/${userId}/role`, {
+            method: 'PATCH',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ role }),
+        });
+        return handleResponse(response, 'Role update failed');
+    },
+
+    /**
      * Sends a forgot password request.
      * @param data - The data including email.
      * @returns A promise that resolves with the API response.
      */
     forgotPassword: async (data: { email: string }) => {
-        const response = await fetch(`${BASE_URL}/api/auth/forgot-password`, {
+        const response = await fetch(`${getBaseUrl()}/api/auth/forgot-password`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

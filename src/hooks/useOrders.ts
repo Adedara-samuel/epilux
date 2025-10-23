@@ -1,6 +1,6 @@
 // src/hooks/useOrders.ts
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ordersAPI, adminOrdersAPI } from '@/services';
+import { ordersAPI, adminOrdersAPI, orderActionsAPI } from '@/services';
 
 // Public order hooks
 // Hook for getting user's orders
@@ -87,5 +87,53 @@ export const useOrderStats = () => {
   return useQuery({
     queryKey: ['admin', 'orders', 'stats'],
     queryFn: () => adminOrdersAPI.getOrderStats(),
+  });
+};
+
+// Hook for confirming order receipt
+export const useConfirmOrderReceipt = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => orderActionsAPI.confirmReceipt(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ['order'] });
+    },
+  });
+};
+
+// Hook for rating product
+export const useRateProduct = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ orderId, productId, rating, review }: {
+      orderId: string;
+      productId: string;
+      rating: number;
+      review?: string;
+    }) => orderActionsAPI.rateProduct(orderId, productId, rating, review),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ['order'] });
+    },
+  });
+};
+
+// Hook for rating marketer
+export const useRateMarketer = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ orderId, rating, review }: {
+      orderId: string;
+      rating: number;
+      review?: string;
+    }) => orderActionsAPI.rateMarketer(orderId, rating, review),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ['order'] });
+    },
   });
 };

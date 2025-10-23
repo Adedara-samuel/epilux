@@ -3,27 +3,26 @@
 // app/admin/dashboard/page.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useRouter } from 'next/navigation';
 // NOTE: Assuming your hook is correctly imported as useAdminDashboardStats
+import { Button } from '@/Components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/Components/ui/card';
+import { Skeleton } from '@/Components/ui/skeleton';
 import { useAdminDashboardStats } from '@/hooks/useAdmin';
 import {
-  Users,
-  Package,
-  ShoppingCart,
-  DollarSign,
-  TrendingUp,
   AlertCircle,
   CheckCircle,
   Clock,
+  DollarSign,
+  Package,
+  ShoppingCart,
+  TrendingUp,
+  Users,
   XCircle // Added for potential error status
 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/Components/ui/card';
-import { Button } from '@/Components/ui/button';
-import { Badge } from '@/Components/ui/badge';
 import Link from 'next/link';
-import { Skeleton } from '@/Components/ui/skeleton';
 
 // 1. Define the expected API Response structure (Conceptual Interface)
 interface DashboardStats {
@@ -58,9 +57,46 @@ const DEFAULT_STATS: DashboardStats = {
 };
 
 export default function AdminDashboard() {
-  const { user } = useAuth();
-  const router = useRouter();
-  const [authLoading, setAuthLoading] = useState(true);
+   const { user } = useAuth();
+   const router = useRouter();
+   const [authLoading, setAuthLoading] = useState(true);
+
+   // Add global animations
+   useEffect(() => {
+       const styleSheet = document.createElement('style');
+       styleSheet.textContent = `
+         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+         @keyframes scaleIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+         @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+         @keyframes bounceIn { from { transform: scale(0.3); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+         .animate-fadeIn { animation: fadeIn 0.5s ease-out; }
+         .animate-scaleIn { animation: scaleIn 0.3s ease-out; }
+         .animate-slideUp { animation: slideUp 0.4s ease-out; }
+         .animate-bounceIn { animation: bounceIn 0.6s ease-out; }
+         .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+
+         * { cursor: default; }
+         button, a, input, textarea, select { cursor: pointer; }
+
+         .scroll-smooth { scroll-behavior: smooth; }
+         .transition-all { transition: all 0.3s ease; }
+         .hover-lift { transition: transform 0.2s ease; }
+         .hover-lift:hover { transform: translateY(-2px); }
+         .hover-glow { transition: box-shadow 0.3s ease; }
+         .hover-glow:hover { box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); }
+       `;
+       document.head.appendChild(styleSheet);
+
+       // Add smooth scrolling to body
+       document.body.classList.add('scroll-smooth');
+
+       return () => {
+         document.head.removeChild(styleSheet);
+         document.body.classList.remove('scroll-smooth');
+       };
+   }, []);
 
   const {
     data: statsData,
@@ -143,15 +179,15 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Welcome Section */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg p-6 text-white">
-        <h1 className="text-2xl font-bold mb-2">Welcome back, {user?.firstName}!</h1>
-        <p className="text-blue-100">Here's what's happening with your store today.</p>
+      <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg p-4 md:p-6 text-white animate-bounceIn">
+        <h1 className="text-xl md:text-2xl font-bold mb-2">Welcome back, {user?.firstName}!</h1>
+        <p className="text-blue-100 text-sm md:text-base animate-fadeIn animation-delay-300">Here's what's happening with your store today.</p>
       </div>
 
       {/* Stats Cards - NOW USING API DATA */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 animate-fadeIn animation-delay-700">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Users</CardTitle>
@@ -206,7 +242,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Quick Actions & Alerts */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 animate-fadeIn animation-delay-900">
         {/* Quick Actions (Unchanged) */}
         <Card>
           <CardHeader>
@@ -293,12 +329,12 @@ export default function AdminDashboard() {
       </div>
 
       {/* Performance Overview (Unchanged, still hardcoded) */}
-      <Card>
+      <Card className="animate-fadeIn animation-delay-1100">
         <CardHeader>
           <CardTitle className="text-lg">Performance Overview</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6">
             <div className="text-center">
               <div className="text-2xl font-bold text-green-600 mb-1">98.5%</div>
               <p className="text-sm text-gray-600">Order Fulfillment Rate</p>

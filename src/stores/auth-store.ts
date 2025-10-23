@@ -6,6 +6,7 @@ import { authAPI, tokenManager } from '@/services';
 interface AuthStore {
     user: User | null;
     loading: boolean;
+    isAuthenticating: boolean;
     login: (credentials: { email: string; password: string }) => Promise<{ success: boolean; message: string }>;
     adminLogin: (credentials: { email: string; password: string }) => Promise<{ success: boolean; message: string }>;
     register: (userData: { email: string; password: string; firstName: string; lastName: string }) => Promise<{ success: boolean; message: string }>;
@@ -17,24 +18,25 @@ interface AuthStore {
 export const useAuthStore = create<AuthStore>((set, get) => ({
     user: null,
     loading: true,
+    isAuthenticating: true,
 
     initializeAuth: async () => {
+        set({ isAuthenticating: true });
         try {
             const token = tokenManager.getToken();
             const storedUser = tokenManager.getUser();
 
             if (token && storedUser) {
-                // For now, just set the stored user without verifying
-                // You can add token verification later if needed
+                // Just set the user from storage - let backend handle token validation
                 set({ user: storedUser });
             } else {
-                tokenManager.clearAuth();
+                set({ user: null });
             }
         } catch (error) {
             console.error('Error initializing auth:', error);
-            tokenManager.clearAuth();
+            set({ user: null });
         } finally {
-            set({ loading: false });
+            set({ loading: false, isAuthenticating: false });
         }
     },
 
@@ -46,6 +48,25 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
                 tokenManager.setToken(response.token);
                 tokenManager.setUser(response.user);
                 set({ user: response.user });
+
+                // Handle role-based redirects
+                if (response.user.role === 'marketer') {
+                    // Redirect to marketer page
+                    if (typeof window !== 'undefined') {
+                        window.location.href = '/marketer';
+                    }
+                } else if (response.user.role === 'affiliate') {
+                    // Redirect to products page for affiliates
+                    if (typeof window !== 'undefined') {
+                        window.location.href = '/products';
+                    }
+                } else {
+                    // Regular users go to products page
+                    if (typeof window !== 'undefined') {
+                        window.location.href = '/products';
+                    }
+                }
+
                 return { success: true, message: response.message };
             } else {
                 return { success: false, message: response.message || 'Login failed' };
@@ -105,7 +126,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
             console.error('Error logging out:', error);
         } finally {
             tokenManager.clearAuth();
-            set({ user: null });
+            set({ user: null, isAuthenticating: false });
             // Note: router.push('/login') should be handled in the component
         }
     },

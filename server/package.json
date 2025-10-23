@@ -25,6 +25,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@radix-ui/react-dialog": "^1.1.15",
+    "@radix-ui/react-select": "^2.2.6",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "d-": "^1.0.0",

@@ -1,7 +1,8 @@
 // types/product.ts
 
 export interface Product {
-    id: string;
+    id: string; // Required for cart operations
+    _id?: string; // MongoDB ID
     name: string;
     image: string;
     price: number;
@@ -11,6 +12,9 @@ export interface Product {
     stock: number;
     affiliateCommission: number; // For affiliate calculations
     tags?: string[]; // Optional tags for extra info
+    isActive?: boolean; // For product status
+    createdAt?: string; // Creation timestamp
+    updatedAt?: string; // Update timestamp
 }
 
 // Sample Product Data (you'd typically fetch this from a database)

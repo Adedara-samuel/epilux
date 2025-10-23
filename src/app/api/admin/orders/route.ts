@@ -1,7 +1,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://epilux-backend.vercel.app';
+const BASE_URL = 'https://epilux-backend.vercel.app';
 
 export async function GET(request: NextRequest) {
     try {

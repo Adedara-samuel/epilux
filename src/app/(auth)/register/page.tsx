@@ -9,6 +9,31 @@ import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
+import { X, User, Mail, Lock, Key, Phone, Eye, EyeOff, DollarSign, Users, Zap, CheckCircle } from 'lucide-react';
+
+const programHighlights = [
+    {
+        icon: DollarSign,
+        title: "Fixed Commission per Bag",
+        description: "Earn a fixed commission for every bag of Epilux water sold, redeemed monthly as cash or product.",
+    },
+    {
+        icon: Users,
+        title: "Referral Bonus (5%)",
+        description: "Get 5% bonus from every commission earned by the people you refer. Build a passive income stream!",
+        animation: "animate-bounce",
+    },
+    {
+        icon: Zap,
+        title: "Free Marketing Tools",
+        description: "Get pre-designed flyers, captions, and video templates for WhatsApp, Facebook, and Instagram to boost conversions.",
+    },
+    {
+        icon: CheckCircle,
+        title: "Full Training & Onboarding",
+        description: "Access visual guides, training videos, and a comprehensive FAQ on how commissions and programs work.",
+    },
+];
 
 const RegisterForm = () => {
     const { register: registerMutation, loading } = useAuth();
@@ -18,9 +43,13 @@ const RegisterForm = () => {
         firstName: '',
         lastName: '',
         email: '',
+        phone: '',
         password: '',
-        confirmPassword: ''
+        confirmPassword: '',
+        referralCode: ''
     });
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     // Redirect to login on successful registration with redirect parameter
     useEffect(() => {
@@ -79,157 +108,211 @@ const RegisterForm = () => {
             email: formData.email,
             password: formData.password,
             firstName: formData.firstName,
-            lastName: formData.lastName
+            lastName: formData.lastName,
+            phone: formData.phone,
+            referralCode: formData.referralCode
+        } as any, {
+            onSuccess: () => {
+                toast.success('Registration successful! Welcome to Epilux!');
+            },
+            onError: (error: any) => {
+                const errorMessage = error?.response?.data?.message || error?.message || 'Registration failed. Please try again.';
+                toast.error(errorMessage);
+            }
         });
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-            <div className="w-full max-w-6xl bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col lg:flex-row">
-                {/* Left Column - Form */}
-                <div className="w-full lg:w-1/2 p-8 sm:p-12">
-                    <div className="text-center mb-10">
-                        <h1 className="text-3xl font-bold text-gray-900 mb-2">Create Account</h1>
-                        <p className="text-gray-500">Join us for premium water delivery services</p>
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-4">
+            {/* BLURRED BACKGROUND */}
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md">
+                <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl m-4 flex overflow-hidden transform transition-all duration-300 scale-100">
+                    {/* Left Side: Program Highlights (Value Proposition) */}
+                    <div className="hidden md:block w-1/2 bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 p-10 text-white relative overflow-hidden">
+                        {/* Animated background elements */}
+                        <div className="absolute top-0 left-0 w-full h-full">
+                            <div className="absolute top-10 left-10 w-20 h-20 bg-white/10 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
+                            <div className="absolute top-32 right-16 w-16 h-16 bg-yellow-300/20 rounded-full animate-bounce" style={{ animationDelay: '1s' }}></div>
+                            <div className="absolute bottom-20 left-20 w-12 h-12 bg-blue-300/20 rounded-full animate-bounce" style={{ animationDelay: '2s' }}></div>
+                        </div>
+
+                        <div className="relative z-10">
+                            <h3 className="text-3xl font-extrabold mb-4 border-b border-blue-400 pb-3 animate-fadeIn">
+                                Join the Epilux Partner Program
+                            </h3>
+                            <p className="text-blue-100 mb-8 text-lg animate-fadeIn" style={{ animationDelay: '0.2s' }}>
+                                Start your journey to predictable income by partnering with a premium water brand.
+                            </p>
+                            <ul className="space-y-6">
+                                {programHighlights.map((item, index) => (
+                                    <li key={index} className={`flex items-start gap-4 p-4 rounded-lg bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-300 animate-fadeIn ${item.animation || ''}`} style={{ animationDelay: `${0.3 + index * 0.1}s` }}>
+                                        <item.icon className={`h-6 w-6 text-yellow-300 flex-shrink-0 mt-1 ${item.animation ? 'animate-pulse' : ''}`} />
+                                        <div>
+                                            <p className="font-semibold text-lg text-white">{item.title}</p>
+                                            <p className="text-blue-100 text-sm leading-relaxed">{item.description}</p>
+                                        </div>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+
+                        <img
+                            src="/images/logo.png"
+                            alt="Epilux Water"
+                            className="absolute bottom-0 -right-20 opacity-20 h-40 w-auto animate-pulse"
+                        />
                     </div>
 
-                    <div className="space-y-6">
-                        <form onSubmit={handleSubmit} className="space-y-5">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
-                                        First Name
-                                    </label>
+                    {/* Right Side: Registration Form */}
+                    <div className="w-full md:w-1/2 p-8 sm:p-10 relative bg-gradient-to-br from-white via-gray-50 to-blue-50">
+                        {/* Floating decorative elements */}
+                        <div className="absolute top-8 right-8 w-16 h-16 bg-blue-100 rounded-full opacity-20 animate-float"></div>
+                        <div className="absolute bottom-16 left-8 w-12 h-12 bg-purple-100 rounded-full opacity-20 animate-float" style={{ animationDelay: '1s' }}></div>
+
+                        <button
+                            onClick={() => router.back()}
+                            className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 transition-colors rounded-full p-2 hover:bg-gray-100 z-10"
+                        >
+                            <X className="h-6 w-6" />
+                        </button>
+
+                        <div className="relative z-10">
+                            <div className="text-center mb-8">
+                                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg animate-bounceIn">
+                                    <User className="w-8 h-8 text-white" />
+                                </div>
+                                <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2 animate-fadeIn">
+                                    Create Your Account
+                                </h2>
+                                <p className="text-gray-500 animate-fadeIn" style={{ animationDelay: '0.2s' }}>
+                                    It only takes a minute to get started.
+                                </p>
+                            </div>
+
+                            <form onSubmit={handleSubmit} className="space-y-5 animate-fadeIn" style={{ animationDelay: '0.4s' }}>
+                                {/* First Name */}
+                                <div className="relative group">
+                                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
                                     <input
-                                        id="firstName"
-                                        name="firstName"
                                         type="text"
-                                        required
+                                        name="firstName"
+                                        placeholder="First Name"
                                         value={formData.firstName}
                                         onChange={handleChange}
-                                        className="w-full px-4 text-black py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-                                        placeholder="John"
+                                        required
+                                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 bg-white/80 backdrop-blur-sm hover:border-gray-400"
                                     />
                                 </div>
-                                <div>
-                                    <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
-                                        Last Name
-                                    </label>
+
+                                {/* Last Name */}
+                                <div className="relative group">
+                                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
                                     <input
-                                        id="lastName"
-                                        name="lastName"
                                         type="text"
-                                        required
+                                        name="lastName"
+                                        placeholder="Last Name"
                                         value={formData.lastName}
                                         onChange={handleChange}
-                                        className="w-full px-4 text-black py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-                                        placeholder="Doe"
+                                        required
+                                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 bg-white/80 backdrop-blur-sm hover:border-gray-400"
                                     />
                                 </div>
-                            </div>
 
-                            <div>
-                                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                                    Email Address
-                                </label>
-                                <input
-                                    id="email"
-                                    name="email"
-                                    type="email"
-                                    autoComplete="email"
-                                    required
-                                    value={formData.email}
-                                    onChange={handleChange}
-                                    className="w-full px-4 text-black py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-                                    placeholder="your@email.com"
-                                />
-                            </div>
+                                {/* Email */}
+                                <div className="relative group">
+                                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                                    <input
+                                        type="email"
+                                        name="email"
+                                        placeholder="Email Address"
+                                        value={formData.email}
+                                        onChange={handleChange}
+                                        required
+                                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 bg-white/80 backdrop-blur-sm hover:border-gray-400"
+                                    />
+                                </div>
 
-                            <div>
-                                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-                                    Password
-                                </label>
-                                <input
-                                    id="password"
-                                    name="password"
-                                    type="password"
-                                    required
-                                    minLength={8}
-                                    value={formData.password}
-                                    onChange={handleChange}
-                                    className="w-full text-black px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-                                    placeholder="••••••••"
-                                />
-                                <p className="mt-1 text-xs text-gray-500">Minimum 8 characters</p>
-                            </div>
+                                {/* Phone Number */}
+                                <div className="relative group">
+                                    <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                                    <input
+                                        type="tel"
+                                        name="phone"
+                                        placeholder="Phone Number"
+                                        value={formData.phone}
+                                        onChange={handleChange}
+                                        required
+                                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 bg-white/80 backdrop-blur-sm hover:border-gray-400"
+                                    />
+                                </div>
 
-                            <div>
-                                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                                    Confirm Password
-                                </label>
-                                <input
-                                    id="confirmPassword"
-                                    name="confirmPassword"
-                                    type="password"
-                                    required
-                                    value={formData.confirmPassword}
-                                    onChange={handleChange}
-                                    className="w-full px-4 py-3 text-black rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-                                    placeholder="••••••••"
-                                />
-                            </div>
+                                {/* Referral Code (Optional) */}
+                                <div className="relative group">
+                                    <Key className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                                    <input
+                                        type="text"
+                                        name="referralCode"
+                                        placeholder="Referral Code (Optional)"
+                                        value={formData.referralCode}
+                                        onChange={handleChange}
+                                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 bg-white/80 backdrop-blur-sm hover:border-gray-400"
+                                    />
+                                </div>
 
-                            <div className="flex items-center">
-                                <input
-                                    id="terms"
-                                    name="terms"
-                                    type="checkbox"
-                                    required
-                                    className="h-4 w-4 text-blue-500 focus:ring-blue-500 rounded border-gray-300"
-                                />
-                                <label htmlFor="terms" className="ml-2 block text-sm text-gray-700">
-                                    I agree to the <a href="/terms" className="text-blue-500 hover:underline">Terms of Service</a> and <a href="/privacy" className="text-blue-500 hover:underline">Privacy Policy</a>
-                                </label>
-                            </div>
+                                {/* Password */}
+                                <div className="relative group">
+                                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                                    <input
+                                        type={showPassword ? "text" : "password"}
+                                        name="password"
+                                        placeholder="Password"
+                                        value={formData.password}
+                                        onChange={handleChange}
+                                        required
+                                        minLength={6}
+                                        className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 bg-white/80 backdrop-blur-sm hover:border-gray-400"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-blue-500 transition-colors p-1"
+                                    >
+                                        {showPassword ? <EyeOff className="h-5 w-5 cursor-pointer" /> : <Eye className="h-5 w-5 cursor-pointer" />}
+                                    </button>
+                                </div>
 
-                            <button
-                                type="submit"
-                                disabled={loading}
-                                className="w-full py-3 px-4 bg-blue-500 hover:bg-blue-950 text-white font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-70 flex items-center justify-center cursor-pointer disabled:cursor-not-allowed"
-                            >
-                                {loading ? (
-                                    <>
-                                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                        </svg>
-                                        Creating account...
-                                    </>
-                                ) : (
-                                    'Create Account'
-                                )}
-                            </button>
-                        </form>
+                                {/* Confirm Password */}
+                                <div className="relative group">
+                                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                                    <input
+                                        type={showConfirmPassword ? "text" : "password"}
+                                        name="confirmPassword"
+                                        placeholder="Confirm Password"
+                                        value={formData.confirmPassword}
+                                        onChange={handleChange}
+                                        required
+                                        minLength={6}
+                                        className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 bg-white/80 backdrop-blur-sm hover:border-gray-400"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-blue-500 transition-colors p-1"
+                                    >
+                                        {showConfirmPassword ? <EyeOff className="h-5 w-5 cursor-pointer" /> : <Eye className="h-5 w-5 cursor-pointer" />}
+                                    </button>
+                                </div>
 
-                        <div className="text-center text-sm text-gray-500">
-                            Already have an account?{' '}
-                            <a href="/login" className="font-medium text-blue-500 hover:underline">
-                                Sign in
-                            </a>
-                        </div>
-                    </div>
-                </div>
-                <div className="hidden lg:block w-1/2 relative bg-blue-600">
-                    <img
-                        src="/images/auth-bg.jpg"
-                        alt="Water delivery"
-                        className="object-cover w-full h-full opacity-90"
-                    />
-                    <div className="absolute inset-0 bg-black/40 flex items-end p-12">
-                        <div>
-                            <h2 className="text-2xl font-bold text-white mb-3">Customer Dashboard</h2>
-                            <p className="text-white/90 max-w-md">
-                                Manage your water subscriptions and orders
+                                <button
+                                    type="submit"
+                                    disabled={loading}
+                                    className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold py-3 rounded-xl transition-all shadow-lg hover:shadow-xl mt-6 transform hover:scale-105 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none"
+                                >
+                                    {loading ? 'Creating Account...' : 'Complete Registration'}
+                                </button>
+                            </form>
+                            <p className="text-center text-sm text-gray-500 mt-6 animate-fadeIn" style={{ animationDelay: '0.6s' }}>
+                                Already a partner? <a href="/login" className="text-blue-600 hover:text-blue-700 font-medium transition-colors">Sign in here</a>
                             </p>
                         </div>
                     </div>

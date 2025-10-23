@@ -76,6 +76,17 @@ export const useAdminUsers = (options: { page?: number; limit?: number } = {}) =
   });
 };
 
+export const useCreateAdminUser = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: adminUsersAPI.createUser,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
+    },
+  });
+};
+
 export const useAdminUser = (id: string) => {
   return useQuery({
     queryKey: ['admin', 'user', id],
@@ -114,6 +125,19 @@ export const useUpdateUserRole = () => {
   return useMutation({
     mutationFn: ({ id, role }: { id: string; role: string }) =>
       adminUsersAPI.updateUserRole(id, role),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'user'] });
+    },
+  });
+};
+
+export const useSuspendUser = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, suspended }: { id: string; suspended?: boolean }) =>
+      adminUsersAPI.suspendUser(id, suspended),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
       queryClient.invalidateQueries({ queryKey: ['admin', 'user'] });

@@ -18,10 +18,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             // Assuming your API returns a user object and a token on success
             setUser(data.user);
             setToken(data.token);
-            toast.success('Registration successful!');
+            // Success toast will be handled by individual components
         },
-        onError: (error: Error) => {
-            toast.error(`Registration failed: ${error.message}`);
+        onError: (error: any) => {
+            // Error toast will be handled by individual components
+            throw error; // Re-throw to let individual components handle the error
         },
     });
 
@@ -35,10 +36,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
             setUser(data.user);
             setToken(data.token);
-            toast.success('Login successful!');
+            // Success toast will be handled by individual components
         },
-        onError: (error: Error) => {
-            toast.error(`Login failed: ${error.message}`);
+        onError: (error: any) => {
+            // Error toast will be handled by individual components
+            throw error; // Re-throw to let individual components handle the error
         },
     });
 
@@ -52,10 +54,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
             setUser(data.user);
             setToken(data.token);
-            toast.success('Admin login successful!');
+            // Success toast will be handled by individual components
         },
-        onError: (error: Error) => {
-            toast.error(`Admin login failed: ${error.message}`);
+        onError: (error: any) => {
+            // Error toast will be handled by individual components
+            throw error; // Re-throw to let individual components handle the error
         },
     });
 

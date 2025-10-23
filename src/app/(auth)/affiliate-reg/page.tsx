@@ -6,7 +6,7 @@ import React, { useState } from 'react';
 import { Truck, DollarSign, Award, Users, Zap, BookOpen } from 'lucide-react';
 import Footer from '@/Components/layout/footer';
 import AffiliateHeader from '@/Components/layout/affiliate-header';
-import RegistrationModal from '@/Components/register-affiliate-modal';
+import { useRouter } from 'next/navigation';
 
 const AFFILIATE_SUCCESS_IMAGE = "https://images.unsplash.com/photo-1552664730-d307ca884978?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&ixlib=rb-4.0.3&q=80&w=1080";
 
@@ -55,11 +55,11 @@ const supportingFeatures = [
 ];
 
 export default function AffiliateWelcomePage() {
-    const [isModalOpen, setIsModalOpen] = useState(false);
+    const router = useRouter();
 
     return (
         <div className="min-h-screen flex flex-col bg-gray-50 font-sans">
-            <AffiliateHeader onRegisterClick={() => setIsModalOpen(true)} />
+            <AffiliateHeader onRegisterClick={() => router.push('/register')} />
             
             <main className="flex-grow">
                 {/* 1. Modern Hero Section */}
@@ -75,7 +75,7 @@ export default function AffiliateWelcomePage() {
                             Partner with Epilux and tap into a system where **BUYERS, DISTRIBUTORS, and MARKETERS** all earn commissions for every bag of premium water sold.
                         </p>
                         <button
-                            onClick={() => setIsModalOpen(true)}
+                            onClick={() => router.push('/register')}
                             className="bg-yellow-400 text-gray-900 font-bold py-4 px-12 rounded-xl text-lg shadow-2xl hover:bg-yellow-300 transition-all transform hover:scale-105"
                         >
                             Start Earning Today!
@@ -154,7 +154,7 @@ export default function AffiliateWelcomePage() {
                             Join the Epilux Partner Program today. It's simple, free, and instantly rewarding.
                         </p>
                         <button
-                            onClick={() => setIsModalOpen(true)}
+                            onClick={() => router.push('/register')}
                             className="bg-yellow-400 text-gray-900 font-bold py-4 px-12 rounded-xl text-xl shadow-2xl hover:bg-yellow-300 transition-all transform hover:scale-105"
                         >
                             Register in 60 Seconds
@@ -164,7 +164,6 @@ export default function AffiliateWelcomePage() {
             </main>
 
             <Footer />
-            <RegistrationModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
         </div>
     );
 }

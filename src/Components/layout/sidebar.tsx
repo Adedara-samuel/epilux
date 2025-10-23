@@ -19,6 +19,7 @@ const categories = [
     { name: 'Water Dispensers', href: '/products?category=dispenser', icon: Package },
     { name: 'Accessories', href: '/products?category=accessories', icon: Package },
     { name: 'Bulk Orders', href: '/products?category=bulk', icon: Package },
+    { name: 'Admin Panel', href: '/admin', icon: Package, adminOnly: true },
 ];
 
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
@@ -107,18 +108,25 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                                 Menu
                             </h3>
                             <ul className="space-y-1">
-                                {categories.map((item) => (
-                                    <li key={item.name}>
-                                        <Link
-                                            href={item.href}
-                                            className="flex items-center gap-3 px-3 py-2.5 rounded-md text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors"
-                                            onClick={handleLinkClick}
-                                        >
-                                            <item.icon className="h-5 w-5 text-blue-600" />
-                                            <span className="font-medium">{item.name}</span>
-                                        </Link>
-                                    </li>
-                                ))}
+                                {categories.map((item) => {
+                                    // Only show admin panel link if user is admin
+                                    if (item.adminOnly && user?.role !== 'admin') {
+                                        return null;
+                                    }
+
+                                    return (
+                                        <li key={item.name}>
+                                            <Link
+                                                href={item.href}
+                                                className="flex items-center gap-3 px-3 py-2.5 rounded-md text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors"
+                                                onClick={handleLinkClick}
+                                            >
+                                                <item.icon className="h-5 w-5 text-blue-600" />
+                                                <span className="font-medium">{item.name}</span>
+                                            </Link>
+                                        </li>
+                                    );
+                                })}
                             </ul>
                         </div>
 

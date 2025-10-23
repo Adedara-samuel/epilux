@@ -104,6 +104,7 @@ import orderRoutes from './routes/orders.js';
 import affiliateRoutes from './routes/affiliate.js';
 import adminRoutes from './routes/admin.js';
 import userRoutes from './routes/user.js';
+import commissionRoutes from './routes/commissions.js';
 
 // Use routes
 app.use('/api/auth', authRoutes);
@@ -113,6 +114,7 @@ app.use('/api/affiliate', affiliateRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/support', supportRoutes);
 app.use('/api/user', userRoutes);
+app.use('/api/admin/commissions', commissionRoutes);
 
 // Temporary admin route to list all users (remove in production)
 app.get('/api/admin/users', async (req, res) => {

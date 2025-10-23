@@ -2,11 +2,12 @@
 // src/services/base.ts
 import axios from 'axios';
 
+// Use production backend URL
 const API_BASE_URL = 'https://epilux-backend.vercel.app';
 
 // Create axios instance with default config
 export const api = axios.create({
-    baseURL: API_BASE_URL,
+    baseURL: API_BASE_URL, // Always use production backend URL
     headers: {
         'Content-Type': 'application/json',
     },
@@ -28,8 +29,8 @@ api.interceptors.request.use(
         const token = tokenManager.getToken(); // <-- Gets token from localStorage
         if (token && typeof window !== 'undefined') {
             config.headers.Authorization = `Bearer ${token}`;
-            // Also set token as cookie for backend compatibility
-            document.cookie = `authToken=${token}; path=/; max-age=86400; samesite=strict${process.env.NODE_ENV === 'production' ? '; secure' : ''}`;
+            // Also set token as cookie for backend compatibility (7 days)
+            document.cookie = `authToken=${token}; path=/; max-age=604800; samesite=strict${process.env.NODE_ENV === 'production' ? '; secure' : ''}`;
         }
         return config;
     },
@@ -59,6 +60,7 @@ export const tokenManager = {
     setToken: (token: string) => {
         if (typeof window !== 'undefined') {
             localStorage.setItem('authToken', token);
+            localStorage.setItem('tokenTimestamp', Date.now().toString());
         }
     },
 
@@ -100,6 +102,7 @@ export const tokenManager = {
         if (typeof window !== 'undefined') {
             localStorage.removeItem('authToken');
             localStorage.removeItem('user');
+            localStorage.removeItem('tokenTimestamp');
             // Clear the auth cookie
             document.cookie = 'authToken=; path=/; max-age=0; samesite=strict';
         }

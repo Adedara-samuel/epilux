@@ -4,7 +4,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 'use client';
 
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Filter, Plus, MoreHorizontal, Edit, Trash2, Book } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
@@ -36,6 +36,43 @@ export default function AdminProductsPage() {
     stock: '',
     image: '',
   });
+
+  // Add global animations
+  useEffect(() => {
+      const styleSheet = document.createElement('style');
+      styleSheet.textContent = `
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes scaleIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes bounceIn { from { transform: scale(0.3); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+        .animate-fadeIn { animation: fadeIn 0.5s ease-out; }
+        .animate-scaleIn { animation: scaleIn 0.3s ease-out; }
+        .animate-slideUp { animation: slideUp 0.4s ease-out; }
+        .animate-bounceIn { animation: bounceIn 0.6s ease-out; }
+        .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+
+        * { cursor: default; }
+        button, a, input, textarea, select { cursor: pointer; }
+
+        .scroll-smooth { scroll-behavior: smooth; }
+        .transition-all { transition: all 0.3s ease; }
+        .hover-lift { transition: transform 0.2s ease; }
+        .hover-lift:hover { transform: translateY(-2px); }
+        .hover-glow { transition: box-shadow 0.3s ease; }
+        .hover-glow:hover { box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); }
+      `;
+      document.head.appendChild(styleSheet);
+
+      // Add smooth scrolling to body
+      document.body.classList.add('scroll-smooth');
+
+      return () => {
+        document.head.removeChild(styleSheet);
+        document.body.classList.remove('scroll-smooth');
+      };
+  }, []);
 
   const queryClient = useQueryClient();
 
@@ -127,44 +164,52 @@ export default function AdminProductsPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Products Management</h1>
-          <p className="text-gray-600">Manage your product catalog and inventory</p>
-        </div>
-        <Button asChild className="flex items-center gap-2 cursor-pointer">
-          <Link href="/admin/products/new">
-            <Plus className="w-4 h-4" />
-            Add Product
-          </Link>
-        </Button>
-      </div>
-
-      {/* Filters and Search */}
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <Input
-                placeholder="Search products..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
+      <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-40">
+        <div className="container mx-auto px-6 py-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent animate-bounceIn">
+                Products Management
+              </h1>
+              <p className="text-gray-600 mt-1 animate-fadeIn animation-delay-300">Manage your product catalog and inventory</p>
             </div>
-            <Button variant="outline" className="flex items-center gap-2 cursor-pointer">
-              <Filter className="w-4 h-4" />
-              Filter
+            <Button asChild className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg shadow-md hover:shadow-lg transition-all hover-lift animate-fadeIn animation-delay-500">
+              <Link href="/admin/products/new">
+                <Plus className="w-4 h-4 mr-2" />
+                Add Product
+              </Link>
             </Button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      {/* Products Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="container mx-auto px-6 py-8">
+
+        {/* Filters and Search */}
+        <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl mb-6 animate-fadeIn animation-delay-700">
+          <CardContent className="p-6">
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Input
+                  placeholder="Search products..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 bg-white/50 border-gray-200"
+                />
+              </div>
+              <Button variant="outline" className="flex items-center gap-2 hover-lift">
+                <Filter className="w-4 h-4" />
+                Filter
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Products Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fadeIn animation-delay-900">
         {filteredProducts.map((product: any) => (
           // Using product.id || product._id for the key ensures a unique key is used.
           <Card key={product.id || product._id} className="overflow-hidden hover:shadow-lg transition-shadow">
@@ -226,25 +271,25 @@ export default function AdminProductsPage() {
         ))}
       </div>
 
-      {filteredProducts.length === 0 && (
-        <Card>
-          <CardContent className="p-12 text-center">
-            <div className="text-gray-400 mb-4">
-              <Search className="w-12 h-12 mx-auto" />
-            </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No products found</h3>
-            <p className="text-gray-600 mb-4">
-              {searchTerm ? 'Try adjusting your search terms.' : 'Get started by adding your first product.'}
-            </p>
-            <Button asChild className="cursor-pointer">
-              <Link href="/admin/products/new">
-                <Plus className="w-4 h-4 mr-2" />
-                Add Product
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
-      )}
+        {filteredProducts.length === 0 && (
+          <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl animate-fadeIn animation-delay-1100">
+            <CardContent className="p-12 text-center">
+              <div className="text-gray-400 mb-4">
+                <Search className="w-12 h-12 mx-auto" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No products found</h3>
+              <p className="text-gray-600 mb-4">
+                {searchTerm ? 'Try adjusting your search terms.' : 'Get started by adding your first product.'}
+              </p>
+              <Button asChild className="cursor-pointer hover-lift">
+                <Link href="/admin/products/new">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Product
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
       {/* View Product Dialog */}
       {viewOpen && selectedProduct && (
@@ -349,5 +394,6 @@ export default function AdminProductsPage() {
         </div>
       )}
     </div>
-  );
+  </div>
+);
 }

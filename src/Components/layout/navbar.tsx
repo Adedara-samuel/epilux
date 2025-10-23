@@ -2,18 +2,18 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 // components/Navbar.tsx
 'use client';
-import Link from 'next/link';
-import { Search, ShoppingCart, User, ChevronDown, Menu, X } from 'lucide-react';
-import { useState, useEffect, useRef } from 'react';
-import { cn } from '@/lib/utils';
 import { useAuth } from '@/app/context/auth-context';
+import { cn } from '@/lib/utils';
 import { useCartStore } from '@/stores/cart-store';
-import { Avatar, AvatarImage, AvatarFallback } from '@radix-ui/react-avatar';
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@radix-ui/react-dropdown-menu';
+import { Avatar, AvatarFallback, AvatarImage } from '@radix-ui/react-avatar';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@radix-ui/react-dropdown-menu';
+import { Menu, Search, ShoppingCart, X } from 'lucide-react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
+import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
-import { useRouter } from 'next/navigation';
-import { Badge } from '../ui/badge';
 
 export default function Navbar() {
     const { user, logout } = useAuth();
@@ -183,7 +183,9 @@ export default function Navbar() {
                                                 ? 'Administrator'
                                                 : userRole === 'affiliate'
                                                     ? 'Affiliate Partner'
-                                                    : 'Customer'}
+                                                    : userRole === 'marketer'
+                                                        ? 'Delivery Marketer'
+                                                        : 'Customer'}
                                         </div>
                                     </div>
                                     <DropdownMenuSeparator className="h-px bg-gray-200 my-1" />
@@ -212,6 +214,16 @@ export default function Navbar() {
                                                 className="block w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded"
                                             >
                                                 Affiliate Dashboard
+                                            </Link>
+                                        </DropdownMenuItem>
+                                    )}
+                                    {userRole === 'marketer' && (
+                                        <DropdownMenuItem asChild>
+                                            <Link
+                                                href="/marketer"
+                                                className="block w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded"
+                                            >
+                                                Delivery Dashboard
                                             </Link>
                                         </DropdownMenuItem>
                                     )}
@@ -369,7 +381,9 @@ export default function Navbar() {
                                             ? 'Administrator'
                                             : userRole === 'affiliate'
                                                 ? 'Affiliate Partner'
-                                                : 'Customer'}
+                                                : userRole === 'marketer'
+                                                    ? 'Delivery Marketer'
+                                                    : 'Customer'}
                                     </div>
                                 </div>
                                 <div className="space-y-1">
@@ -396,6 +410,15 @@ export default function Navbar() {
                                             onClick={() => setMobileMenuOpen(false)}
                                         >
                                             Affiliate Dashboard
+                                        </Link>
+                                    )}
+                                    {userRole === 'marketer' && (
+                                        <Link
+                                            href="/marketer"
+                                            className="block px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-md transition-colors"
+                                            onClick={() => setMobileMenuOpen(false)}
+                                        >
+                                            Delivery Dashboard
                                         </Link>
                                     )}
                                     <button

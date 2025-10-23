@@ -75,3 +75,31 @@ export const adminOrdersAPI = {
     return response.data;
   },
 };
+
+// User Order Actions API functions
+export const orderActionsAPI = {
+  // Confirm order receipt
+  confirmReceipt: async (id: string) => {
+    const response = await api.put(`/api/orders/${id}/confirm-receipt`);
+    return response.data;
+  },
+
+  // Rate product
+  rateProduct: async (id: string, productId: string, rating: number, review?: string) => {
+    const response = await api.post(`/api/orders/${id}/rate-product`, {
+      productId,
+      rating,
+      review
+    });
+    return response.data;
+  },
+
+  // Rate marketer
+  rateMarketer: async (id: string, rating: number, review?: string) => {
+    const response = await api.post(`/api/orders/${id}/rate-marketer`, {
+      rating,
+      review
+    });
+    return response.data;
+  },
+};

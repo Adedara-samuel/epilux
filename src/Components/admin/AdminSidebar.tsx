@@ -9,7 +9,7 @@ import {
     ShoppingCart,
     BarChart3,
     Settings,
-    LogOut
+    LogOut, UserCheck, Percent
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/Components/ui/button';
@@ -21,7 +21,9 @@ const navigation = [
     { name: 'Products', href: '/admin/products', icon: Package },
     { name: 'Orders', href: '/admin/orders', icon: ShoppingCart },
     { name: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
+    { name: 'Commission Rates', href: '/admin/commissions', icon: Percent },
     { name: 'Settings', href: '/admin/settings', icon: Settings },
+    { name: 'Marketer', href: '/admin/marketers', icon: UserCheck },
 ];
 
 interface AdminSidebarProps {

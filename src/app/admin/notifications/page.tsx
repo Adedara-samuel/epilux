@@ -29,7 +29,7 @@ import {
     X,
     Loader2
 } from 'lucide-react';
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 
 // --- Helper Type for Mapping to Component's Expectation ---
@@ -49,7 +49,44 @@ export default function AdminNotificationsPage() {
     const { data: ticketsData, isLoading, isError } = useSupportTickets();
     const updateStatusMutation = useUpdateTicketStatus();
     const deleteMutation = useDeleteMessage();
-    const resolveTicketMutation = useResolveTicket(); 
+    const resolveTicketMutation = useResolveTicket();
+
+    // Add global animations
+    useEffect(() => {
+        const styleSheet = document.createElement('style');
+        styleSheet.textContent = `
+          @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+          @keyframes scaleIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+          @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+          @keyframes bounceIn { from { transform: scale(0.3); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+          @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+          .animate-fadeIn { animation: fadeIn 0.5s ease-out; }
+          .animate-scaleIn { animation: scaleIn 0.3s ease-out; }
+          .animate-slideUp { animation: slideUp 0.4s ease-out; }
+          .animate-bounceIn { animation: bounceIn 0.6s ease-out; }
+          .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+
+          * { cursor: default; }
+          button, a, input, textarea, select { cursor: pointer; }
+
+          .scroll-smooth { scroll-behavior: smooth; }
+          .transition-all { transition: all 0.3s ease; }
+          .hover-lift { transition: transform 0.2s ease; }
+          .hover-lift:hover { transform: translateY(-2px); }
+          .hover-glow { transition: box-shadow 0.3s ease; }
+          .hover-glow:hover { box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); }
+        `;
+        document.head.appendChild(styleSheet);
+
+        // Add smooth scrolling to body
+        document.body.classList.add('scroll-smooth');
+
+        return () => {
+          document.head.removeChild(styleSheet);
+          document.body.classList.remove('scroll-smooth');
+        };
+    }, []);
 
     // Local state for UI interactions
     const [searchTerm, setSearchTerm] = useState('');
@@ -206,35 +243,41 @@ export default function AdminNotificationsPage() {
     
     // --- Main Component JSX ---
     return (
-        <div className="space-y-6">
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
             {/* Header */}
-            <div className="flex items-center justify-between">
-                <div className="text-center flex-1">
-                    <h1 className="text-3xl font-bold text-gray-900">Support Tickets (Notifications)</h1>
-                    <p className="text-gray-600 mt-1">Manage customer inquiries and support requests</p>
-                </div>
-                <div className="flex gap-2">
-                    {unreadCount > 0 && (
-                        <Button 
-                            onClick={markAllAsRead} 
-                            variant="outline" 
-                            className="cursor-pointer"
-                            // Disable if any status update is pending
-                            disabled={updateStatusMutation.isPending} 
-                        >
-                            {updateStatusMutation.isPending ? (
-                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            ) : (
-                                <CheckCircle className="w-4 h-4 mr-2" />
+            <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-40">
+                <div className="container mx-auto px-6 py-6">
+                    <div className="flex items-center justify-between">
+                        <div className="text-center flex-1">
+                            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent animate-bounceIn">Support Tickets (Notifications)</h1>
+                            <p className="text-gray-600 mt-1 animate-fadeIn animation-delay-300">Manage customer inquiries and support requests</p>
+                        </div>
+                        <div className="flex gap-2">
+                            {unreadCount > 0 && (
+                                <Button
+                                    onClick={markAllAsRead}
+                                    variant="outline"
+                                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg shadow-md hover:shadow-lg transition-all hover-lift animate-fadeIn animation-delay-500"
+                                    // Disable if any status update is pending
+                                    disabled={updateStatusMutation.isPending}
+                                >
+                                    {updateStatusMutation.isPending ? (
+                                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                    ) : (
+                                        <CheckCircle className="w-4 h-4 mr-2" />
+                                    )}
+                                    Mark All Read
+                                </Button>
                             )}
-                            Mark All Read
-                        </Button>
-                    )}
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            {/* Stats Cards - These counts will update instantly due to optimistic updates in the hook */}
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <div className="container mx-auto px-6 py-8">
+
+                {/* Stats Cards - These counts will update instantly due to optimistic updates in the hook */}
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-4 animate-fadeIn animation-delay-700">
                 <Card>
                     <CardContent className="p-4">
                         <div className="flex items-center gap-3">
@@ -314,47 +357,47 @@ export default function AdminNotificationsPage() {
                 </Card>
             </div>
 
-            {/* Filters and Search */}
-            <Card>
-                <CardContent className="p-6">
-                    <div className="flex flex-col md:flex-row gap-4">
-                        <div className="relative flex-1">
-                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                            <Input
-                                placeholder="Search tickets by subject or content..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="pl-10"
-                            />
+                {/* Filters and Search */}
+                <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl mb-6 animate-fadeIn animation-delay-900">
+                    <CardContent className="p-6">
+                        <div className="flex flex-col md:flex-row gap-4">
+                            <div className="relative flex-1">
+                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                                <Input
+                                    placeholder="Search tickets by subject or content..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="pl-10 bg-white/50 border-gray-200"
+                                />
+                            </div>
+
+                            {/* Filter Type simplified */}
+                            <select
+                                value={filterType}
+                                onChange={(e) => setFilterType(e.target.value)}
+                                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 hover-lift"
+                            >
+                                <option value="all">All Types</option>
+                                <option value="message">Customer Messages</option>
+                            </select>
+
+                            {/* Filter Read/Pending/Resolved */}
+                            <select
+                                value={filterRead}
+                                onChange={(e) => setFilterRead(e.target.value)}
+                                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 hover-lift"
+                            >
+                                <option value="all">All Status</option>
+                                <option value="unread">Unread/Pending</option>
+                                <option value="read">Read/Active</option>
+                                <option value="resolved">Resolved</option>
+                            </select>
                         </div>
+                    </CardContent>
+                </Card>
 
-                        {/* Filter Type simplified */}
-                        <select
-                            value={filterType}
-                            onChange={(e) => setFilterType(e.target.value)}
-                            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                            <option value="all">All Types</option>
-                            <option value="message">Customer Messages</option>
-                        </select>
-
-                        {/* Filter Read/Pending/Resolved */}
-                        <select
-                            value={filterRead}
-                            onChange={(e) => setFilterRead(e.target.value)}
-                            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                            <option value="all">All Status</option>
-                            <option value="unread">Unread/Pending</option>
-                            <option value="read">Read/Active</option>
-                            <option value="resolved">Resolved</option> 
-                        </select>
-                    </div>
-                </CardContent>
-            </Card>
-
-            {/* Notifications List */}
-            <div className="space-y-4">
+                {/* Notifications List */}
+                <div className="space-y-4 animate-fadeIn animation-delay-1100">
                 {filteredNotifications.length === 0 ? (
                     <Card>
                         <CardContent className="p-12 text-center">
@@ -635,6 +678,7 @@ export default function AdminNotificationsPage() {
                     </div>
                 </div>
             )}
+            </div>
         </div>
     );
 }

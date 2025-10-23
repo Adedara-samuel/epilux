@@ -1,6 +1,16 @@
 // src/services/messageService.ts
 import { api } from './base'; // Assuming base.ts is in the same directory
 
+// For client-side requests, use relative URLs to leverage Next.js rewrites
+const getBaseUrl = () => {
+  if (typeof window !== 'undefined') {
+    // Client-side: use relative URLs
+    return '';
+  }
+  // Server-side: use full URL
+  return 'https://epilux-backend.vercel.app';
+};
+
 // --- TypeScript Definitions ---
 
 export interface SupportTicket {
@@ -36,8 +46,18 @@ export const messageAPI = {
      * Maps to: POST /api/messages
      */
     sendMessage: async (data: SendMessagePayload): Promise<SupportTicket> => {
-        const response = await api.post('/api/messages', data);
-        return response.data;
+        const baseUrl = getBaseUrl();
+        const response = await fetch(`${baseUrl}/api/messages`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        });
+        if (!response.ok) {
+            throw new Error('Failed to send message');
+        }
+        return response.json();
     },
 
     /**
@@ -45,8 +65,19 @@ export const messageAPI = {
      * Maps to: GET /api/messages
      */
     getMessages: async (): Promise<MessagesListResponse> => {
-        const response = await api.get('/api/messages');
-        return response.data;
+        const baseUrl = getBaseUrl();
+        const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+        const response = await fetch(`${baseUrl}/api/messages`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                ...(token && { 'Authorization': `Bearer ${token}` }),
+            },
+        });
+        if (!response.ok) {
+            throw new Error('Failed to get messages');
+        }
+        return response.json();
     },
 
     /**
@@ -54,8 +85,19 @@ export const messageAPI = {
      * Maps to: GET /api/messages/:id
      */
     getMessage: async (id: string): Promise<SupportTicket> => {
-        const response = await api.get(`/api/messages/${id}`);
-        return response.data;
+        const baseUrl = getBaseUrl();
+        const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+        const response = await fetch(`${baseUrl}/api/messages/${id}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                ...(token && { 'Authorization': `Bearer ${token}` }),
+            },
+        });
+        if (!response.ok) {
+            throw new Error('Failed to get message');
+        }
+        return response.json();
     },
 
     // --- Admin Action Functions (Required for the AdminNotificationsPage) ---
@@ -65,9 +107,20 @@ export const messageAPI = {
      * Maps to: PATCH /api/messages/:id
      */
     updateStatus: async (id: string, newStatus: 'read' | 'pending' | 'resolved'): Promise<SupportTicket> => {
-        // NOTE: Returning SupportTicket as per typical API response for an update
-        const response = await api.patch(`/api/messages/${id}`, { status: newStatus });
-        return response.data;
+        const baseUrl = getBaseUrl();
+        const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+        const response = await fetch(`${baseUrl}/api/messages/${id}`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                ...(token && { 'Authorization': `Bearer ${token}` }),
+            },
+            body: JSON.stringify({ status: newStatus }),
+        });
+        if (!response.ok) {
+            throw new Error('Failed to update status');
+        }
+        return response.json();
     },
 
     /**
@@ -75,7 +128,18 @@ export const messageAPI = {
      * Maps to: DELETE /api/messages/:id
      */
     deleteMessage: async (id: string): Promise<void> => {
-        await api.delete(`/api/messages/${id}`);
+        const baseUrl = getBaseUrl();
+        const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+        const response = await fetch(`${baseUrl}/api/messages/${id}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                ...(token && { 'Authorization': `Bearer ${token}` }),
+            },
+        });
+        if (!response.ok) {
+            throw new Error('Failed to delete message');
+        }
     },
 
     /**

@@ -269,6 +269,192 @@ const getOrderStats = async (req, res) => {
     }
 };
 
+// Confirm order receipt
+const confirmOrderReceipt = async (req, res) => {
+    try {
+        const order = await Order.findById(req.params.id);
+
+        if (!order) {
+            return res.status(404).json({
+                success: false,
+                message: 'Order not found'
+            });
+        }
+
+        // Check if user owns this order
+        if (order.userId.toString() !== req.user.id) {
+            return res.status(403).json({
+                success: false,
+                message: 'Access denied'
+            });
+        }
+
+        // Check if order is delivered
+        if (order.status !== 'delivered') {
+            return res.status(400).json({
+                success: false,
+                message: 'Order must be delivered before confirming receipt'
+            });
+        }
+
+        // Update order
+        order.deliveryConfirmed = true;
+        order.deliveryConfirmedAt = new Date();
+        await order.save();
+
+        res.json({
+            success: true,
+            message: 'Order receipt confirmed successfully',
+            order
+        });
+    } catch (error) {
+        console.error('Error confirming order receipt:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error confirming order receipt'
+        });
+    }
+};
+
+// Rate product
+const rateProduct = async (req, res) => {
+    try {
+        const { productId, rating, review } = req.body;
+        const order = await Order.findById(req.params.id);
+
+        if (!order) {
+            return res.status(404).json({
+                success: false,
+                message: 'Order not found'
+            });
+        }
+
+        // Check if user owns this order
+        if (order.userId.toString() !== req.user.id) {
+            return res.status(403).json({
+                success: false,
+                message: 'Access denied'
+            });
+        }
+
+        // Check if order is confirmed
+        if (!order.deliveryConfirmed) {
+            return res.status(400).json({
+                success: false,
+                message: 'Order must be confirmed before rating products'
+            });
+        }
+
+        // Check if product exists in order
+        const orderItem = order.items.find(item => item.productId.toString() === productId);
+        if (!orderItem) {
+            return res.status(400).json({
+                success: false,
+                message: 'Product not found in this order'
+            });
+        }
+
+        // Check if product already rated
+        const existingRating = order.productRatings.find(r => r.productId === productId);
+        if (existingRating) {
+            return res.status(400).json({
+                success: false,
+                message: 'Product already rated'
+            });
+        }
+
+        // Add rating
+        order.productRatings.push({
+            productId,
+            rating: parseInt(rating),
+            review: review || '',
+            createdAt: new Date()
+        });
+
+        await order.save();
+
+        res.json({
+            success: true,
+            message: 'Product rated successfully',
+            order
+        });
+    } catch (error) {
+        console.error('Error rating product:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error rating product'
+        });
+    }
+};
+
+// Rate marketer
+const rateMarketer = async (req, res) => {
+    try {
+        const { rating, review } = req.body;
+        const order = await Order.findById(req.params.id);
+
+        if (!order) {
+            return res.status(404).json({
+                success: false,
+                message: 'Order not found'
+            });
+        }
+
+        // Check if user owns this order
+        if (order.userId.toString() !== req.user.id) {
+            return res.status(403).json({
+                success: false,
+                message: 'Access denied'
+            });
+        }
+
+        // Check if order is confirmed
+        if (!order.deliveryConfirmed) {
+            return res.status(400).json({
+                success: false,
+                message: 'Order must be confirmed before rating marketer'
+            });
+        }
+
+        // Check if marketer exists
+        if (!order.marketerId) {
+            return res.status(400).json({
+                success: false,
+                message: 'No marketer assigned to this order'
+            });
+        }
+
+        // Check if marketer already rated
+        if (order.marketerRating.rating) {
+            return res.status(400).json({
+                success: false,
+                message: 'Marketer already rated'
+            });
+        }
+
+        // Add rating
+        order.marketerRating = {
+            rating: parseInt(rating),
+            review: review || '',
+            createdAt: new Date()
+        };
+
+        await order.save();
+
+        res.json({
+            success: true,
+            message: 'Marketer rated successfully',
+            order
+        });
+    } catch (error) {
+        console.error('Error rating marketer:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error rating marketer'
+        });
+    }
+};
+
 export {
     createOrder,
     getOrders,
@@ -276,5 +462,8 @@ export {
     updateOrderStatus,
     deleteOrder,
     getUserOrders,
-    getOrderStats
+    getOrderStats,
+    confirmOrderReceipt,
+    rateProduct,
+    rateMarketer
 };

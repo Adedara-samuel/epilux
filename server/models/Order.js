@@ -102,6 +102,57 @@ const orderSchema = new Schema({
         zipCode: String
     },
     notes: String,
+    // Delivery tracking fields
+    marketerId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        default: null
+    },
+    deliveryConfirmed: {
+        type: Boolean,
+        default: false
+    },
+    deliveryConfirmedAt: {
+        type: Date,
+        default: null
+    },
+    // Rating fields
+    productRatings: [{
+        productId: {
+            type: String,
+            required: true
+        },
+        rating: {
+            type: Number,
+            min: 1,
+            max: 5,
+            required: true
+        },
+        review: {
+            type: String,
+            default: ''
+        },
+        createdAt: {
+            type: Date,
+            default: Date.now
+        }
+    }],
+    marketerRating: {
+        rating: {
+            type: Number,
+            min: 1,
+            max: 5,
+            default: null
+        },
+        review: {
+            type: String,
+            default: ''
+        },
+        createdAt: {
+            type: Date,
+            default: null
+        }
+    },
     createdAt: {
         type: Date,
         default: Date.now

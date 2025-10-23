@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://epilux-backend.vercel.app';
+const BASE_URL = 'https://epilux-backend.vercel.app';
 
 // FIX: Changed the type of the second argument from '{ params: { id: string } }' to 'any'
 export async function GET(request: NextRequest, { params }: any) { 

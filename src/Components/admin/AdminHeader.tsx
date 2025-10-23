@@ -75,7 +75,7 @@ export function AdminHeader({ setSidebarOpen }: AdminHeaderProps) {
 
     return (
         <>
-        <header className="fixed top-0 left-0 lg:left-64 right-0 z-40 bg-white border-b border-gray-200 shadow-sm">
+        <header className="fixed top-0 left-0 lg:left-64 right-0 z-1000 bg-white border-b border-gray-200 shadow-sm">
             <div className="px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center justify-between h-16">
                     {/* Left side - Mobile menu button and page title */}

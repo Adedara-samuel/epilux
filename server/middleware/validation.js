@@ -368,6 +368,69 @@ const validatePagination = [
         .withMessage('Order must be either "asc" or "desc"')
 ];
 
+// Validation rules for commission rate creation
+const validateCommissionRateCreation = [
+    body('name')
+        .trim()
+        .isLength({ min: 1, max: 100 })
+        .withMessage('Commission rate name must be between 1 and 100 characters'),
+
+    body('description')
+        .optional()
+        .trim()
+        .isLength({ max: 500 })
+        .withMessage('Description must be less than 500 characters'),
+
+    body('rate')
+        .isFloat({ min: 0, max: 100 })
+        .withMessage('Rate must be between 0 and 100'),
+
+    body('type')
+        .optional()
+        .isIn(['percentage', 'fixed'])
+        .withMessage('Type must be either "percentage" or "fixed"'),
+
+    body('category')
+        .optional()
+        .isIn(['product', 'service', 'referral', 'general'])
+        .withMessage('Category must be one of: product, service, referral, general')
+];
+
+// Validation rules for commission rate update
+const validateCommissionRateUpdate = [
+    body('name')
+        .optional()
+        .trim()
+        .isLength({ min: 1, max: 100 })
+        .withMessage('Commission rate name must be between 1 and 100 characters'),
+
+    body('description')
+        .optional()
+        .trim()
+        .isLength({ max: 500 })
+        .withMessage('Description must be less than 500 characters'),
+
+    body('rate')
+        .optional()
+        .isFloat({ min: 0, max: 100 })
+        .withMessage('Rate must be between 0 and 100'),
+
+    body('type')
+        .optional()
+        .isIn(['percentage', 'fixed'])
+        .withMessage('Type must be either "percentage" or "fixed"'),
+
+    body('category')
+        .optional()
+        .isIn(['product', 'service', 'referral', 'general'])
+        .withMessage('Category must be one of: product, service, referral, general'),
+
+    body('isActive')
+        .optional()
+        .isBoolean()
+        .withMessage('isActive must be a boolean value')
+];
+
 export {
     validateRegistration,
     validateLogin,
@@ -383,5 +446,7 @@ export {
     validateIdParam,
     validateMongoId,
     validatePagination,
+    validateCommissionRateCreation,
+    validateCommissionRateUpdate,
     handleValidationErrors
 };

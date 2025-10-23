@@ -338,7 +338,7 @@ const getDashboardStats = async (req, res) => {
 const getUser = async (req, res) => {
   try {
     const user = await User.findById(req.params.id).select('-password');
-    
+
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -348,7 +348,10 @@ const getUser = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      data: user
+      data: {
+        ...user.toObject(),
+        suspended: user.isActive === false
+      }
     });
   } catch (error) {
     console.error('Error getting user:', error);
@@ -387,11 +390,17 @@ const getUsers = async (req, res) => {
       .skip((page - 1) * limit)
       .lean();
 
+    // Add suspended field to each user
+    const usersWithSuspended = users.map(user => ({
+      ...user,
+      suspended: user.isActive === false
+    }));
+
     const count = await User.countDocuments(query);
 
     res.status(200).json({
       success: true,
-      data: users,
+      data: usersWithSuspended,
       pagination: {
         total: count,
         page: Number(page),
@@ -447,6 +456,64 @@ const updateUser = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error updating user',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Suspend user
+ */
+const suspendUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { suspended } = req.body;
+
+    // Validate suspended status
+    if (typeof suspended !== 'boolean') {
+      return res.status(400).json({
+        success: false,
+        message: 'Suspended status is required and must be a boolean'
+      });
+    }
+
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Prevent suspension of admin users
+    if (user.role === 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Cannot suspend admin users'
+      });
+    }
+
+    // Set suspension status
+    user.isActive = !suspended;
+    await user.save();
+
+    // Remove password from response
+    const userResponse = user.toObject();
+    delete userResponse.password;
+
+    res.status(200).json({
+      success: true,
+      message: `User ${suspended ? 'suspended' : 'unsuspended'} successfully`,
+      data: {
+        ...userResponse,
+        suspended
+      }
+    });
+  } catch (error) {
+    console.error('Error suspending user:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error suspending user',
       error: error.message
     });
   }
@@ -874,6 +941,7 @@ export {
   getUsers,
   getUser,
   updateUser,
+  suspendUser,
   deleteUser,
   getRecentAffiliateActivity,
   getRecentSignups,

@@ -14,6 +14,7 @@ router.get('/dashboard/stats', authenticate, authorize('admin'), adminController
 router.get('/users', authenticate, authorize('admin'), adminController.getUsers);
 router.get('/users/:id', authenticate, authorize('admin'), adminController.getUser);
 router.put('/users/:id', authenticate, authorize('admin'), adminController.updateUser);
+router.put('/users/:id/suspend', authenticate, authorize('admin'), adminController.suspendUser);
 router.delete('/users/:id', authenticate, authorize('admin'), adminController.deleteUser);
 
 // Product management routes

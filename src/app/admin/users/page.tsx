@@ -2,24 +2,62 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 'use client';
 
-import { useState } from 'react';
-import { Search, Filter, MoreHorizontal, UserPlus, Eye, Edit, UserCheck, Trash2, X } from 'lucide-react';
-import { Button } from '@/Components/ui/button';
-import { Input } from '@/Components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/Components/ui/card';
+import React, { useState, useEffect } from 'react';
 import { Badge } from '@/Components/ui/badge';
-import { Label } from '@/Components/ui/label';
+import { Button } from '@/Components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/Components/ui/card';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/Components/ui/dropdown-menu';
-import { useAdminUsers, useAdminUser, useUpdateUserRole, useUpdateAdminUser, useDeleteAdminUser } from '@/hooks/useAdmin';
+import { Input } from '@/Components/ui/input';
+import { Label } from '@/Components/ui/label';
+import { useAdminUser, useAdminUsers, useCreateAdminUser, useDeleteAdminUser, useUpdateAdminUser, useUpdateUserRole, useSuspendUser } from '@/hooks/useAdmin';
+import { Edit, Eye, Filter, MoreHorizontal, Search, Trash2, UserCheck, UserPlus, X, Ban } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function AdminUsersPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [page, setPage] = useState(1);
+
+  // Add global animations
+  useEffect(() => {
+      const styleSheet = document.createElement('style');
+      styleSheet.textContent = `
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes scaleIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes bounceIn { from { transform: scale(0.3); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+        .animate-fadeIn { animation: fadeIn 0.5s ease-out; }
+        .animate-scaleIn { animation: scaleIn 0.3s ease-out; }
+        .animate-slideUp { animation: slideUp 0.4s ease-out; }
+        .animate-bounceIn { animation: bounceIn 0.6s ease-out; }
+        .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+
+        * { cursor: default; }
+        button, a, input, textarea, select { cursor: pointer; }
+
+        .scroll-smooth { scroll-behavior: smooth; }
+        .transition-all { transition: all 0.3s ease; }
+        .hover-lift { transition: transform 0.2s ease; }
+        .hover-lift:hover { transform: translateY(-2px); }
+        .hover-glow { transition: box-shadow 0.3s ease; }
+        .hover-glow:hover { box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); }
+      `;
+      document.head.appendChild(styleSheet);
+
+      // Add smooth scrolling to body
+      document.body.classList.add('scroll-smooth');
+
+      return () => {
+        document.head.removeChild(styleSheet);
+        document.body.classList.remove('scroll-smooth');
+      };
+  }, []);
 
   // Dialog states
   const [showAddDialog, setShowAddDialog] = useState(false);
@@ -27,6 +65,7 @@ export default function AdminUsersPage() {
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showRoleDialog, setShowRoleDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showSuspendDialog, setShowSuspendDialog] = useState(false);
   const [selectedUser, setSelectedUser] = useState<any>(null);
 
   // Form states
@@ -34,12 +73,14 @@ export default function AdminUsersPage() {
     firstName: '',
     lastName: '',
     email: '',
+    phone: '',
     role: ''
   });
   const [newUserForm, setNewUserForm] = useState({
     firstName: '',
     lastName: '',
     email: '',
+    phone: '',
     password: '',
     role: 'user'
   });
@@ -50,6 +91,8 @@ export default function AdminUsersPage() {
   const updateUserRoleMutation = useUpdateUserRole();
   const updateUserMutation = useUpdateAdminUser();
   const deleteUserMutation = useDeleteAdminUser();
+  const createUserMutation = useCreateAdminUser();
+  const suspendUserMutation = useSuspendUser();
 
   const users = usersData?.data || [];
   const pagination = usersData?.pagination || {};
@@ -66,6 +109,7 @@ export default function AdminUsersPage() {
       firstName: user.firstName || '',
       lastName: user.lastName || '',
       email: user.email || '',
+      phone: user.phone || '',
       role: user.role || 'user'
     });
     setShowEditDialog(true);
@@ -82,6 +126,11 @@ export default function AdminUsersPage() {
     setShowDeleteDialog(true);
   };
 
+  const handleSuspendUser = (user: any) => {
+    setSelectedUser(user);
+    setShowSuspendDialog(true);
+  };
+
   const handleSaveEdit = () => {
     if (selectedUser) {
       updateUserMutation.mutate(
@@ -90,6 +139,10 @@ export default function AdminUsersPage() {
           onSuccess: () => {
             setShowEditDialog(false);
             setSelectedUser(null);
+            toast.success('User updated successfully!');
+          },
+          onError: (error: any) => {
+            toast.error(error?.response?.data?.message || error?.message || 'Failed to update user');
           }
         }
       );
@@ -104,6 +157,10 @@ export default function AdminUsersPage() {
           onSuccess: () => {
             setShowRoleDialog(false);
             setSelectedUser(null);
+            toast.success('User role updated successfully!');
+          },
+          onError: (error: any) => {
+            toast.error(error?.response?.data?.message || error?.message || 'Failed to update user role');
           }
         }
       );
@@ -116,20 +173,48 @@ export default function AdminUsersPage() {
         onSuccess: () => {
           setShowDeleteDialog(false);
           setSelectedUser(null);
+          toast.success('User deleted successfully!');
+        },
+        onError: (error: any) => {
+          toast.error(error?.response?.data?.message || error?.message || 'Failed to delete user');
+        }
+      });
+    }
+  };
+
+  const handleConfirmSuspend = () => {
+    if (selectedUser) {
+      suspendUserMutation.mutate({ id: selectedUser._id, suspended: !selectedUser.suspended }, {
+        onSuccess: () => {
+          setShowSuspendDialog(false);
+          setSelectedUser(null);
+          toast.success(`User ${selectedUser.suspended ? 'unsuspended' : 'suspended'} successfully!`);
+        },
+        onError: (error: any) => {
+          toast.error(error?.response?.data?.message || error?.message || 'Failed to update user status');
         }
       });
     }
   };
 
   const handleAddUser = () => {
-    // For now, just close dialog. In real app, would call create user API
-    setShowAddDialog(false);
-    setNewUserForm({
-      firstName: '',
-      lastName: '',
-      email: '',
-      password: '',
-      role: 'user'
+    createUserMutation.mutate(newUserForm, {
+      onSuccess: () => {
+        setShowAddDialog(false);
+        setNewUserForm({
+          firstName: '',
+          lastName: '',
+          email: '',
+          phone: '',
+          password: '',
+          role: 'user'
+        });
+        toast.success('User created successfully!');
+        // The mutation will automatically invalidate queries and refresh the users list
+      },
+      onError: (error: any) => {
+        toast.error(error?.response?.data?.message || error?.message || 'Failed to create user');
+      }
     });
   };
 
@@ -145,58 +230,68 @@ export default function AdminUsersPage() {
         return <Badge variant="destructive">Admin</Badge>;
       case 'affiliate':
         return <Badge variant="secondary">Affiliate</Badge>;
+      case 'marketer':
+        return <Badge className="bg-green-100 text-green-800">Marketer</Badge>;
       default:
         return <Badge variant="outline">Customer</Badge>;
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    return status === 'active'
-      ? <Badge className="bg-green-100 text-green-800">Active</Badge>
-      : <Badge variant="secondary">Inactive</Badge>;
+  const getStatusBadge = (user: any) => {
+    return user.suspended
+      ? <Badge className="bg-red-100 text-red-800">Suspended</Badge>
+      : <Badge className="bg-green-100 text-green-800">Active</Badge>;
   };
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Users Management</h1>
-          <p className="text-gray-600">Manage user accounts and permissions</p>
-        </div>
-        <Button className="flex items-center gap-2 cursor-pointer" onClick={() => setShowAddDialog(true)}>
-          <UserPlus className="w-4 h-4" />
-          Add User
-        </Button>
-      </div>
-
-      {/* Filters and Search */}
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <Input
-                placeholder="Search users..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
+      <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-40">
+        <div className="container mx-auto px-6 py-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent animate-bounceIn">
+                Users Management
+              </h1>
+              <p className="text-gray-600 mt-1 animate-fadeIn animation-delay-300">Manage user accounts and permissions</p>
             </div>
-            <Button variant="outline" className="flex items-center gap-2">
-              <Filter className="w-4 h-4" />
-              Filter
+            <Button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg shadow-md hover:shadow-lg transition-all hover-lift animate-fadeIn animation-delay-500" onClick={() => setShowAddDialog(true)}>
+              <UserPlus className="w-4 h-4 mr-2" />
+              Add User
             </Button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      {/* Users Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Users ({filteredUsers.length})</CardTitle>
-        </CardHeader>
-        <CardContent>
+      <div className="container mx-auto px-6 py-8">
+
+        {/* Filters and Search */}
+        <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl mb-6 animate-fadeIn animation-delay-700">
+          <CardContent className="p-6">
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Input
+                  placeholder="Search users..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 bg-white/50 border-gray-200"
+                />
+              </div>
+              <Button variant="outline" className="flex items-center gap-2 hover-lift">
+                <Filter className="w-4 h-4" />
+                Filter
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Users Table */}
+        <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl animate-fadeIn animation-delay-900">
+          <CardHeader>
+            <CardTitle>Users ({filteredUsers.length})</CardTitle>
+          </CardHeader>
+          <CardContent>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
@@ -223,7 +318,7 @@ export default function AdminUsersPage() {
                       {getRoleBadge(user.role)}
                     </td>
                     <td className="py-4 px-4">
-                      {getStatusBadge(user.emailVerified ? 'active' : 'inactive')}
+                      {getStatusBadge(user)}
                     </td>
                     <td className="py-4 px-4 text-gray-900">-</td>
                     <td className="py-4 px-4 text-gray-900">
@@ -240,17 +335,21 @@ export default function AdminUsersPage() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleViewUser(user)}className='cursor-pointer'>
+                          <DropdownMenuItem onClick={() => handleViewUser(user)} className='cursor-pointer'>
                             <Eye className="w-4 h-4 mr-2" />
                             View Details
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleEditUser(user)}className='cursor-pointer'>
+                          <DropdownMenuItem onClick={() => handleEditUser(user)} className='cursor-pointer'>
                             <Edit className="w-4 h-4 mr-2" />
                             Edit User
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleChangeRole(user)}className='cursor-pointer'>
+                          <DropdownMenuItem onClick={() => handleChangeRole(user)} className='cursor-pointer'>
                             <UserCheck className="w-4 h-4 mr-2" />
                             Change Role
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleSuspendUser(user)} className='cursor-pointer'>
+                            <Ban className="w-4 h-4 mr-2" />
+                            {user.suspended ? 'Unsuspend User' : 'Suspend User'}
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             className="text-red-600 cursor-pointer"
@@ -276,39 +375,43 @@ export default function AdminUsersPage() {
         </CardContent>
       </Card>
 
-      {/* Pagination */}
-      {pagination.pages > 1 && (
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="text-sm text-gray-700">
-                Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} users
+        {/* Pagination */}
+        {pagination.pages > 1 && (
+          <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl animate-fadeIn animation-delay-1100">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-gray-700">
+                  Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} users
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage(prev => Math.max(1, prev - 1))}
+                    disabled={pagination.page <= 1}
+                    className="hover-lift"
+                  >
+                    Previous
+                  </Button>
+                  <span className="text-sm text-gray-700">
+                    Page {pagination.page} of {pagination.pages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage(prev => Math.min(pagination.pages, prev + 1))}
+                    disabled={pagination.page >= pagination.pages}
+                    className="hover-lift"
+                  >
+                    Next
+                  </Button>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage(prev => Math.max(1, prev - 1))}
-                  disabled={pagination.page <= 1}
-                >
-                  Previous
-                </Button>
-                <span className="text-sm text-gray-700">
-                  Page {pagination.page} of {pagination.pages}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage(prev => Math.min(pagination.pages, prev + 1))}
-                  disabled={pagination.page >= pagination.pages}
-                >
-                  Next
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+            </CardContent>
+          </Card>
+        )}
+
+      </div>
 
       {/* Add User Dialog */}
       {showAddDialog && (
@@ -347,6 +450,16 @@ export default function AdminUsersPage() {
                 />
               </div>
               <div>
+                <Label htmlFor="new-phone">Phone Number</Label>
+                <Input
+                  id="new-phone"
+                  type="tel"
+                  value={newUserForm.phone}
+                  onChange={(e) => setNewUserForm(prev => ({ ...prev, phone: e.target.value }))}
+                  placeholder="+234..."
+                />
+              </div>
+              <div>
                 <Label htmlFor="new-password">Password</Label>
                 <Input
                   id="new-password"
@@ -365,6 +478,7 @@ export default function AdminUsersPage() {
                 >
                   <option value="user">User</option>
                   <option value="affiliate">Affiliate</option>
+                  <option value="marketer">Marketer</option>
                   <option value="admin">Admin</option>
                 </select>
               </div>
@@ -408,7 +522,7 @@ export default function AdminUsersPage() {
                 </div>
                 <div>
                   <Label>Status</Label>
-                  <div className="mt-1">{getStatusBadge(selectedUser.emailVerified ? 'active' : 'inactive')}</div>
+                  <div className="mt-1">{getStatusBadge(selectedUser)}</div>
                 </div>
                 <div>
                   <Label>Join Date</Label>
@@ -470,6 +584,16 @@ export default function AdminUsersPage() {
                 />
               </div>
               <div>
+                <Label htmlFor="edit-phone">Phone Number</Label>
+                <Input
+                  id="edit-phone"
+                  type="tel"
+                  value={editForm.phone}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, phone: e.target.value }))}
+                  placeholder="+234..."
+                />
+              </div>
+              <div>
                 <Label htmlFor="edit-role">Role</Label>
                 <select
                   id="edit-role"
@@ -479,6 +603,7 @@ export default function AdminUsersPage() {
                 >
                   <option value="user">User</option>
                   <option value="affiliate">Affiliate</option>
+                  <option value="marketer">Marketer</option>
                   <option value="admin">Admin</option>
                 </select>
               </div>
@@ -517,6 +642,7 @@ export default function AdminUsersPage() {
                 >
                   <option value="user">User</option>
                   <option value="affiliate">Affiliate</option>
+                  <option value="marketer">Marketer</option>
                   <option value="admin">Admin</option>
                 </select>
               </div>
@@ -527,6 +653,32 @@ export default function AdminUsersPage() {
               </Button>
               <Button onClick={handleSaveRole} className='cursor-pointer'>
                 Update Role
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Suspend User Dialog */}
+      {showSuspendDialog && selectedUser && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-in fade-in duration-300">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md animate-in slide-in-from-bottom-4 duration-300">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-orange-600">Suspend User</h3>
+              <Button variant="ghost" size="sm" onClick={() => setShowSuspendDialog(false)}>
+                <X className="w-4 h-4 cursor-pointer" />
+              </Button>
+            </div>
+            <div className="space-y-4">
+              <p>Are you sure you want to {selectedUser.suspended ? 'unsuspend' : 'suspend'} <strong>{`${selectedUser.firstName} ${selectedUser.lastName}`}</strong>?</p>
+              <p className="text-sm text-gray-600">The user will be {selectedUser.suspended ? 'restored to active status' : 'temporarily suspended from the platform'}.</p>
+            </div>
+            <div className="flex justify-end gap-2 mt-6">
+              <Button variant="outline" onClick={() => setShowSuspendDialog(false)} className='cursor-pointer'>
+                Cancel
+              </Button>
+              <Button variant={selectedUser.suspended ? "default" : "destructive"} onClick={handleConfirmSuspend} className='cursor-pointer'>
+                {selectedUser.suspended ? 'Unsuspend User' : 'Suspend User'}
               </Button>
             </div>
           </div>
