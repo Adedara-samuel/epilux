@@ -47,7 +47,7 @@ function LoginPage() {
                 } else if (role === 'affiliate') {
                     router.replace('/affiliate/dashboard');
                 } else if (role === 'marketer') {
-                    router.replace('/admin/marketers');
+                    router.replace('/marketer');
                 } else {
                     router.replace(redirectTo);
                 }

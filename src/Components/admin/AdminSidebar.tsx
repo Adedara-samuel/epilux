@@ -16,14 +16,14 @@ import { Button } from '@/Components/ui/button';
 import { cn } from '@/lib/utils';
 
 const navigation = [
-    { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
+    { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
     { name: 'Users', href: '/admin/users', icon: Users },
     { name: 'Products', href: '/admin/products', icon: Package },
     { name: 'Orders', href: '/admin/orders', icon: ShoppingCart },
     { name: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
     { name: 'Commission Rates', href: '/admin/commissions', icon: Percent },
     { name: 'Settings', href: '/admin/settings', icon: Settings },
-    { name: 'Marketer', href: '/admin/marketers', icon: UserCheck },
+    { name: 'Marketers', href: '/admin/marketers', icon: UserCheck },
 ];
 
 interface AdminSidebarProps {
@@ -58,7 +58,7 @@ export function AdminSidebar({ sidebarOpen, setSidebarOpen }: AdminSidebarProps)
                 <div className="flex flex-col h-full">
                     {/* Logo */}
                     <div className="flex items-center justify-center h-16 px-4 bg-blue-600 border-b border-blue-700">
-                        <Link href="/admin/dashboard" className="flex items-center gap-2">
+                        <Link href="/admin" className="flex items-center gap-2 cursor-pointer">
                             <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
                                 <span className="text-blue-600 font-bold text-sm">E</span>
                             </div>
@@ -75,7 +75,7 @@ export function AdminSidebar({ sidebarOpen, setSidebarOpen }: AdminSidebarProps)
                                     key={item.name}
                                     href={item.href}
                                     className={cn(
-                                        "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 group",
+                                        "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 group cursor-pointer",
                                         isActive
                                             ? "bg-blue-100 text-blue-700 shadow-sm"
                                             : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"

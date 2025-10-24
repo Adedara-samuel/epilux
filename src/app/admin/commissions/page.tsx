@@ -32,7 +32,8 @@ interface CommissionRate {
 }
 
 export default function CommissionRatesPage() {
-  const { user } = useAuth();
+   const { user } = useAuth();
+   const currentUser = user;
   const [commissionRates, setCommissionRates] = useState<CommissionRate[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -86,17 +87,158 @@ export default function CommissionRatesPage() {
     };
   }, []);
 
-  // Fetch commission rates
+  // Mock commission rates data
+  const mockCommissionRates: CommissionRate[] = [
+    {
+      _id: 'rate-1',
+      name: 'Standard Product Commission',
+      description: 'Default commission rate for all product sales',
+      rate: 15.0,
+      type: 'percentage',
+      category: 'product',
+      isActive: true,
+      createdBy: {
+        firstName: 'Admin',
+        lastName: 'User',
+        email: 'admin@epilux.com'
+      },
+      createdAt: '2024-01-15T10:00:00Z',
+      updatedAt: '2024-01-15T10:00:00Z'
+    },
+    {
+      _id: 'rate-2',
+      name: 'Premium Service Commission',
+      description: 'Higher commission for premium services',
+      rate: 25.0,
+      type: 'percentage',
+      category: 'service',
+      isActive: true,
+      createdBy: {
+        firstName: 'Admin',
+        lastName: 'User',
+        email: 'admin@epilux.com'
+      },
+      createdAt: '2024-01-20T14:30:00Z',
+      updatedAt: '2024-01-20T14:30:00Z'
+    },
+    {
+      _id: 'rate-3',
+      name: 'Referral Bonus',
+      description: 'Commission for successful referrals',
+      rate: 500.0,
+      type: 'fixed',
+      category: 'referral',
+      isActive: true,
+      createdBy: {
+        firstName: 'Admin',
+        lastName: 'User',
+        email: 'admin@epilux.com'
+      },
+      createdAt: '2024-02-01T09:15:00Z',
+      updatedAt: '2024-02-01T09:15:00Z'
+    },
+    {
+      _id: 'rate-4',
+      name: 'Bulk Order Discount',
+      description: 'Reduced commission for bulk orders',
+      rate: 10.0,
+      type: 'percentage',
+      category: 'product',
+      isActive: false,
+      createdBy: {
+        firstName: 'Admin',
+        lastName: 'User',
+        email: 'admin@epilux.com'
+      },
+      createdAt: '2024-02-10T16:45:00Z',
+      updatedAt: '2024-02-10T16:45:00Z'
+    },
+    {
+      _id: 'rate-5',
+      name: 'Seasonal Promotion',
+      description: 'Special commission for holiday season',
+      rate: 20.0,
+      type: 'percentage',
+      category: 'general',
+      isActive: true,
+      createdBy: {
+        firstName: 'Admin',
+        lastName: 'User',
+        email: 'admin@epilux.com'
+      },
+      createdAt: '2024-02-15T11:20:00Z',
+      updatedAt: '2024-02-15T11:20:00Z'
+    },
+    {
+      _id: 'rate-6',
+      name: 'New Affiliate Welcome',
+      description: 'Bonus commission for first 3 months',
+      rate: 1000.0,
+      type: 'fixed',
+      category: 'referral',
+      isActive: true,
+      createdBy: {
+        firstName: 'Admin',
+        lastName: 'User',
+        email: 'admin@epilux.com'
+      },
+      createdAt: '2024-03-01T08:00:00Z',
+      updatedAt: '2024-03-01T08:00:00Z'
+    },
+    {
+      _id: 'rate-7',
+      name: 'Loyalty Program',
+      description: 'Additional commission for loyal affiliates',
+      rate: 5.0,
+      type: 'percentage',
+      category: 'general',
+      isActive: false,
+      createdBy: {
+        firstName: 'Admin',
+        lastName: 'User',
+        email: 'admin@epilux.com'
+      },
+      createdAt: '2024-03-10T13:30:00Z',
+      updatedAt: '2024-03-10T13:30:00Z'
+    },
+    {
+      _id: 'rate-8',
+      name: 'High-Value Client',
+      description: 'Premium commission for enterprise clients',
+      rate: 30.0,
+      type: 'percentage',
+      category: 'service',
+      isActive: true,
+      createdBy: {
+        firstName: 'Admin',
+        lastName: 'User',
+        email: 'admin@epilux.com'
+      },
+      createdAt: '2024-03-20T15:45:00Z',
+      updatedAt: '2024-03-20T15:45:00Z'
+    }
+  ];
+
+  // Fetch commission rates (using mock data)
   const fetchCommissionRates = async () => {
     try {
       setLoading(true);
-      const response = await adminCommissionRatesAPI.getCommissionRates({
-        page: 1,
-        limit: 100,
-        ...(categoryFilter !== 'all' && { category: categoryFilter }),
-        ...(statusFilter !== 'all' && { isActive: statusFilter === 'active' })
-      });
-      setCommissionRates(response.commissionRates || []);
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Filter mock data based on current filters
+      let filteredData = mockCommissionRates;
+
+      if (categoryFilter !== 'all') {
+        filteredData = filteredData.filter(rate => rate.category === categoryFilter);
+      }
+
+      if (statusFilter !== 'all') {
+        const isActive = statusFilter === 'active';
+        filteredData = filteredData.filter(rate => rate.isActive === isActive);
+      }
+
+      setCommissionRates(filteredData);
     } catch (error) {
       console.error('Error fetching commission rates:', error);
       toast.error('Failed to load commission rates');
@@ -115,50 +257,71 @@ export default function CommissionRatesPage() {
     rate.description?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Handle form submission
+  // Handle form submission (mock implementation)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       if (selectedRate) {
-        // Update
-        await adminCommissionRatesAPI.updateCommissionRate(selectedRate._id, formData);
+        // Update existing rate (mock)
+        setCommissionRates(prev => prev.map(rate =>
+          rate._id === selectedRate._id
+            ? {
+                ...rate,
+                ...formData,
+                updatedAt: new Date().toISOString()
+              }
+            : rate
+        ));
         toast.success('Commission rate updated successfully');
         setIsEditModalOpen(false);
       } else {
-        // Create
-        await adminCommissionRatesAPI.createCommissionRate(formData);
+        // Create new rate (mock)
+        const newRate: CommissionRate = {
+          _id: `rate-${Date.now()}`,
+          ...formData,
+          isActive: true,
+          createdBy: {
+            firstName: 'Admin',
+            lastName: 'User',
+            email: 'admin@epilux.com'
+          },
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        setCommissionRates(prev => [...prev, newRate]);
         toast.success('Commission rate created successfully');
         setIsCreateModalOpen(false);
       }
       setSelectedRate(null);
       resetForm();
-      fetchCommissionRates();
     } catch (error) {
       console.error('Error saving commission rate:', error);
       toast.error('Failed to save commission rate');
     }
   };
 
-  // Handle toggle status
+  // Handle toggle status (mock implementation)
   const handleToggleStatus = async (rate: CommissionRate) => {
     try {
-      await adminCommissionRatesAPI.toggleCommissionRateStatus(rate._id);
+      setCommissionRates(prev => prev.map(r =>
+        r._id === rate._id
+          ? { ...r, isActive: !r.isActive, updatedAt: new Date().toISOString() }
+          : r
+      ));
       toast.success(`Commission rate ${rate.isActive ? 'disabled' : 'enabled'} successfully`);
-      fetchCommissionRates();
     } catch (error) {
       console.error('Error toggling commission rate status:', error);
       toast.error('Failed to toggle commission rate status');
     }
   };
 
-  // Handle delete
+  // Handle delete (mock implementation)
   const handleDelete = async (rate: CommissionRate) => {
     if (!confirm(`Are you sure you want to delete "${rate.name}"?`)) return;
 
     try {
-      await adminCommissionRatesAPI.deleteCommissionRate(rate._id);
+      setCommissionRates(prev => prev.filter(r => r._id !== rate._id));
       toast.success('Commission rate deleted successfully');
-      fetchCommissionRates();
     } catch (error) {
       console.error('Error deleting commission rate:', error);
       toast.error('Failed to delete commission rate');
@@ -230,7 +393,7 @@ export default function CommissionRatesPage() {
                   Add Commission Rate
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-md animate-scaleIn">
+              <DialogContent className="sm:max-w-md animate-scaleIn z-1000 sm:rounded-lg">
                 <DialogHeader>
                   <DialogTitle className="flex items-center gap-2">
                     <Percent className="w-5 h-5 text-blue-600" />

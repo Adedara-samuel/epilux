@@ -6,13 +6,16 @@ import Link from "next/link";
 import React from 'react';
 
 const ProductCategories: React.FC = () => {
-    const featuredProducts: Product[] = products.filter(p => ['sachet', 'bottled', 'dispenser'].includes(p.category)).slice(0, 3);
+    const featuredProducts: Product[] = products.filter(p => ['sachet', 'bottled', 'dispenser'].includes(p.category)).slice(0, 3).map(p => ({
+        ...p,
+        id: p.id || p._id || 'unknown'
+    })) as Product[];
 
     return (
-        <section className="container mx-auto px-6 py-16 bg-white rounded-lg shadow-lg -mt-8 relative z-20">
+        <section className="container mx-auto px-6 py-16 bg-blue-50 rounded-lg shadow-lg -mt-8 relative z-20">
             <div className="text-center mb-14">
                 <h2 className="text-4xl font-bold text-blue-700 mb-4 tracking-tight">Discover Our Premium Products</h2>
-                <p className="text-lg text-gray-600 max-w-3xl mx-auto leading-relaxed">
+                <p className="text-lg text-blue-600 max-w-3xl mx-auto leading-relaxed">
                     Explore our range of high-quality drinking water, meticulously purified for your health and refreshment.
                 </p>
             </div>

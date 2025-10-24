@@ -105,9 +105,32 @@ export const useSearchProducts = (query: string) => {
 
 // Hook for getting products by category
 export const useProductsByCategory = (category: string) => {
-  return useQuery({
-    queryKey: ['products', 'category', category],
-    queryFn: () => productsAPI.getProductsByCategory(category),
-    enabled: !!category,
-  });
+  return useQuery({
+    queryKey: ['products', 'category', category],
+    queryFn: () => productsAPI.getProductsByCategory(category),
+    enabled: !!category,
+  });
+};
+
+// Hook for getting product reviews
+export const useProductReviews = (productId: string) => {
+  return useQuery({
+    queryKey: ['product', 'reviews', productId],
+    queryFn: () => productsAPI.getProductReviews(productId),
+    enabled: !!productId,
+  });
+};
+
+// Hook for adding product review
+export const useAddProductReview = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ productId, reviewData }: { productId: string; reviewData: Parameters<typeof productsAPI.addProductReview>[1] }) =>
+      productsAPI.addProductReview(productId, reviewData),
+    onSuccess: (_, { productId }) => {
+      queryClient.invalidateQueries({ queryKey: ['product', 'reviews', productId] });
+      queryClient.invalidateQueries({ queryKey: ['product', productId] });
+    },
+  });
 };

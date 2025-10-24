@@ -169,35 +169,18 @@ function ProductsPage() {
         search: searchQuery || undefined,
     });
 
-    const products = productsData?.data || [];
+    // Ensure products have the required 'id' field for cart operations
+    const products = (productsData?.products || []).map((product: any) => ({
+        ...product,
+        id: product.id || product._id, // Use _id as fallback if id is missing
+    }));
 
     // Get categories for filters
     const { data: categoriesData } = useCategories();
 
     const categories = categoriesData?.categories || [];
 
-    // If user is not logged in, show login prompt
-    if (!user) {
-        return (
-            <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-                <div className="text-center max-w-md mx-auto p-8">
-                    <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <span className="text-4xl">🔒</span>
-                    </div>
-                    <h2 className="text-2xl font-bold text-gray-900 mb-4">Login Required</h2>
-                    <p className="text-gray-600 mb-6">
-                        Please log in to access our premium water products and start earning commissions through our affiliate program.
-                    </p>
-                    <Button
-                        onClick={() => router.push('/login')}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3"
-                    >
-                        Login to Continue
-                    </Button>
-                </div>
-            </div>
-        );
-    }
+    // No login redirect - let backend handle authentication
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -216,7 +199,7 @@ function ProductsPage() {
                                     <Droplets className="w-8 h-8 text-white" />
                                 </div>
                                 <h2 className="text-3xl font-bold text-gray-900 mb-2">Premium Water Collection</h2>
-                                <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                                <p className="text-lg text-blue-600 max-w-2xl mx-auto">
                                     Discover our complete range of high-quality water products, from convenient sachets to premium dispensers
                                 </p>
                                 <div className="flex items-center justify-center gap-4 mt-6">
@@ -224,10 +207,10 @@ function ProductsPage() {
                                         <Package2 className="w-4 h-4 text-blue-600" />
                                         <span className="font-semibold text-blue-800">{products.length} Products</span>
                                     </div>
-                                    {/* <div className="flex items-center gap-2 bg-white/60 backdrop-blur-sm px-4 py-2 rounded-xl border border-green-200">
+                                    <div className="flex items-center gap-2 bg-white/60 backdrop-blur-sm px-4 py-2 rounded-xl border border-green-200">
                                         <Truck className="w-4 h-4 text-green-600" />
                                         <span className="font-semibold text-green-800">Free Delivery</span>
-                                    </div> */}
+                                    </div>
                                     <div className="flex items-center gap-2 bg-white/60 backdrop-blur-sm px-4 py-2 rounded-xl border border-purple-200">
                                         <Shield className="w-4 h-4 text-purple-600" />
                                         <span className="font-semibold text-purple-800">Quality Guaranteed</span>
@@ -283,7 +266,7 @@ function ProductsPage() {
                             <div className="text-center mt-8">
                                 <p className="text-gray-600 mb-4">Ready to start earning commissions?</p>
                                 <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                                    <Button className="cursor-pointer bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-8 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300">
+                                    <Button className="cursor-pointer bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-8 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300" onClick={() => document.getElementById('products-section')?.scrollIntoView({ behavior: 'smooth' })}>
                                         <ShoppingBag className="w-4 h-4 mr-2" />
                                         Browse All Products
                                     </Button>
@@ -323,11 +306,11 @@ function ProductsPage() {
                         </div>
 
                         {/* Products Grid */}
-                        <div className="space-y-4">
+                        <div id="products-section" className="space-y-4">
                             {isLoading ? (
                                 <div className="flex items-center justify-center py-16">
                                     <div className="text-center">
-                                        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-500 mx-auto mb-4"></div>
+                                        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
                                         <p className="text-lg text-gray-700">Loading products...</p>
                                     </div>
                                 </div>
@@ -357,7 +340,7 @@ function ProductsPage() {
                                     </p>
                                     <Button
                                         onClick={() => handleCategoryChange('all')}
-                                        className="bg-orange-500 hover:bg-orange-600 cursor-pointer"
+                                        className="bg-blue-600 hover:bg-blue-700 cursor-pointer border-blue-600"
                                     >
                                         View All Products
                                     </Button>

@@ -1,7 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 // components/products/product-card.tsx
 'use client';
-import { ShoppingCart, Plus, Minus, Eye, Star, Info } from 'lucide-react';
+import { ShoppingCart, Plus, Minus, Eye, Star, Info, MessageSquare, ThumbsUp } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 import { Button } from '../ui/button';
@@ -9,6 +9,11 @@ import { Badge } from '../ui/badge';
 import { Card, CardContent } from '../ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
 import { Product } from '@/types/product';
+import { useProductReviews, useAddProductReview } from '@/hooks/useProducts';
+import { useAuth } from '@/hooks/useAuth';
+import { toast } from 'sonner';
+import { Textarea } from '../ui/textarea';
+import { Label } from '../ui/label';
 
 interface ProductCardProps {
     product: Product;
@@ -17,6 +22,20 @@ interface ProductCardProps {
 export default function ProductCard({ product }: ProductCardProps) {
     const [quantity, setQuantity] = useState(1);
     const [showDetails, setShowDetails] = useState(false);
+    const [showReviews, setShowReviews] = useState(false);
+    const [showReviewForm, setShowReviewForm] = useState(false);
+    const [reviewRating, setReviewRating] = useState(5);
+    const [reviewComment, setReviewComment] = useState('');
+    const [reviewTitle, setReviewTitle] = useState('');
+    const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+
+    const { user } = useAuth();
+    const productId = product.id || product._id || '';
+    const { data: reviewsData, isLoading: reviewsLoading } = useProductReviews(productId);
+    const addReviewMutation = useAddProductReview();
+
+    const reviews = reviewsData?.reviews || [];
+    const averageRating = reviewsData?.averageRating || 0;
 
     if (!product) {
         return <div className="bg-white rounded-lg shadow p-4">Product not available</div>;
@@ -43,15 +62,46 @@ export default function ProductCard({ product }: ProductCardProps) {
     };
 
     const getStockStatus = (stock: number) => {
-        if (stock > 50) return { text: 'In Stock', color: 'bg-green-100 text-green-800' };
-        if (stock > 10) return { text: 'Low Stock', color: 'bg-yellow-100 text-yellow-800' };
-        return { text: 'Limited', color: 'bg-red-100 text-red-800' };
+        if (stock === 0) return { text: 'Out of Stock', color: 'bg-gray-100 text-gray-800', available: false };
+        if (stock > 50) return { text: 'In Stock', color: 'bg-green-100 text-green-800', available: true };
+        if (stock > 10) return { text: 'Low Stock', color: 'bg-yellow-100 text-yellow-800', available: true };
+        return { text: 'Limited', color: 'bg-red-100 text-red-800', available: true };
     };
 
     const stockStatus = getStockStatus(product.stock);
 
+    const handleSubmitReview = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!reviewComment.trim()) {
+            toast.error('Please enter a review comment');
+            return;
+        }
+
+        setIsSubmittingReview(true);
+        try {
+            await addReviewMutation.mutateAsync({
+                productId,
+                reviewData: {
+                    rating: reviewRating,
+                    comment: reviewComment,
+                    title: reviewTitle || undefined,
+                }
+            });
+
+            toast.success('Review added successfully!');
+            setReviewComment('');
+            setReviewTitle('');
+            setReviewRating(5);
+            setShowReviewForm(false);
+        } catch (error: any) {
+            toast.error(error?.response?.data?.message || 'Failed to add review');
+        } finally {
+            setIsSubmittingReview(false);
+        }
+    };
+
     return (
-        <Card className="group bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 border border-gray-200 hover:border-orange-200">
+        <Card className={`group bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 border border-gray-200 hover:border-blue-200 ${!stockStatus.available ? 'opacity-60 grayscale' : ''}`}>
             {/* Product Image */}
             <div className="relative">
                 <Link href={loginLinkHref}>
@@ -147,17 +197,17 @@ export default function ProductCard({ product }: ProductCardProps) {
                                             <div className="bg-gray-50 rounded-lg p-4">
                                                 <div className="flex items-center gap-3 mb-2">
                                                     <span className="text-2xl font-bold text-gray-900">
-                                                        ₦{product.price.toLocaleString()}
-                                                    </span>
+                                                                                ₦{(product.price || 0).toLocaleString()}
+                                                                            </span>
                                                     {product.originalPrice && (
                                                         <span className="text-lg text-gray-500 line-through">
-                                                            ₦{product.originalPrice.toLocaleString()}
-                                                        </span>
+                                                                    ₦{(product.originalPrice || 0).toLocaleString()}
+                                                                </span>
                                                     )}
                                                 </div>
                                                 <div className="flex items-center gap-2 text-sm text-green-600 font-medium">
                                                     <Star className="w-4 h-4" />
-                                                    Earn ₦{product.affiliateCommission.toLocaleString()} per sale
+                                                    Earn ₦{(product.affiliateCommission || 0).toLocaleString()} per sale
                                                 </div>
                                             </div>
 
@@ -186,8 +236,8 @@ export default function ProductCard({ product }: ProductCardProps) {
                                                         </Button>
                                                     </div>
                                                     <span className="text-sm text-gray-600">
-                                                        Total: ₦{(product.price * quantity).toLocaleString()}
-                                                    </span>
+                                                            Total: ₦{((product.price || 0) * quantity).toLocaleString()}
+                                                        </span>
                                                 </div>
                                             </div>
 
@@ -198,20 +248,106 @@ export default function ProductCard({ product }: ProductCardProps) {
                                                     Affiliate Commission
                                                 </div>
                                                 <p className="text-green-600 text-sm mt-1">
-                                                    You'll earn ₦{(product.affiliateCommission * quantity).toLocaleString()} when this sells
+                                                    You'll earn ₦{((product.affiliateCommission || 0) * quantity).toLocaleString()} when this sells
                                                 </p>
+                                            </div>
+
+                                            {/* Reviews Section */}
+                                            <div className="border-t border-gray-200 pt-4">
+                                                <div className="flex items-center justify-between mb-3">
+                                                    <div className="flex items-center gap-2">
+                                                        <MessageSquare className="w-4 h-4 text-blue-600" />
+                                                        <span className="text-sm font-medium text-gray-900">Reviews ({reviews.length})</span>
+                                                        {averageRating > 0 && (
+                                                            <div className="flex items-center gap-1">
+                                                                <Star className="w-4 h-4 text-yellow-400 fill-current" />
+                                                                <span className="text-sm font-medium text-gray-900">{averageRating.toFixed(1)}</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => setShowReviews(!showReviews)}
+                                                        className="text-xs border-blue-300 text-blue-600 hover:bg-blue-50"
+                                                    >
+                                                        {showReviews ? 'Hide' : 'View'} Reviews
+                                                    </Button>
+                                                </div>
+
+                                                {showReviews && (
+                                                    <div className="space-y-3">
+                                                        {reviewsLoading ? (
+                                                            <p className="text-sm text-gray-500">Loading reviews...</p>
+                                                        ) : reviews.length > 0 ? (
+                                                            <div className="space-y-3 max-h-40 overflow-y-auto">
+                                                                {reviews.slice(0, 3).map((review: any, index: number) => (
+                                                                    <div key={index} className="bg-gray-50 rounded-lg p-3">
+                                                                        <div className="flex items-center justify-between mb-2">
+                                                                            <div className="flex items-center gap-2">
+                                                                                <div className="flex">
+                                                                                    {[...Array(5)].map((_, i) => (
+                                                                                        <Star
+                                                                                            key={i}
+                                                                                            className={`w-3 h-3 ${i < review.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
+                                                                                        />
+                                                                                    ))}
+                                                                                </div>
+                                                                                <span className="text-xs text-gray-600">{review.user?.firstName || 'Anonymous'}</span>
+                                                                            </div>
+                                                                            <span className="text-xs text-gray-500">
+                                                                                {new Date(review.createdAt).toLocaleDateString()}
+                                                                            </span>
+                                                                        </div>
+                                                                        {review.title && (
+                                                                            <h5 className="text-sm font-medium text-gray-900 mb-1">{review.title}</h5>
+                                                                        )}
+                                                                        <p className="text-sm text-gray-700">{review.comment}</p>
+                                                                    </div>
+                                                                ))}
+                                                                {reviews.length > 3 && (
+                                                                    <p className="text-xs text-blue-600 text-center">+{reviews.length - 3} more reviews</p>
+                                                                )}
+                                                            </div>
+                                                        ) : (
+                                                            <p className="text-sm text-gray-500">No reviews yet. Be the first to review!</p>
+                                                        )}
+
+                                                        {/* Add Review Button */}
+                                                        {user && (
+                                                            <div className="border-t border-gray-200 pt-3">
+                                                                <Button
+                                                                    onClick={() => {
+                                                                        setShowReviews(false);
+                                                                        setShowReviewForm(true);
+                                                                    }}
+                                                                    className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm"
+                                                                >
+                                                                    Write a Review
+                                                                </Button>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
                                             </div>
 
                                             {/* Action Buttons */}
                                             <div className="space-y-2">
-                                                <Link href={`/login?redirect=/products/${product.id}?quantity=${quantity}`}>
-                                                    <Button className="w-full bg-orange-500 hover:bg-orange-600 text-white font-medium">
+                                                {stockStatus.available ? (
+                                                    <Link href={`/login?redirect=/products/${product.id}?quantity=${quantity}`}>
+                                                        <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium">
+                                                            <ShoppingCart className="w-4 h-4 mr-2" />
+                                                            Add to Cart
+                                                        </Button>
+                                                    </Link>
+                                                ) : (
+                                                    <Button className="w-full bg-gray-400 text-white font-medium cursor-not-allowed" disabled>
                                                         <ShoppingCart className="w-4 h-4 mr-2" />
-                                                        Add to Cart
+                                                        Out of Stock
                                                     </Button>
-                                                </Link>
+                                                )}
                                                 <Link href={loginLinkHref}>
-                                                    <Button variant="outline" className="w-full">
+                                                    <Button variant="outline" className="w-full border-blue-300 text-blue-600 hover:bg-blue-50">
                                                         <Eye className="w-4 h-4 mr-2" />
                                                         View Full Details
                                                     </Button>
@@ -219,6 +355,78 @@ export default function ProductCard({ product }: ProductCardProps) {
                                             </div>
                                         </div>
                                     </div>
+                                </DialogContent>
+                            </Dialog>
+
+                            {/* Review Form Dialog */}
+                            <Dialog open={showReviewForm} onOpenChange={setShowReviewForm}>
+                                <DialogContent className="max-w-md">
+                                    <DialogHeader>
+                                        <DialogTitle className="flex items-center gap-2">
+                                            <Star className="w-5 h-5 text-yellow-400" />
+                                            Write a Review
+                                        </DialogTitle>
+                                    </DialogHeader>
+                                    <form onSubmit={handleSubmitReview} className="space-y-4">
+                                        <div>
+                                            <Label className="text-sm font-medium">Rating</Label>
+                                            <div className="flex gap-1 mt-1">
+                                                {[1, 2, 3, 4, 5].map((star) => (
+                                                    <button
+                                                        key={star}
+                                                        type="button"
+                                                        onClick={() => setReviewRating(star)}
+                                                        className="focus:outline-none"
+                                                    >
+                                                        <Star
+                                                            className={`w-6 h-6 ${star <= reviewRating ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
+                                                        />
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <Label htmlFor="review-title" className="text-sm font-medium">Review Title (Optional)</Label>
+                                            <input
+                                                id="review-title"
+                                                type="text"
+                                                value={reviewTitle}
+                                                onChange={(e) => setReviewTitle(e.target.value)}
+                                                placeholder="Summarize your review"
+                                                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 mt-1"
+                                                maxLength={100}
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label htmlFor="review-comment" className="text-sm font-medium">Your Review</Label>
+                                            <Textarea
+                                                id="review-comment"
+                                                value={reviewComment}
+                                                onChange={(e) => setReviewComment(e.target.value)}
+                                                placeholder="Share your experience with this product..."
+                                                className="w-full text-sm border-gray-300 focus:ring-blue-500 focus:border-blue-500 mt-1"
+                                                rows={4}
+                                                required
+                                            />
+                                        </div>
+                                        <div className="flex gap-3 pt-4">
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                onClick={() => setShowReviewForm(false)}
+                                                className="flex-1"
+                                            >
+                                                Cancel
+                                            </Button>
+                                            <Button
+                                                type="submit"
+                                                disabled={isSubmittingReview || !reviewComment.trim()}
+                                                className="flex-1 bg-blue-600 hover:bg-blue-700"
+                                            >
+                                                {isSubmittingReview ? 'Submitting...' : 'Submit Review'}
+                                            </Button>
+                                        </div>
+                                    </form>
                                 </DialogContent>
                             </Dialog>
                         </div>
@@ -231,7 +439,7 @@ export default function ProductCard({ product }: ProductCardProps) {
                 <div className="space-y-3">
                     <div>
                         <Link href={loginLinkHref}>
-                            <h3 className="font-semibold text-gray-900 mb-1 line-clamp-2 hover:text-orange-600 transition-colors text-sm leading-tight">
+                            <h3 className="font-semibold text-gray-900 mb-1 line-clamp-2 hover:text-blue-600 transition-colors text-sm leading-tight">
                                 {product.name}
                             </h3>
                         </Link>
@@ -244,16 +452,16 @@ export default function ProductCard({ product }: ProductCardProps) {
                     {/* Price & Commission */}
                     <div className="space-y-2">
                         <div className="flex items-center gap-2">
-                            <span className="text-lg font-bold text-gray-900">₦{product.price.toLocaleString()}</span>
+                            <span className="text-lg font-bold text-gray-900">₦{(product.price || 0).toLocaleString()}</span>
                             {product.originalPrice && (
                                 <span className="text-sm text-gray-500 line-through">
-                                    ₦{product.originalPrice.toLocaleString()}
+                                    ₦{(product.originalPrice || 0).toLocaleString()}
                                 </span>
                             )}
                         </div>
                         <div className="flex items-center gap-1 text-xs text-green-600 font-medium">
                             <Star className="w-3 h-3" />
-                            ₦{product.affiliateCommission.toLocaleString()}/sale
+                            ₦{(product.affiliateCommission || 0).toLocaleString()}/sale
                         </div>
                     </div>
 
@@ -264,7 +472,7 @@ export default function ProductCard({ product }: ProductCardProps) {
                                 <Button
                                     variant="outline"
                                     size="sm"
-                                    className="flex-1 text-xs hover-lift"
+                                    className="flex-1 text-xs hover-lift border-blue-300 text-blue-600 hover:bg-blue-50"
                                     onClick={() => setShowDetails(true)}
                                 >
                                     <Eye className="w-3 h-3 mr-1" />
@@ -272,12 +480,19 @@ export default function ProductCard({ product }: ProductCardProps) {
                                 </Button>
                             </DialogTrigger>
                         </Dialog>
-                        <Link href={`/login?redirect=/products/${product.id}?quantity=${quantity}`} className="flex-1">
-                            <Button size="sm" className="w-full bg-orange-500 hover:bg-orange-600 text-white text-xs">
+                        {stockStatus.available ? (
+                            <Link href={`/login?redirect=/products/${product.id}?quantity=${quantity}`} className="flex-1">
+                                <Button size="sm" className="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs">
+                                    <ShoppingCart className="w-3 h-3 mr-1" />
+                                    Add
+                                </Button>
+                            </Link>
+                        ) : (
+                            <Button size="sm" className="w-full bg-gray-400 text-white text-xs cursor-not-allowed" disabled>
                                 <ShoppingCart className="w-3 h-3 mr-1" />
-                                Add
+                                Out
                             </Button>
-                        </Link>
+                        )}
                     </div>
                 </div>
             </CardContent>

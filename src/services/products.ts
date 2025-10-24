@@ -45,6 +45,22 @@ export const productsAPI = {
         const response = await api.get('/api/products/categories');
         return response.data;
     },
+
+    // Get product reviews
+    getProductReviews: async (productId: string) => {
+        const response = await api.get(`/api/products/${productId}/reviews`);
+        return response.data;
+    },
+
+    // Add product review
+    addProductReview: async (productId: string, reviewData: {
+        rating: number;
+        comment: string;
+        title?: string;
+    }) => {
+        const response = await api.post(`/api/products/${productId}/reviews`, reviewData);
+        return response.data;
+    },
 };
 
 // Admin Products API functions

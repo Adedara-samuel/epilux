@@ -53,11 +53,11 @@ const SubscriptionPlans: React.FC = () => {
     ];
 
     return (
-        <section className="bg-gray-50 py-16">
+        <section className="bg-blue-50 py-16">
             <div className="container mx-auto px-6">
                 <div className="text-center mb-14">
                     <h2 className="text-4xl font-bold text-blue-700 mb-4 tracking-tight">Flexible Water Subscription Plans</h2>
-                    <p className="text-lg text-gray-600 max-w-3xl mx-auto leading-relaxed">
+                    <p className="text-lg text-blue-600 max-w-3xl mx-auto leading-relaxed">
                         Choose a plan that fits your consumption and enjoy seamless, automated deliveries of premium Epilux Water.
                     </p>
                 </div>
@@ -96,24 +96,24 @@ const SubscriptionPlans: React.FC = () => {
                     <div className="flex flex-col md:flex-row justify-center items-stretch gap-8 text-gray-700">
                         <div className="flex flex-col items-center text-center p-6 bg-white rounded-xl shadow-md flex-1">
                             <div className="bg-blue-100 p-4 rounded-full mb-4">
-                                <Check className="text-blue-500 h-10 w-10" />
+                                <Check className="text-blue-600 h-10 w-10" />
                             </div>
-                            <h4 className="font-bold text-xl text-gray-800 mb-2">1. Choose Your Plan</h4>
-                            <p className="text-gray-600 leading-relaxed">Select from Basic, Standard, or Premium plans tailored to your water consumption needs.</p>
+                            <h4 className="font-bold text-xl text-blue-800 mb-2">1. Choose Your Plan</h4>
+                            <p className="text-blue-600 leading-relaxed">Select from Basic, Standard, or Premium plans tailored to your water consumption needs.</p>
                         </div>
                         <div className="flex flex-col items-center text-center p-6 bg-white rounded-xl shadow-md flex-1">
                             <div className="bg-blue-100 p-4 rounded-full mb-4">
-                                <Check className="text-blue-500 h-10 w-10" />
+                                <Check className="text-blue-600 h-10 w-10" />
                             </div>
-                            <h4 className="font-bold text-xl text-gray-800 mb-2">2. Set Delivery Schedule</h4>
-                            <p className="text-gray-600 leading-relaxed">Enjoy flexible delivery days that seamlessly integrate with your routine. Modify or pause anytime.</p>
+                            <h4 className="font-bold text-xl text-blue-800 mb-2">2. Set Delivery Schedule</h4>
+                            <p className="text-blue-600 leading-relaxed">Enjoy flexible delivery days that seamlessly integrate with your routine. Modify or pause anytime.</p>
                         </div>
                         <div className="flex flex-col items-center text-center p-6 bg-white rounded-xl shadow-md flex-1">
                             <div className="bg-blue-100 p-4 rounded-full mb-4">
-                                <Check className="text-blue-500 h-10 w-10" />
+                                <Check className="text-blue-600 h-10 w-10" />
                             </div>
-                            <h4 className="font-bold text-xl text-gray-800 mb-2">3. Automated Deliveries</h4>
-                            <p className="text-gray-600 leading-relaxed">Receive consistent, high-quality water delivered directly to your door, absolutely hassle-free.</p>
+                            <h4 className="font-bold text-xl text-blue-800 mb-2">3. Automated Deliveries</h4>
+                            <p className="text-blue-600 leading-relaxed">Receive consistent, high-quality water delivered directly to your door, absolutely hassle-free.</p>
                         </div>
                     </div>
                 </div>
@@ -145,16 +145,16 @@ const SubscriptionPlans: React.FC = () => {
                     <h3 className="text-3xl font-bold text-blue-700 text-center mb-10">Frequently Asked Questions</h3>
                     <div className="space-y-6 max-w-5xl mx-auto">
                         <div className="bg-white p-8 rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300">
-                            <h4 className="font-bold text-xl text-gray-800 mb-3">Can I change my plan later?</h4>
-                            <p className="text-gray-600 leading-relaxed">Absolutely! You can easily upgrade or downgrade your subscription plan at any time directly through your personalized account portal. We offer full flexibility to match your evolving needs.</p>
+                            <h4 className="font-bold text-xl text-blue-800 mb-3">Can I change my plan later?</h4>
+                            <p className="text-blue-600 leading-relaxed">Absolutely! You can easily upgrade or downgrade your subscription plan at any time directly through your personalized account portal. We offer full flexibility to match your evolving needs.</p>
                         </div>
                         <div className="bg-white p-8 rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300">
-                            <h4 className="font-bold text-xl text-gray-800 mb-3">How do I pause or cancel my subscription?</h4>
-                            <p className="text-gray-600 leading-relaxed">Managing your subscription is straightforward. You can pause or cancel your service directly from your user dashboard with just a few clicks. Our aim is to provide you with complete control.</p>
+                            <h4 className="font-bold text-xl text-blue-800 mb-3">How do I pause or cancel my subscription?</h4>
+                            <p className="text-blue-600 leading-relaxed">Managing your subscription is straightforward. You can pause or cancel your service directly from your user dashboard with just a few clicks. Our aim is to provide you with complete control.</p>
                         </div>
                         <div className="bg-white p-8 rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300">
-                            <h4 className="font-bold text-xl text-gray-800 mb-3">What if I need more water than my plan offers?</h4>
-                            <p className="text-gray-600 leading-relaxed">No problem at all! If your consumption temporarily exceeds your plan's allocation, you can always place an ad-hoc order for additional bags. For sustained higher demand, we recommend upgrading your plan for better value and convenience.</p>
+                            <h4 className="font-bold text-xl text-blue-800 mb-3">What if I need more water than my plan offers?</h4>
+                            <p className="text-blue-600 leading-relaxed">No problem at all! If your consumption temporarily exceeds your plan's allocation, you can always place an ad-hoc order for additional bags. For sustained higher demand, we recommend upgrading your plan for better value and convenience.</p>
                         </div>
                     </div>
                 </div>

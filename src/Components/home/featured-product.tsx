@@ -10,12 +10,15 @@ import { Product } from '@/types/product';
 
 const FeaturedProducts: React.FC = () => {
     const { data: productsData, isLoading } = useProducts();
-    const products = productsData?.products || [];
+    const products = productsData?.data || [];
 
     // Filter for featured products (you can adjust the criteria)
     const featuredProducts = products.filter((product: Product) =>
         product.category === 'bottled' || product.category === 'sachet'
-    ).slice(0, 3);
+    ).slice(0, 3).map((p: any) => ({
+        ...p,
+        id: p.id || p._id || 'unknown'
+    })) as Product[];
 
     if (isLoading) {
         return (
@@ -28,11 +31,11 @@ const FeaturedProducts: React.FC = () => {
     }
 
     return (
-        <section className="py-16 bg-gray-100">
+        <section className="py-16 bg-blue-50">
             <div className="container mx-auto px-6">
                 <div className="text-center mb-14">
                     <h2 className="text-4xl font-bold text-blue-700 mb-4 tracking-tight">Our Bestsellers</h2>
-                    <p className="text-lg text-gray-600 max-w-3xl mx-auto leading-relaxed">
+                    <p className="text-lg text-blue-600 max-w-3xl mx-auto leading-relaxed">
                         Discover what our customers love most. These are our top-rated and most purchased water products.
                     </p>
                 </div>
