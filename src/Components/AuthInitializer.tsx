@@ -9,17 +9,14 @@ export function AuthInitializer() {
 
   useEffect(() => {
     // Initialize auth on every page load to ensure proper state
-    initializeAuth();
+    // Add a small delay to ensure cookies are available
+    const timer = setTimeout(() => {
+      initializeAuth();
+    }, 100);
+
+    return () => clearTimeout(timer);
   }, [initializeAuth]);
 
-  // Show loading state while authenticating
-  if (isAuthenticating) {
-    return (
-      <div className="fixed inset-0 bg-white bg-opacity-80 flex items-center justify-center z-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
-
+  // Don't show loading state - let components handle their own loading
   return null;
 }

@@ -26,12 +26,33 @@ export const api = axios.create({
 // Request interceptor to add auth token
 api.interceptors.request.use(
     (config) => {
-        const token = tokenManager.getToken(); // <-- Gets token from localStorage
+        // Get token from localStorage first (using 'auth_token' key), then try cookie as fallback
+        let token = tokenManager.getToken();
+
+        // If no token in localStorage, try to get from cookie
+        if (!token && typeof window !== 'undefined') {
+            const cookies = document.cookie.split(';');
+            const authCookie = cookies.find(cookie => cookie.trim().startsWith('authToken='));
+            if (authCookie) {
+                token = authCookie.split('=')[1];
+                // Store in localStorage for future requests using 'auth_token' key
+                if (token) {
+                    tokenManager.setToken(token);
+                }
+            }
+        }
+
         if (token && typeof window !== 'undefined') {
             config.headers.Authorization = `Bearer ${token}`;
             // Also set token as cookie for backend compatibility (7 days)
             document.cookie = `authToken=${token}; path=/; max-age=604800; samesite=strict${process.env.NODE_ENV === 'production' ? '; secure' : ''}`;
         }
+
+        // Debug: Log token usage
+        if (token) {
+            console.log('Using auth token for request:', config.url);
+        }
+
         return config;
     },
     (error) => {
@@ -59,14 +80,14 @@ api.interceptors.response.use(
 export const tokenManager = {
     setToken: (token: string) => {
         if (typeof window !== 'undefined') {
-            localStorage.setItem('authToken', token);
+            localStorage.setItem('auth_token', token);
             localStorage.setItem('tokenTimestamp', Date.now().toString());
         }
     },
 
     getToken: () => {
         if (typeof window !== 'undefined') {
-            return localStorage.getItem('authToken');
+            return localStorage.getItem('auth_token');
         }
         return null;
     },
@@ -100,7 +121,7 @@ export const tokenManager = {
     // Clear all auth data
     clearAuth: () => {
         if (typeof window !== 'undefined') {
-            localStorage.removeItem('authToken');
+            localStorage.removeItem('auth_token');
             localStorage.removeItem('user');
             localStorage.removeItem('tokenTimestamp');
             // Clear the auth cookie

@@ -49,7 +49,16 @@ export default function AddProductPage() {
     const onSubmit = async (data: ProductFormData) => {
         setIsSubmitting(true);
         try {
-            await createProduct.mutateAsync(data);
+            // Generate a unique SKU for the product
+            const uniqueSku = `SKU_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+            // Add the SKU to the data
+            const productData = {
+                ...data,
+                sku: uniqueSku
+            };
+
+            await createProduct.mutateAsync(productData);
             toast.success('Product created successfully');
             router.push('/admin/products');
         } catch (error) {

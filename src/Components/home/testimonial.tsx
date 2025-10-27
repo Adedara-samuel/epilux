@@ -37,33 +37,33 @@ const Testimonials: React.FC = () => {
     ];
 
     return (
-        <section className="py-16 bg-blue-700 text-white">
-            <div className="container mx-auto px-6">
-                <div className="text-center mb-14">
-                    <h2 className="text-4xl font-bold mb-4 tracking-tight">What Our Valued Customers Say</h2>
-                    <p className="text-lg opacity-90 max-w-3xl mx-auto leading-relaxed">
+        <section className="py-12 md:py-16 bg-blue-700 text-white">
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="text-center mb-8 md:mb-14">
+                    <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 tracking-tight">What Our Valued Customers Say</h2>
+                    <p className="text-base sm:text-lg opacity-90 max-w-3xl mx-auto leading-relaxed px-4">
                         Hear directly from the households and businesses who trust Epilux Water for their daily hydration needs.
                     </p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-10">
                     {testimonials.map((testimonial, index) => (
-                        <Card key={index} className="p-8 bg-white rounded-xl shadow-lg text-gray-800 flex flex-col justify-between">
+                        <Card key={index} className="p-6 sm:p-8 bg-white rounded-xl shadow-lg text-gray-800 flex flex-col justify-between hover:shadow-xl transition-shadow">
                             <div>
-                                <div className="flex items-center gap-4 mb-6">
-                                    <div className={`w-16 h-16 rounded-full bg-gradient-to-br ${testimonial.avatarColor} flex items-center justify-center text-white text-xl font-bold shadow-lg`}>
+                                <div className="flex items-center gap-3 md:gap-4 mb-4 md:mb-6">
+                                    <div className={`w-12 h-12 md:w-16 md:h-16 rounded-full bg-gradient-to-br ${testimonial.avatarColor} flex items-center justify-center text-white text-lg md:text-xl font-bold shadow-lg`}>
                                         {testimonial.name.split(' ').map(n => n[0]).join('')}
                                     </div>
                                     <div>
-                                        <h4 className="font-bold text-blue-600 text-xl">{testimonial.name}</h4>
+                                        <h4 className="font-bold text-blue-600 text-lg md:text-xl">{testimonial.name}</h4>
                                         <p className="text-sm text-gray-500">{testimonial.role}</p>
                                     </div>
                                 </div>
-                                <div className="flex mb-4">
+                                <div className="flex mb-3 md:mb-4">
                                     {[...Array(5)].map((_, i) => (
                                         <svg
                                             key={i}
-                                            className={`w-6 h-6 ${i < testimonial.rating ? 'text-yellow-400' : 'text-gray-300'}`}
+                                            className={`w-5 h-5 md:w-6 md:h-6 ${i < testimonial.rating ? 'text-yellow-400' : 'text-gray-300'}`}
                                             fill="currentColor"
                                             viewBox="0 0 20 20"
                                         >
@@ -71,7 +71,7 @@ const Testimonials: React.FC = () => {
                                         </svg>
                                     ))}
                                 </div>
-                                <p className="text-lg italic leading-relaxed">"{testimonial.content}"</p>
+                                <p className="text-base md:text-lg italic leading-relaxed">"{testimonial.content}"</p>
                             </div>
                         </Card>
                     ))}

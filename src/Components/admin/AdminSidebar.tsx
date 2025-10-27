@@ -33,11 +33,28 @@ interface AdminSidebarProps {
 
 export function AdminSidebar({ sidebarOpen, setSidebarOpen }: AdminSidebarProps) {
     const pathname = usePathname();
-    const { user, logout } = useAuth();
+    const { user, logout, token } = useAuth();
 
-    const handleLogout = () => {
-        logout();
-        window.location.href = '/admin-login';
+    const handleLogout = async () => {
+        try {
+            // Call the logout API to terminate the token on the server
+            if (token) {
+                await logout();
+            }
+        } catch (error) {
+            console.error('Logout API call failed:', error);
+        } finally {
+            // Clear local storage immediately regardless of API call success
+            if (typeof window !== 'undefined') {
+                localStorage.removeItem('auth_token');
+                localStorage.removeItem('user');
+                localStorage.removeItem('tokenTimestamp');
+                // Clear the auth cookie
+                document.cookie = 'authToken=; path=/; max-age=0; samesite=strict';
+            }
+            // Redirect to login
+            window.location.href = '/login';
+        }
     };
 
     return (
@@ -45,7 +62,7 @@ export function AdminSidebar({ sidebarOpen, setSidebarOpen }: AdminSidebarProps)
             {/* Mobile sidebar overlay */}
             {sidebarOpen && (
                 <div
-                    className="fixed inset-0 z-40 bg-gray-600 bg-opacity-75 lg:hidden"
+                    className="fixed inset-0 z-40 bg-gray-600 bg-opacity-75 lg:hidden cursor-pointer"
                     onClick={() => setSidebarOpen(false)}
                 />
             )}
@@ -58,12 +75,12 @@ export function AdminSidebar({ sidebarOpen, setSidebarOpen }: AdminSidebarProps)
                 <div className="flex flex-col h-full">
                     {/* Logo */}
                     <div className="flex items-center justify-center h-16 px-4 bg-blue-600 border-b border-blue-700">
-                        <Link href="/admin" className="flex items-center gap-2 cursor-pointer">
+                        <button onClick={() => window.location.href = '/admin/dashboard'} className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity">
                             <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
                                 <span className="text-blue-600 font-bold text-sm">E</span>
                             </div>
                             <span className="text-white font-bold text-lg">Admin Panel</span>
-                        </Link>
+                        </button>
                     </div>
 
                     {/* Navigation */}
@@ -74,13 +91,13 @@ export function AdminSidebar({ sidebarOpen, setSidebarOpen }: AdminSidebarProps)
                                 <Link
                                     key={item.name}
                                     href={item.href}
+                                    onClick={() => setSidebarOpen(false)}
                                     className={cn(
-                                        "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 group cursor-pointer",
+                                        "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 group cursor-pointer text-left",
                                         isActive
                                             ? "bg-blue-100 text-blue-700 shadow-sm"
                                             : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
                                     )}
-                                    onClick={() => setSidebarOpen(false)}
                                 >
                                     <item.icon className={cn(
                                         "w-5 h-5 transition-colors",
@@ -111,7 +128,8 @@ export function AdminSidebar({ sidebarOpen, setSidebarOpen }: AdminSidebarProps)
                             onClick={handleLogout}
                             variant="outline"
                             size="sm"
-                            className="w-full flex items-center gap-2 text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300 transition-colors"
+                            className="w-full flex items-center gap-2 text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300 transition-colors cursor-pointer"
+                            disabled={false}
                         >
                             <LogOut className="w-4 h-4" />
                             Logout

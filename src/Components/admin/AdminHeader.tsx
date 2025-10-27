@@ -26,7 +26,7 @@ interface AdminHeaderProps {
 }
 
 export function AdminHeader({ setSidebarOpen }: AdminHeaderProps) {
-    const { user, logout } = useAuth();
+    const { user, logout, token } = useAuth();
     const pathname = usePathname();
     const router = useRouter();
 
@@ -54,9 +54,26 @@ export function AdminHeader({ setSidebarOpen }: AdminHeaderProps) {
         setProfileOpen(false); // Close other dialog
     };
 
-    const handleLogout = () => {
-        logout();
-        router.push('/login');
+    const handleLogout = async () => {
+        try {
+            // Call the logout API to terminate the token on the server
+            if (token) {
+                await logout();
+            }
+        } catch (error) {
+            console.error('Logout API call failed:', error);
+        } finally {
+            // Clear local storage immediately regardless of API call success
+            if (typeof window !== 'undefined') {
+                localStorage.removeItem('auth_token');
+                localStorage.removeItem('user');
+                localStorage.removeItem('tokenTimestamp');
+                // Clear the auth cookie
+                document.cookie = 'authToken=; path=/; max-age=0; samesite=strict';
+            }
+            // Redirect to login
+            window.location.href = '/login';
+        }
     };
 
     const formatTimestamp = (timestamp: string) => {
@@ -83,7 +100,7 @@ export function AdminHeader({ setSidebarOpen }: AdminHeaderProps) {
                         <Button
                             variant="ghost"
                             size="icon"
-                            className="lg:hidden cursor-pointer"
+                            className="lg:hidden cursor-pointer hover:bg-gray-100"
                             onClick={() => setSidebarOpen(true)}
                         >
                             <Menu className="w-5 h-5" />
@@ -113,7 +130,7 @@ export function AdminHeader({ setSidebarOpen }: AdminHeaderProps) {
                         <Button
                             variant="ghost"
                             size="icon"
-                            className="md:hidden cursor-pointer"
+                            className="md:hidden cursor-pointer hover:bg-gray-100"
                         >
                             <Search className="w-5 h-5" />
                         </Button>
@@ -122,7 +139,7 @@ export function AdminHeader({ setSidebarOpen }: AdminHeaderProps) {
                         <Button
                             variant="ghost"
                             size="icon"
-                            className="relative cursor-pointer"
+                            className="relative cursor-pointer hover:bg-gray-100"
                             onClick={handleNotificationsClick}
                         >
                             <Bell className="w-5 h-5" />
@@ -130,13 +147,13 @@ export function AdminHeader({ setSidebarOpen }: AdminHeaderProps) {
                             {unreadCount > 0 && (
                                 <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full text-xs text-white flex items-center justify-center">
                                     {/* Use 99+ for very high counts */}
-                                    {unreadCount > 99 ? '99+' : unreadCount} 
+                                    {unreadCount > 99 ? '99+' : unreadCount}
                                 </span>
                             )}
                         </Button>
 
                         {/* User info */}
-                        <div className="hidden sm:flex items-center gap-3 cursor-pointer" onClick={handleProfileClick}>
+                        <div className="hidden sm:flex items-center gap-3 cursor-pointer hover:bg-gray-50 rounded-lg p-2 transition-colors" onClick={handleProfileClick}>
                             <div className="text-right">
                                 <div className="text-sm font-medium text-gray-900">
                                     {user?.firstName} {user?.lastName}
@@ -165,7 +182,7 @@ export function AdminHeader({ setSidebarOpen }: AdminHeaderProps) {
 
         {/* Profile Dialog - Remains the same */}
         {profileOpen && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md" onClick={() => setProfileOpen(false)}>
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md cursor-pointer" onClick={() => setProfileOpen(false)}>
                 <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4" onClick={(e) => e.stopPropagation()}>
                     <div className="p-6">
                         <div className="text-center mb-6">
@@ -183,7 +200,7 @@ export function AdminHeader({ setSidebarOpen }: AdminHeaderProps) {
 
                         <div className="space-y-3">
                             <Link href="/admin/settings" onClick={() => setProfileOpen(false)}>
-                                <div className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
+                                <div className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => setProfileOpen(false)}>
                                     <Settings className="w-5 h-5 text-gray-600" />
                                     <span className="text-gray-700">Settings</span>
                                     <ChevronRight className="w-4 h-4 text-gray-400 ml-auto" />
@@ -207,7 +224,7 @@ export function AdminHeader({ setSidebarOpen }: AdminHeaderProps) {
 
         {/* Notifications Dialog - DYNAMIC CONTENT */}
         {notificationsOpen && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md" onClick={() => setNotificationsOpen(false)}>
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md cursor-pointer" onClick={() => setNotificationsOpen(false)}>
                 <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
                     <div className="p-6">
                         <div className="flex items-center justify-between mb-6 sticky top-0 bg-white pb-3 border-b">
@@ -219,7 +236,7 @@ export function AdminHeader({ setSidebarOpen }: AdminHeaderProps) {
                             )}
                             <button
                                 onClick={() => setNotificationsOpen(false)}
-                                className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+                                className="p-1 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
                             >
                                 <X className="w-5 h-5" />
                             </button>

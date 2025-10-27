@@ -180,7 +180,22 @@ function ProductsPage() {
 
     const categories = categoriesData?.categories || [];
 
-    // No login redirect - let backend handle authentication
+    // Add null check for user.role to prevent "Cannot read properties of null" error
+    if (user && !user.role) {
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+                <div className="text-center max-w-md mx-auto p-8">
+                    <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <span className="text-4xl">⚠️</span>
+                    </div>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-4">Loading...</h2>
+                    <p className="text-gray-600 mb-6">
+                        Please wait while we load your account information.
+                    </p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -270,7 +285,7 @@ function ProductsPage() {
                                         <ShoppingBag className="w-4 h-4 mr-2" />
                                         Browse All Products
                                     </Button>
-                                    {user.role !== 'admin' && user.role !== 'marketer' && (
+                                    {user && user.role !== 'admin' && user.role !== 'marketer' && (
                                         <Button
                                             variant="outline"
                                             onClick={() => {

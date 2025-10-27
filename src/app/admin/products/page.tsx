@@ -112,11 +112,18 @@ export default function AdminProductsPage() {
   };
 
   const handleUpdateProduct = () => {
+    // Generate unique SKU if not present
+    const generateSKU = () => {
+      const timestamp = Date.now().toString(36);
+      const random = Math.random().toString(36).substring(2, 8);
+      return `SKU-${timestamp}-${random}`.toUpperCase();
+    };
+
     updateMutation.mutate(
       {
-        // FIX: Use selectedProduct._id to get the unique identifier, 
+        // FIX: Use selectedProduct._id to get the unique identifier,
         // and pass it as 'id' as the backend service expects.
-        id: selectedProduct._id, 
+        id: selectedProduct._id,
         data: {
           name: editForm.name,
           description: editForm.description,
@@ -124,7 +131,8 @@ export default function AdminProductsPage() {
           category: editForm.category,
           stock: parseInt(editForm.stock),
           image: editForm.image,
-        },
+          sku: selectedProduct.sku || generateSKU(), // Add unique SKU
+        } as any,
       },
       {
         onSuccess: () => {

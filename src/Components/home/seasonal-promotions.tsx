@@ -35,16 +35,16 @@ const SeasonalPromotions: React.FC = () => {
     ];
 
     return (
-        <section className="bg-blue-50 py-16">
-            <div className="container mx-auto px-6">
-                <div className="text-center mb-14">
-                    <h2 className="text-4xl font-bold text-blue-700 mb-4 tracking-tight">Exciting Seasonal Promotions</h2>
-                    <p className="text-lg text-blue-600 max-w-3xl mx-auto leading-relaxed">
+        <section className="bg-blue-50 py-12 md:py-16">
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="text-center mb-8 md:mb-14">
+                    <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-blue-700 mb-4 tracking-tight">Exciting Seasonal Promotions</h2>
+                    <p className="text-base sm:text-lg text-blue-600 max-w-3xl mx-auto leading-relaxed px-4">
                         Don't miss out on our special offers during high-demand periods and festive seasons!
                     </p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10">
                     {promotions.map((promo, index) => (
                         <div key={index} className="relative rounded-xl overflow-hidden shadow-lg transform hover:scale-105 transition-transform duration-300">
                             <div className="absolute inset-0 bg-black/70 z-10"></div>
@@ -55,16 +55,16 @@ const SeasonalPromotions: React.FC = () => {
                                 height={400}
                                 className="w-full h-full object-cover"
                             />
-                            <div className="absolute inset-0 z-20 flex flex-col justify-end p-8">
-                                <h3 className="text-3xl font-bold text-white mb-2">{promo.title}</h3>
-                                <p className="text-white text-lg mb-6 opacity-90">{promo.description}</p>
-                                <div className="flex justify-between items-center">
-                                    <Button asChild variant="outline" className="bg-white text-blue-700 hover:bg-gray-100 px-6 py-3 text-base rounded-full shadow-md">
+                            <div className="absolute inset-0 z-20 flex flex-col justify-end p-6 md:p-8">
+                                <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-2">{promo.title}</h3>
+                                <p className="text-white text-sm sm:text-base md:text-lg mb-4 md:mb-6 opacity-90">{promo.description}</p>
+                                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                                    <Button asChild variant="outline" className="bg-white text-blue-700 hover:bg-gray-100 px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base rounded-full shadow-md w-full sm:w-auto">
                                         <Link href={promo.redirectPath}>
                                             {promo.cta}
                                         </Link>
                                     </Button>
-                                    <span className="text-white text-sm opacity-80">Offer ends: {promo.endDate}</span>
+                                    <span className="text-white text-xs sm:text-sm opacity-80">Offer ends: {promo.endDate}</span>
                                 </div>
                             </div>
                         </div>

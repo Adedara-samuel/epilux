@@ -61,42 +61,6 @@ export default function AdminDashboard() {
    const router = useRouter();
    const [authLoading, setAuthLoading] = useState(true);
 
-   // Add global animations
-   useEffect(() => {
-       const styleSheet = document.createElement('style');
-       styleSheet.textContent = `
-         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-         @keyframes scaleIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-         @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-         @keyframes bounceIn { from { transform: scale(0.3); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-
-         .animate-fadeIn { animation: fadeIn 0.5s ease-out; }
-         .animate-scaleIn { animation: scaleIn 0.3s ease-out; }
-         .animate-slideUp { animation: slideUp 0.4s ease-out; }
-         .animate-bounceIn { animation: bounceIn 0.6s ease-out; }
-         .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
-
-         * { cursor: default; }
-         button, a, input, textarea, select { cursor: pointer; }
-
-         .scroll-smooth { scroll-behavior: smooth; }
-         .transition-all { transition: all 0.3s ease; }
-         .hover-lift { transition: transform 0.2s ease; }
-         .hover-lift:hover { transform: translateY(-2px); }
-         .hover-glow { transition: box-shadow 0.3s ease; }
-         .hover-glow:hover { box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); }
-       `;
-       document.head.appendChild(styleSheet);
-
-       // Add smooth scrolling to body
-       document.body.classList.add('scroll-smooth');
-
-       return () => {
-         document.head.removeChild(styleSheet);
-         document.body.classList.remove('scroll-smooth');
-       };
-   }, []);
 
   const {
     data: statsData,
@@ -249,30 +213,30 @@ export default function AdminDashboard() {
             <CardTitle className="text-lg">Quick Actions</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <Button asChild className="w-full justify-start" variant="outline">
-              <Link href="/admin/products">
+            <Link href="/admin/products">
+              <Button className="w-full justify-start" variant="outline">
                 <Package className="w-4 h-4 mr-2" />
                 Add New Product
-              </Link>
-            </Button>
-            <Button asChild className="w-full justify-start" variant="outline">
-              <Link href="/admin/orders">
+              </Button>
+            </Link>
+            <Link href="/admin/orders">
+              <Button className="w-full justify-start" variant="outline">
                 <ShoppingCart className="w-4 h-4 mr-2" />
                 View Orders
-              </Link>
-            </Button>
-            <Button asChild className="w-full justify-start" variant="outline">
-              <Link href="/admin/users">
+              </Button>
+            </Link>
+            <Link href="/admin/users">
+              <Button className="w-full justify-start" variant="outline">
                 <Users className="w-4 h-4 mr-2" />
                 Manage Users
-              </Link>
-            </Button>
-            <Button asChild className="w-full justify-start" variant="outline">
-              <Link href="/admin/analytics">
+              </Button>
+            </Link>
+            <Link href="/admin/analytics">
+              <Button className="w-full justify-start" variant="outline">
                 <TrendingUp className="w-4 h-4 mr-2" />
                 View Analytics
-              </Link>
-            </Button>
+              </Button>
+            </Link>
           </CardContent>
         </Card>
 

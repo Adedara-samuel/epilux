@@ -35,9 +35,9 @@ function LoginPage() {
         }
     }, []);
 
-    // Redirect if already logged in (after redirectTo is set and user data is available)
+    // Redirect based on user role after successful login
     useEffect(() => {
-        if (!authLoading && !isAuthenticating && user && redirectTo) {
+        if (!authLoading && !isAuthenticating && user) {
             if (!user.emailVerified) {
                 router.replace('/verify-email');
             } else {
@@ -49,11 +49,12 @@ function LoginPage() {
                 } else if (role === 'marketer') {
                     router.replace('/marketer');
                 } else {
-                    router.replace(redirectTo);
+                    // Default for regular users
+                    router.replace('/products');
                 }
             }
         }
-    }, [user, authLoading, isAuthenticating, router, redirectTo]);
+    }, [user, authLoading, isAuthenticating, router]);
 
     // Form validation
     const isFormValid = email && password && email.includes('@') && password.length >= 6;

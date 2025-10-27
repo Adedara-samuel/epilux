@@ -23,8 +23,22 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     initializeAuth: async () => {
         set({ isAuthenticating: true });
         try {
-            const token = tokenManager.getToken();
-            const storedUser = tokenManager.getUser();
+            // First try localStorage
+            let token = tokenManager.getToken();
+            let storedUser = tokenManager.getUser();
+
+            // If no token in localStorage, try cookies
+            if (!token && typeof window !== 'undefined') {
+                const cookies = document.cookie.split(';');
+                const authCookie = cookies.find(cookie => cookie.trim().startsWith('authToken='));
+                if (authCookie) {
+                    token = authCookie.split('=')[1];
+                    // Store in localStorage for future requests
+                    if (token) {
+                        tokenManager.setToken(token);
+                    }
+                }
+            }
 
             if (token && storedUser) {
                 // Just set the user from storage - let backend handle token validation
