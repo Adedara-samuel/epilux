@@ -11,7 +11,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useAffiliateProfile } from '@/hooks/useAffiliate';
 
 export default function Header() {
-    const { totalItems } = useCartStore();
+    const totalItems = useCartStore((s) => s.getTotalItems());
     const { user } = useAuth();
     const { data: profileData } = useAffiliateProfile();
     const profile = profileData?.profile;

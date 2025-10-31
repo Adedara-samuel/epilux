@@ -8,6 +8,12 @@ import {
     updateTicketStatus,
     assignTicket
 } from '../controllers/supportController.js';
+import {
+    getMessages,
+    sendMessage,
+    getMessage,
+    markMessageAsRead
+} from '../controllers/messageController.js';
 import upload from '../middleware/upload.js';
 
 const router = express.Router();
@@ -38,5 +44,11 @@ router.put('/tickets/:id/status', authorize(['admin', 'support']), updateTicketS
 
 // Assign ticket to support staff (admin only)
 router.put('/tickets/:id/assign', authorize(['admin']), assignTicket);
+
+// Direct Messages
+router.get('/messages', getMessages);
+router.post('/messages', sendMessage);
+router.get('/messages/:id', getMessage);
+router.put('/messages/:id/read', markMessageAsRead);
 
 export default router;

@@ -51,11 +51,15 @@ import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/Components/ui/button';
 import { useAffiliateProfile, useAffiliateReferrals } from '@/hooks/useAffiliate';
 
-export default function AffiliateReferrals() {
+interface AffiliateReferralsProps {
+  referralsData?: { referrals: any[]; total: number };
+}
+
+export default function AffiliateReferrals({ referralsData }: AffiliateReferralsProps) {
   const { data: profileData } = useAffiliateProfile();
-  const { data: referralsData } = useAffiliateReferrals();
-  const profile = profileData?.profile;
-  const referrals = referralsData?.referrals || [];
+  const { data: fetchedReferralsData } = useAffiliateReferrals();
+  const profile = profileData?.profile as any;
+  const referrals = (referralsData?.referrals ?? fetchedReferralsData?.referrals ?? []) as any[];
   const [copiedCode, setCopiedCode] = useState(false);
 
   // Inject custom styles
@@ -69,7 +73,11 @@ export default function AffiliateReferrals() {
   }, []);
 
   const copyReferralCode = async () => {
-    if (profile?.referralCode) {
+    if (profile?.affiliateInfo?.affiliateCode) {
+      await navigator.clipboard.writeText(profile.affiliateInfo.affiliateCode);
+      setCopiedCode(true);
+      setTimeout(() => setCopiedCode(false), 2000);
+    } else if (profile?.referralCode) {
       await navigator.clipboard.writeText(profile.referralCode);
       setCopiedCode(true);
       setTimeout(() => setCopiedCode(false), 2000);
@@ -109,10 +117,13 @@ export default function AffiliateReferrals() {
                     )}
                   </Button>
                 </div>
+                {profile?.referralLink && (
+                  <p className="mt-2 text-xs break-all text-purple-100/90">{profile.referralLink}</p>
+                )}
               </div>
               <Button
                 onClick={() => {
-                  const shareText = `Join Epilux Water and get premium products delivered! Use my referral code: ${profile?.referralCode} to get started.`;
+                  const shareText = `Join Epilux Water and get premium products delivered! Use my referral code: ${profile?.affiliateInfo?.affiliateCode || profile?.referralCode} to get started.`;
                   if (navigator.share) {
                     navigator.share({
                       title: 'Join Epilux Water',
@@ -144,7 +155,7 @@ export default function AffiliateReferrals() {
               </div>
               <div>
                 <p className="text-sm text-gray-600">Total Referrals</p>
-                <p className="text-2xl font-bold text-gray-900 animate-countUp">{referrals.length}</p>
+                <p className="text-2xl font-bold text-gray-900 animate-countUp">{profile?.totalReferrals ?? referrals.length}</p>
               </div>
             </div>
           </CardContent>
@@ -159,7 +170,7 @@ export default function AffiliateReferrals() {
               <div>
                 <p className="text-sm text-gray-600">Active Referrals</p>
                 <p className="text-2xl font-bold text-gray-900 animate-countUp">
-                  {referrals.filter(r => r.status === 'active').length}
+                  {profile?.activeReferrals ?? referrals.filter((r: any) => r.status === 'active').length}
                 </p>
               </div>
             </div>
@@ -175,7 +186,7 @@ export default function AffiliateReferrals() {
               <div>
                 <p className="text-sm text-gray-600">Total Commission</p>
                 <p className="text-2xl font-bold text-gray-900 animate-countUp">
-                  ₦{referrals.reduce((sum, r) => sum + r.commission, 0).toLocaleString()}
+                  ₦{(profile?.totalEarned ?? referrals.reduce((sum: number, r: any) => sum + r.commission, 0)).toLocaleString()}
                 </p>
               </div>
             </div>
@@ -194,7 +205,7 @@ export default function AffiliateReferrals() {
         <CardContent>
           {referrals.length > 0 ? (
             <div className="space-y-3">
-              {referrals.map((referral, index) => (
+              {referrals.map((referral: any, index: number) => (
                 <div key={referral.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-all animate-fadeInUp hover:scale-105 cursor-pointer" style={{ animationDelay: `${index * 100}ms` }}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">

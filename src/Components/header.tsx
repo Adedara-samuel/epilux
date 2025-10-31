@@ -11,7 +11,7 @@ import { useCartStore } from '@/stores/cart-store';
 
 const Header: React.FC = () => {
     const { user, logout } = useAuth();
-    const { totalItems } = useCartStore();
+    const totalItems = useCartStore((s) => s.getTotalItems());
     const [hoveredItem, setHoveredItem] = useState<string | null>(null);
 
     const handleLogout = () => {

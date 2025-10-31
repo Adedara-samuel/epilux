@@ -13,6 +13,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useAuth } from '@/hooks/useAuth';
 import { adminCommissionRatesAPI } from '@/services/admin';
 import { toast } from 'sonner';
+import { useAllCommissions, useUpdateCommissionStatus } from '@/hooks/useCommissions';
 
 interface CommissionRate {
   _id: string;
@@ -34,6 +35,8 @@ interface CommissionRate {
 export default function CommissionRatesPage() {
    const { user } = useAuth();
    const currentUser = user;
+  const { data: commissionsData, isLoading: commissionsLoading } = useAllCommissions();
+  const updateCommissionStatus = useUpdateCommissionStatus();
   const [commissionRates, setCommissionRates] = useState<CommissionRate[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -480,6 +483,44 @@ export default function CommissionRatesPage() {
       </div>
 
       <div className="container mx-auto px-6 py-8">
+        {/* Live Commissions Section */}
+        <Card className="bg-white/80 backdrop-blur-sm border border-gray-200 shadow-sm mb-8">
+          <CardHeader>
+            <CardTitle>Commissions</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {commissionsLoading ? (
+              <div className="py-6 text-sm text-gray-600">Loading commissions...</div>
+            ) : (commissionsData?.commissions?.length ? (
+              <div className="space-y-3">
+                {commissionsData.commissions.slice(0, 10).map((c: any) => (
+                  <div key={c._id} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div className="text-sm">
+                      <div className="font-semibold">₦{(c.amount || 0).toLocaleString()}</div>
+                      <div className="text-gray-600">{new Date(c.createdAt).toLocaleString()}</div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="capitalize">{c.status}</Badge>
+                      <Select onValueChange={(value) => updateCommissionStatus.mutate({ id: c._id, status: value })}>
+                        <SelectTrigger className="w-36">
+                          <SelectValue placeholder="Change status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="pending">Pending</SelectItem>
+                          <SelectItem value="available">Available</SelectItem>
+                          <SelectItem value="withdrawn">Withdrawn</SelectItem>
+                          <SelectItem value="rejected">Rejected</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="py-6 text-sm text-gray-600">No commissions found.</div>
+            ))}
+          </CardContent>
+        </Card>
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8 animate-fadeIn animation-delay-700">
           <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl hover-glow">

@@ -1,16 +1,8 @@
 // src/services/auth.ts
 
-// Use production backend URL
-const BASE_URL = 'https://epilux-backend.vercel.app';
-
-// For client-side requests, use relative URLs to leverage Next.js rewrites
+// Use relative URLs for all requests to leverage Next.js rewrites
 const getBaseUrl = () => {
-  if (typeof window !== 'undefined') {
-    // Client-side: use relative URLs
-    return '';
-  }
-  // Server-side: use full URL
-  return BASE_URL;
+  return 'https://epilux-backend.vercel.app';
 };
 
 /**

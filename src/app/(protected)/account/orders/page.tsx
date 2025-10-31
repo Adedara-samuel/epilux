@@ -4,7 +4,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useMyOrders, useConfirmOrderReceipt, useRateProduct, useRateMarketer } from '@/hooks/useOrders';
+import { useMyOrders, useConfirmOrderReceipt, useRateProduct, useRateMarketer, useCancelOrder } from '@/hooks/useOrders';
 import { Loader2, Package, Calendar, DollarSign, ArrowLeft, ShoppingBag, Eye, Truck, CheckCircle, Star, User, MessageSquare } from 'lucide-react';
 import { Card } from '@/Components/ui/card';
 import { Button } from '@/Components/ui/button';
@@ -24,6 +24,7 @@ export default function MyOrdersPage() {
     const confirmReceiptMutation = useConfirmOrderReceipt();
     const rateProductMutation = useRateProduct();
     const rateMarketerMutation = useRateMarketer();
+    const cancelOrderMutation = useCancelOrder();
 
     // Add global animations
     useEffect(() => {
@@ -92,7 +93,15 @@ export default function MyOrdersPage() {
     const orders = ordersData?.orders || [];
 
     const handleConfirmReceipt = (orderId: string) => {
+        // PUT /api/orders/:id - Update order status (confirm receipt)
         confirmReceiptMutation.mutate(orderId);
+    };
+
+    const handleCancelOrder = (orderId: string) => {
+        if (window.confirm('Are you sure you want to cancel this order?')) {
+            // DELETE /api/orders/:id - Cancel order
+            cancelOrderMutation.mutate(orderId);
+        }
     };
 
     const handleRateProduct = (orderId: string, productId: string) => {
@@ -107,120 +116,13 @@ export default function MyOrdersPage() {
         setReview('');
     };
 
-    // Mock data for presentation - will be replaced with real data when available
-    const mockTrackableOrders: Order[] = [
-        {
-            id: 'ORD-001',
-            createdAt: '2024-10-20T10:30:00Z',
-            total: 25000,
-            status: 'delivered',
-            deliveryConfirmed: true,
-            deliveryConfirmedAt: '2024-10-22T14:20:00Z',
-            marketerId: 'marketer-123',
-            items: [
-                {
-                    productId: {
-                        id: 'prod-1',
-                        _id: 'prod-1',
-                        name: 'Premium Bottled Water (1.5L)',
-                        image: '/images/bottled-water.jpg',
-                        price: 500,
-                        description: 'Pure, refreshing bottled water',
-                        category: 'bottled',
-                        stock: 100,
-                        affiliateCommission: 25
-                    },
-                    quantity: 2
-                },
-                {
-                    productId: {
-                        id: 'prod-2',
-                        _id: 'prod-2',
-                        name: 'Sachet Water Pack (20pcs)',
-                        image: '/images/sachet-water.jpg',
-                        price: 2000,
-                        description: 'Convenient sachet water pack',
-                        category: 'sachet',
-                        stock: 50,
-                        affiliateCommission: 100
-                    },
-                    quantity: 1
-                }
-            ],
-            productRatings: [
-                {
-                    productId: 'prod-1',
-                    rating: 5,
-                    review: 'Excellent quality water, very refreshing!',
-                    createdAt: '2024-10-22T15:00:00Z'
-                }
-            ],
-            marketerRating: {
-                rating: 4,
-                review: 'Great delivery service, arrived on time',
-                createdAt: '2024-10-22T15:30:00Z'
-            }
-        },
-        {
-            id: 'ORD-002',
-            createdAt: '2024-10-18T09:15:00Z',
-            total: 15000,
-            status: 'shipped',
-            deliveryConfirmed: false,
-            marketerId: 'marketer-456',
-            items: [
-                {
-                    productId: {
-                        id: 'prod-3',
-                        _id: 'prod-3',
-                        name: 'Water Dispenser (Hot & Cold)',
-                        image: '/images/dispenser.jpg',
-                        price: 15000,
-                        description: 'Professional water dispenser',
-                        category: 'dispenser',
-                        stock: 25,
-                        affiliateCommission: 750
-                    },
-                    quantity: 1
-                }
-            ],
-            productRatings: [],
-            marketerRating: undefined
-        },
-        {
-            id: 'ORD-003',
-            createdAt: '2024-10-15T16:45:00Z',
-            total: 8500,
-            status: 'delivered',
-            deliveryConfirmed: false,
-            marketerId: 'marketer-789',
-            items: [
-                {
-                    productId: {
-                        id: 'prod-4',
-                        _id: 'prod-4',
-                        name: 'Bulk Water Bottles (19L x 2)',
-                        image: '/images/bulk-water.jpg',
-                        price: 4200,
-                        description: 'Large refillable bottles',
-                        category: 'bulk',
-                        stock: 40,
-                        affiliateCommission: 210
-                    },
-                    quantity: 2
-                }
-            ],
-            productRatings: [],
-            marketerRating: undefined
-        }
-    ];
-
-    const trackableOrders = orders.length > 0 ? orders.filter((order: Order) => order.status.toLowerCase() === 'delivered' || order.status.toLowerCase() === 'shipped') : mockTrackableOrders;
+    const trackableOrders = orders.filter((order: Order) => order.status.toLowerCase() === 'delivered' || order.status.toLowerCase() === 'shipped');
 
     const submitRating = () => {
         if (!ratingModal) return;
 
         if (ratingModal.type === 'product') {
+            // POST /api/orders/:orderId/products/:productId/rate - Rate a product from an order
             rateProductMutation.mutate({
                 orderId: ratingModal.orderId,
                 productId: ratingModal.productId!,
@@ -228,6 +130,7 @@ export default function MyOrdersPage() {
                 review
             });
         } else {
+            // Rate marketer (assuming this is handled via order rating)
             rateMarketerMutation.mutate({
                 orderId: ratingModal.orderId,
                 rating,
@@ -474,6 +377,17 @@ export default function MyOrdersPage() {
                                                 <Button variant="outline" size="sm" className="cursor-pointer">
                                                     Track Order
                                                 </Button>
+                                                {order.status.toLowerCase() === 'pending' && (
+                                                    <Button
+                                                        variant="destructive"
+                                                        size="sm"
+                                                        onClick={() => handleCancelOrder(order.id)}
+                                                        disabled={cancelOrderMutation.isPending}
+                                                        className="cursor-pointer"
+                                                    >
+                                                        {cancelOrderMutation.isPending ? 'Cancelling...' : 'Cancel Order'}
+                                                    </Button>
+                                                )}
                                             </div>
                                             {order.status.toLowerCase() === 'delivered' && (
                                                 <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white cursor-pointer">

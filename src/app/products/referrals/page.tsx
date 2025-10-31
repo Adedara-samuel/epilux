@@ -4,10 +4,16 @@ import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import AffiliateReferrals from '@/Components/affiliate/AffiliateReferrals';
+import { useAffiliateReferrals } from '@/hooks/useAffiliate';
 
 export default function ReferralsPage() {
   const { user } = useAuth();
   const router = useRouter();
+  // Fetch API data via hooks
+  const referrals = useAffiliateReferrals();
+
+  console.log('Referrals data:', referrals.data);
+  console.log('Referrals error:', referrals.error);
 
   // Add global animations
   useEffect(() => {
@@ -51,7 +57,6 @@ export default function ReferralsPage() {
   }, []);
 
   if (!user) {
-    router.push('/login');
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-indigo-50">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
@@ -76,25 +81,29 @@ export default function ReferralsPage() {
     );
   }
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-      {/* Header */}
-      <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-40">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent animate-bounceIn">
-                My Referrals
-              </h1>
-              <p className="text-gray-600 mt-1 animate-fadeIn animation-delay-300">Track and manage your referral network</p>
-            </div>
+  // Check if user has access to referrals (affiliate or user role)
+  if (user.role !== 'affiliate' && user.role !== 'user') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+        <div className="text-center max-w-md mx-auto p-8">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <span className="text-4xl">🚫</span>
           </div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h2>
+          <p className="text-gray-600 mb-6">
+            You don't have permission to access the referrals page.
+          </p>
         </div>
       </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
 
       <div className="container mx-auto px-6 py-8">
         <div className="animate-fadeIn animation-delay-600">
-          <AffiliateReferrals />
+          <AffiliateReferrals referralsData={referrals.data} />
         </div>
       </div>
     </div>

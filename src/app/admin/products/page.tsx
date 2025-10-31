@@ -19,7 +19,7 @@ import {
 import { Label } from '@/Components/ui/label';
 import { Textarea } from '@/Components/ui/textarea';
 import Link from 'next/link';
-import { useAdminProducts, useAdminProduct, useUpdateProduct, useDeleteProduct } from '@/hooks/useProducts';
+import { useAdminProducts, useAdminProduct, useUpdateProduct, useDeleteProduct, useUploadProductImages } from '@/hooks/useProducts';
 import { useQueryClient } from '@tanstack/react-query';
 
 export default function AdminProductsPage() {
@@ -34,8 +34,10 @@ export default function AdminProductsPage() {
     price: '',
     category: '',
     stock: '',
-    image: '',
+    images: [] as { url: string; alt: string; isPrimary: boolean }[],
   });
+  const [newImages, setNewImages] = useState<File[]>([]);
+  const [isUploadingImages, setIsUploadingImages] = useState(false);
 
   // Add global animations
   useEffect(() => {
@@ -79,6 +81,7 @@ export default function AdminProductsPage() {
   const { data: productsData, isLoading } = useAdminProducts({ limit: 100 });
   const updateMutation = useUpdateProduct();
   const deleteMutation = useDeleteProduct();
+  const uploadImagesMutation = useUploadProductImages();
 
   // Deduplicate the products array based on 'id' or '_id' for unique keys.
   // Assuming the unique identifier for mapping is 'id' OR '_id' if 'id' is missing.
@@ -101,8 +104,9 @@ export default function AdminProductsPage() {
       price: product.price?.toString() || '',
       category: product.category || '',
       stock: product.stock?.toString() || '',
-      image: product.image || '',
+      images: product.images || [],
     });
+    setNewImages([]);
     setEditOpen(true);
   };
 
@@ -111,7 +115,7 @@ export default function AdminProductsPage() {
     setDeleteOpen(true);
   };
 
-  const handleUpdateProduct = () => {
+  const handleUpdateProduct = async () => {
     // Generate unique SKU if not present
     const generateSKU = () => {
       const timestamp = Date.now().toString(36);
@@ -119,6 +123,24 @@ export default function AdminProductsPage() {
       return `SKU-${timestamp}-${random}`.toUpperCase();
     };
 
+    // First upload new images if any
+    if (newImages.length > 0) {
+      setIsUploadingImages(true);
+      try {
+        await uploadImagesMutation.mutateAsync({
+          id: selectedProduct._id,
+          images: newImages,
+        });
+        setNewImages([]);
+      } catch (error) {
+        console.error('Failed to upload images:', error);
+        // Continue with product update even if image upload fails
+      } finally {
+        setIsUploadingImages(false);
+      }
+    }
+
+    // Then update product details
     updateMutation.mutate(
       {
         // FIX: Use selectedProduct._id to get the unique identifier,
@@ -129,8 +151,8 @@ export default function AdminProductsPage() {
           description: editForm.description,
           price: parseFloat(editForm.price),
           category: editForm.category,
-          stock: parseInt(editForm.stock),
-          image: editForm.image,
+          inventory: { quantity: parseInt(editForm.stock) },
+          images: editForm.images,
           sku: selectedProduct.sku || generateSKU(), // Add unique SKU
         } as any,
       },
@@ -368,18 +390,94 @@ export default function AdminProductsPage() {
                 />
               </div>
               <div>
-                <Label htmlFor="image">Image URL</Label>
-                <Input
-                  id="image"
-                  value={editForm.image}
-                  onChange={(e) => setEditForm({ ...editForm, image: e.target.value })}
-                />
+                <Label htmlFor="images">Images</Label>
+                <div className="space-y-4">
+                  {/* Existing Images */}
+                  {editForm.images.length > 0 && (
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Current Images</Label>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                        {editForm.images.map((image, index) => (
+                          <div key={index} className="relative group">
+                            <img
+                              src={image.url}
+                              alt={image.alt || `Image ${index + 1}`}
+                              className="w-full h-20 object-cover rounded border"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = '/images/placeholder.jpg';
+                              }}
+                            />
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="sm"
+                              className="absolute top-1 right-1 w-6 h-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={() => {
+                                const newImages = editForm.images.filter((_, i) => i !== index);
+                                setEditForm({ ...editForm, images: newImages });
+                              }}
+                            >
+                              ×
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Upload New Images */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Upload New Images</Label>
+                    <Input
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      onChange={(e) => {
+                        const files = Array.from(e.target.files || []);
+                        setNewImages(files);
+                      }}
+                      className="cursor-pointer"
+                    />
+                    {newImages.length > 0 && (
+                      <div className="flex items-center justify-between">
+                        <div className="text-sm text-gray-600">
+                          {newImages.length} image{newImages.length > 1 ? 's' : ''} selected for upload
+                        </div>
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={async () => {
+                            if (newImages.length === 0) return;
+                            setIsUploadingImages(true);
+                            try {
+                              await uploadImagesMutation.mutateAsync({
+                                id: selectedProduct._id,
+                                images: newImages,
+                              });
+                              setNewImages([]);
+                              // Refresh the product data to show new images
+                              queryClient.invalidateQueries({ queryKey: ['admin', 'products'] });
+                            } catch (error) {
+                              console.error('Failed to upload images:', error);
+                            } finally {
+                              setIsUploadingImages(false);
+                            }
+                          }}
+                          disabled={isUploadingImages}
+                          className="cursor-pointer"
+                        >
+                          {isUploadingImages ? 'Uploading...' : 'Upload Images'}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
             <div className="flex justify-end gap-2 mt-4">
               <Button variant="outline" onClick={() => setEditOpen(false)} className="cursor-pointer">Cancel</Button>
-              <Button onClick={handleUpdateProduct} disabled={updateMutation.isPending} className="cursor-pointer">
-                {updateMutation.isPending ? 'Updating...' : 'Update'}
+              <Button onClick={handleUpdateProduct} disabled={updateMutation.isPending || isUploadingImages} className="cursor-pointer">
+                {updateMutation.isPending || isUploadingImages ? 'Updating...' : 'Update Product'}
               </Button>
             </div>
           </div>

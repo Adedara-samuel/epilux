@@ -10,20 +10,23 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { Menu, Search, ShoppingCart, X } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 
 export default function Navbar() {
     const { user, logout } = useAuth();
-    const { cart, totalItems } = useCartStore();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [isScrolled, setIsScrolled] = useState(false);
     const router = useRouter();
     const mobileMenuRef = useRef<HTMLDivElement>(null);
     const userRole = user?.role || 'customer';
+
+    // Create a stable selector for cart state to prevent infinite re-renders
+    const cartSelector = useMemo(() => (state: any) => state.cart.reduce((total: number, item: any) => total + item.quantity, 0), []);
+    const totalItems = useCartStore(cartSelector);
 
     const categories = [
         { name: 'All Products', href: '/products' },

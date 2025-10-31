@@ -30,7 +30,34 @@ export const supportAPI = {
   replyToTicket: async (id: string, replyData: {
     message: string;
   }) => {
-    const response = await api.post(`/api/support/tickets/${id}/reply`, replyData);
+    const response = await api.post(`/api/support/tickets/${id}/messages`, replyData);
+    return response.data;
+  },
+
+  // Direct Messages
+  getMessages: async (params?: { page?: number; limit?: number; isRead?: boolean }) => {
+    const response = await api.get('/api/support/messages', { params });
+    return response.data;
+  },
+
+  sendMessage: async (messageData: {
+    recipient: string;
+    subject: string;
+    message: string;
+    priority?: string;
+    category?: string;
+  }) => {
+    const response = await api.post('/api/support/messages', messageData);
+    return response.data;
+  },
+
+  getMessage: async (id: string) => {
+    const response = await api.get(`/api/support/messages/${id}`);
+    return response.data;
+  },
+
+  markMessageAsRead: async (id: string) => {
+    const response = await api.put(`/api/support/messages/${id}/read`);
     return response.data;
   },
 };

@@ -9,11 +9,16 @@ import { Badge } from '../ui/badge';
 import { Card, CardContent } from '../ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
 import { Product } from '@/types/product';
+// Import the necessary hooks
 import { useProductReviews, useAddProductReview } from '@/hooks/useProducts';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { Textarea } from '../ui/textarea';
 import { Label } from '../ui/label';
+import { useCartStore } from '@/stores/cart-store';
+import { useAddToCart } from '@/hooks/useCart';
+
+// REMOVED: const API_BASE_URL = 'https://epilux-backend.vercel.app'; // No longer needed, as the service handles the base URL
 
 interface ProductCardProps {
     product: Product;
@@ -27,23 +32,30 @@ export default function ProductCard({ product }: ProductCardProps) {
     const [reviewRating, setReviewRating] = useState(5);
     const [reviewComment, setReviewComment] = useState('');
     const [reviewTitle, setReviewTitle] = useState('');
-    const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+    // REMOVED: const [isSubmittingReview, setIsSubmittingReview] = useState(false); // Handled by mutation hook
 
     const { user } = useAuth();
     const productId = product.id || product._id || '';
     const { data: reviewsData, isLoading: reviewsLoading } = useProductReviews(productId);
-    const addReviewMutation = useAddProductReview();
+    
+    // Initialize the mutation hook
+    const addReviewMutation = useAddProductReview(); 
+    
+    const addToCartStore = useCartStore((state) => state.addToCart);
+    const addToCartAPI = useAddToCart();
 
     const reviews = reviewsData?.reviews || [];
     const averageRating = reviewsData?.averageRating || 0;
+    
+    // Use the mutation hook's status for submission state
+    const isSubmittingReview = addReviewMutation.isPending;
 
     if (!product) {
         return <div className="bg-white rounded-lg shadow p-4">Product not available</div>;
     }
 
-    // Construct the redirect URL for the product detail page
-    const productDetailRedirectUrl = `/products/${product.id}`;
-    const loginLinkHref = `/login?redirect=${encodeURIComponent(productDetailRedirectUrl)}`;
+    // Construct the redirect URL for the products page
+    const loginLinkHref = user ? `/products` : `/login?redirect=${encodeURIComponent('/products')}`;
 
     const handleQuantityChange = (change: number) => {
         const newQuantity = Math.max(1, quantity + change);
@@ -71,33 +83,44 @@ export default function ProductCard({ product }: ProductCardProps) {
     const stockStatus = getStockStatus(product.stock);
 
     const handleSubmitReview = async (e: React.FormEvent) => {
+        console.log('handleSubmitReview called'); // Console log retained for debugging
         e.preventDefault();
+        
+        if (!user) {
+            toast.error('You must be logged in to submit a review.');
+            return;
+        }
+
         if (!reviewComment.trim()) {
             toast.error('Please enter a review comment');
             return;
         }
 
-        setIsSubmittingReview(true);
         try {
+            // FIX: Use the mutation hook to submit the review.
+            // This is the correct pattern to use React Query service functions.
             await addReviewMutation.mutateAsync({
-                productId,
+                productId: productId,
                 reviewData: {
                     rating: reviewRating,
                     comment: reviewComment,
                     title: reviewTitle || undefined,
-                }
+                },
             });
 
-            toast.success('Review added successfully!');
+            toast.success('Review added successfully! The review list will update shortly.');
+            // Reset form state on success
             setReviewComment('');
             setReviewTitle('');
             setReviewRating(5);
             setShowReviewForm(false);
+            
         } catch (error: any) {
-            toast.error(error?.response?.data?.message || 'Failed to add review');
-        } finally {
-            setIsSubmittingReview(false);
+            console.error('Review submission error:', error);
+            // Display error from server response or a fallback message
+            toast.error(error?.response?.data?.message || error?.message || 'Failed to add review');
         }
+        // Removed the finally block as isSubmittingReview is automatically managed by the hook
     };
 
     return (
@@ -107,7 +130,7 @@ export default function ProductCard({ product }: ProductCardProps) {
                 <Link href={loginLinkHref}>
                     <div className="aspect-square bg-gray-100 relative overflow-hidden">
                         <img
-                            src={product.image}
+                            src={product.images?.[0]?.url || product.image}
                             alt={product.name}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                             onError={(e) => {
@@ -153,7 +176,7 @@ export default function ProductCard({ product }: ProductCardProps) {
                                         <div className="space-y-4">
                                             <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
                                                 <img
-                                                    src={product.image}
+                                                    src={product.images?.[0]?.url || product.image}
                                                     alt={product.name}
                                                     className="w-full h-full object-cover"
                                                     onError={(e) => {
@@ -197,12 +220,12 @@ export default function ProductCard({ product }: ProductCardProps) {
                                             <div className="bg-gray-50 rounded-lg p-4">
                                                 <div className="flex items-center gap-3 mb-2">
                                                     <span className="text-2xl font-bold text-gray-900">
-                                                                                ₦{(product.price || 0).toLocaleString()}
-                                                                            </span>
+                                                        ₦{(product.price || 0).toLocaleString()}
+                                                    </span>
                                                     {product.originalPrice && (
                                                         <span className="text-lg text-gray-500 line-through">
-                                                                    ₦{(product.originalPrice || 0).toLocaleString()}
-                                                                </span>
+                                                            ₦{(product.originalPrice || 0).toLocaleString()}
+                                                        </span>
                                                     )}
                                                 </div>
                                                 <div className="flex items-center gap-2 text-sm text-green-600 font-medium">
@@ -236,8 +259,8 @@ export default function ProductCard({ product }: ProductCardProps) {
                                                         </Button>
                                                     </div>
                                                     <span className="text-sm text-gray-600">
-                                                            Total: ₦{((product.price || 0) * quantity).toLocaleString()}
-                                                        </span>
+                                                        Total: ₦{((product.price || 0) * quantity).toLocaleString()}
+                                                    </span>
                                                 </div>
                                             </div>
 
@@ -334,12 +357,29 @@ export default function ProductCard({ product }: ProductCardProps) {
                                             {/* Action Buttons */}
                                             <div className="space-y-2">
                                                 {stockStatus.available ? (
-                                                    <Link href={`/login?redirect=/products/${product.id}?quantity=${quantity}`}>
-                                                        <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium">
-                                                            <ShoppingCart className="w-4 h-4 mr-2" />
-                                                            Add to Cart
-                                                        </Button>
-                                                    </Link>
+                                                    <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium"
+                                                        onClick={async () => {
+                                                            try {
+                                                                // Add to local store for immediate UI feedback
+                                                                addToCartStore(product, quantity);
+
+                                                                // Always attempt API add as well
+                                                                await addToCartAPI.mutateAsync({
+                                                                    productId: productId,
+                                                                    quantity,
+                                                                    image: product.images?.[0]?.url || product.image || '',
+                                                                    name: product.name,
+                                                                    price: product.price
+                                                                });
+
+                                                                toast.success(`${quantity} ${product.name} added to cart!`);
+                                                            } catch (error: any) {
+                                                                toast.error(error?.response?.data?.message || 'Failed to add item to cart');
+                                                            }
+                                                        }}>
+                                                        <ShoppingCart className="w-4 h-4 mr-2" />
+                                                        Add to Cart
+                                                    </Button>
                                                 ) : (
                                                     <Button className="w-full bg-gray-400 text-white font-medium cursor-not-allowed" disabled>
                                                         <ShoppingCart className="w-4 h-4 mr-2" />
@@ -418,13 +458,14 @@ export default function ProductCard({ product }: ProductCardProps) {
                                             >
                                                 Cancel
                                             </Button>
-                                            <Button
+                                            <button
                                                 type="submit"
                                                 disabled={isSubmittingReview || !reviewComment.trim()}
-                                                className="flex-1 bg-blue-600 hover:bg-blue-700"
+                                                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+                                                // Removed the redundant console.log from onClick, relying on form onSubmit
                                             >
                                                 {isSubmittingReview ? 'Submitting...' : 'Submit Review'}
-                                            </Button>
+                                            </button>
                                         </div>
                                     </form>
                                 </DialogContent>
@@ -481,13 +522,30 @@ export default function ProductCard({ product }: ProductCardProps) {
                             </DialogTrigger>
                         </Dialog>
                         {stockStatus.available ? (
-                            <Link href={`/login?redirect=/products/${product.id}?quantity=${quantity}`} className="flex-1">
-                                <Button size="sm" className="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs">
-                                    <ShoppingCart className="w-3 h-3 mr-1" />
-                                    Add
-                                </Button>
-                            </Link>
-                        ) : (
+                             <Button size="sm" className="flex-1 w-full bg-blue-600 hover:bg-blue-700 text-white text-xs"
+                                 onClick={async () => {
+                                     try {
+                                         // Add to local store for immediate UI feedback
+                                         addToCartStore(product, quantity);
+
+                                         // Always attempt API add as well
+                                         await addToCartAPI.mutateAsync({
+                                             productId: productId,
+                                             quantity,
+                                             image: product.images?.[0]?.url || product.image || '',
+                                             name: product.name,
+                                             price: product.price
+                                         });
+
+                                         toast.success(`${quantity} ${product.name} added to cart!`);
+                                     } catch (error: any) {
+                                         toast.error(error?.response?.data?.message || 'Failed to add item to cart');
+                                     }
+                                 }}>
+                                 <ShoppingCart className="w-3 h-3 mr-1" />
+                                 Add
+                             </Button>
+                         ) : (
                             <Button size="sm" className="w-full bg-gray-400 text-white text-xs cursor-not-allowed" disabled>
                                 <ShoppingCart className="w-3 h-3 mr-1" />
                                 Out

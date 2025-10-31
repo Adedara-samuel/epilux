@@ -13,7 +13,9 @@ const nextConfig: NextConfig = {
     return [
       {
         source: '/api/:path*',
-        destination: 'https://epilux-backend.vercel.app/api/:path*',
+        destination: process.env.NODE_ENV === 'production'
+          ? 'https://epilux-backend.vercel.app/api/:path*'
+          : 'http://localhost:5000/api/:path*',
       },
     ];
   },

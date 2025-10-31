@@ -55,19 +55,19 @@ export default function FestivalBundlePage() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-red-50">
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-blue-50 to-blue-50">
             {/* Floating Elements */}
             <div className="fixed inset-0 overflow-hidden pointer-events-none">
-                <div className="absolute top-20 left-10 w-20 h-20 bg-yellow-200 rounded-full opacity-20 animate-bounce"></div>
-                <div className="absolute top-40 right-20 w-16 h-16 bg-orange-200 rounded-full opacity-30 animate-pulse"></div>
-                <div className="absolute bottom-40 left-20 w-24 h-24 bg-red-200 rounded-full opacity-20 animate-bounce"></div>
-                <div className="absolute bottom-20 right-10 w-18 h-18 bg-pink-200 rounded-full opacity-25 animate-pulse"></div>
+                <div className="absolute top-20 left-10 w-20 h-20 bg-blue-200 rounded-full opacity-20 animate-bounce"></div>
+                <div className="absolute top-40 right-20 w-16 h-16 bg-blue-300 rounded-full opacity-30 animate-pulse"></div>
+                <div className="absolute bottom-40 left-20 w-24 h-24 bg-blue-400 rounded-full opacity-20 animate-bounce"></div>
+                <div className="absolute bottom-20 right-10 w-18 h-18 bg-blue-500 rounded-full opacity-25 animate-pulse"></div>
             </div>
 
             {/* Hero Section */}
             <section className="relative py-24 overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br from-orange-400 via-red-500 to-pink-600 opacity-90"></div>
-                <div className="absolute inset-0 bg-gradient-to-br from-orange-400 to-red-500 opacity-20"></div>
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-400 via-blue-500 to-blue-600 opacity-90"></div>
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-400 to-blue-500 opacity-20"></div>
 
                 <div className="container mx-auto px-6 relative z-10">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
@@ -78,7 +78,7 @@ export default function FestivalBundlePage() {
                                     <Sparkles className="w-4 h-4 mr-2" />
                                     LIMITED TIME OFFER
                                 </Badge>
-                                <Badge className="bg-yellow-400 text-yellow-900 px-4 py-2 text-sm font-bold animate-pulse">
+                                <Badge className="bg-blue-400 text-blue-900 px-4 py-2 text-sm font-bold animate-pulse">
                                     🔥 HOT DEAL
                                 </Badge>
                             </div>
@@ -86,12 +86,12 @@ export default function FestivalBundlePage() {
                             <div className="space-y-6">
                                 <h1 className="text-6xl lg:text-7xl font-black text-white leading-none tracking-tight">
                                     Festival
-                                    <span className="block text-yellow-300">Hydration</span>
+                                    <span className="block text-blue-300">Hydration</span>
                                     <span className="block text-4xl lg:text-5xl font-bold text-white/90">Bundle</span>
                                 </h1>
 
                                 <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
-                                    <p className="text-2xl font-bold text-yellow-300 mb-2">
+                                    <p className="text-2xl font-bold text-blue-300 mb-2">
                                         {bundleDetails.subtitle}
                                     </p>
                                     <p className="text-white/90 text-lg leading-relaxed">
@@ -101,7 +101,7 @@ export default function FestivalBundlePage() {
                             </div>
 
                             {/* Pricing Section */}
-                            <div className="bg-white rounded-3xl p-8 shadow-2xl border-4 border-yellow-400">
+                            <div className="bg-white rounded-3xl p-8 shadow-2xl border-4 border-blue-400">
                                 <div className="text-center space-y-4">
                                     <div className="flex items-center justify-center gap-4">
                                         <span className="text-4xl font-bold text-gray-500 line-through">
@@ -132,12 +132,12 @@ export default function FestivalBundlePage() {
 
                             {/* CTA Buttons */}
                             <div className="flex flex-col sm:flex-row gap-4">
-                                <Button asChild size="lg" className="bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-black font-bold px-10 py-6 text-xl rounded-full shadow-2xl hover:shadow-yellow-500/25 transform hover:scale-105 transition-all duration-300 border-4 border-white">
+                                <Button asChild size="lg" className="bg-gradient-to-r from-blue-400 to-blue-500 hover:from-blue-500 hover:to-blue-600 text-white font-bold px-10 py-6 text-xl rounded-full shadow-2xl hover:shadow-blue-500/25 transform hover:scale-105 transition-all duration-300 border-4 border-white">
                                     <Link href="/login?redirect=/checkout?promo=festival-bundle">
                                         🎉 Order Now - Save {bundleDetails.savings}
                                     </Link>
                                 </Button>
-                                <Button asChild variant="outline" size="lg" className="border-2 border-white text-white hover:bg-white hover:text-orange-600 px-10 py-6 text-xl rounded-full backdrop-blur-sm bg-white/10 font-semibold">
+                                <Button asChild variant="outline" size="lg" className="border-2 border-white text-white hover:bg-white hover:text-blue-600 px-10 py-6 text-xl rounded-full backdrop-blur-sm bg-white/10 font-semibold">
                                     <Link href="/products">
                                         View All Products
                                     </Link>
@@ -147,7 +147,7 @@ export default function FestivalBundlePage() {
 
                         {/* Hero Image */}
                         <div className="relative">
-                            <div className="absolute -top-8 -left-8 bg-yellow-400 text-yellow-900 px-6 py-3 rounded-2xl font-black text-xl animate-bounce shadow-lg">
+                            <div className="absolute -top-8 -left-8 bg-blue-400 text-blue-900 px-6 py-3 rounded-2xl font-black text-xl animate-bounce shadow-lg">
                                 FREE BAG!
                             </div>
                             <div className="relative rounded-3xl overflow-hidden shadow-2xl border-8 border-white">
@@ -171,8 +171,8 @@ export default function FestivalBundlePage() {
                             </div>
 
                             {/* Decorative Elements */}
-                            <div className="absolute -bottom-4 -right-4 w-24 h-24 bg-yellow-400 rounded-full opacity-80 animate-pulse"></div>
-                            <div className="absolute -top-4 -right-4 w-16 h-16 bg-orange-400 rounded-full opacity-60 animate-bounce"></div>
+                            <div className="absolute -bottom-4 -right-4 w-24 h-24 bg-blue-400 rounded-full opacity-80 animate-pulse"></div>
+                            <div className="absolute -top-4 -right-4 w-16 h-16 bg-blue-500 rounded-full opacity-60 animate-bounce"></div>
                         </div>
                     </div>
                 </div>
@@ -180,13 +180,13 @@ export default function FestivalBundlePage() {
 
             {/* Features Section */}
             <section className="py-24 bg-white relative">
-                <div className="absolute top-0 left-0 w-full h-20 bg-gradient-to-b from-amber-50 to-white"></div>
+                <div className="absolute top-0 left-0 w-full h-20 bg-gradient-to-b from-blue-50 to-white"></div>
 
                 <div className="container mx-auto px-6 relative z-10">
                     <div className="text-center mb-20">
                         <h2 className="text-5xl font-black text-gray-900 mb-6">
                             What's Inside Your
-                            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-red-500">
+                            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-blue-600">
                                 Festival Bundle
                             </span>
                         </h2>
@@ -197,9 +197,9 @@ export default function FestivalBundlePage() {
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-20">
                         {/* Bundle Details */}
-                        <Card className="p-10 border-4 border-orange-200 hover:border-orange-400 transition-all duration-300 shadow-xl hover:shadow-orange-200/50 bg-gradient-to-br from-orange-50 to-white">
+                        <Card className="p-10 border-4 border-blue-200 hover:border-blue-400 transition-all duration-300 shadow-xl hover:shadow-blue-200/50 bg-gradient-to-br from-blue-50 to-white">
                             <div className="text-center mb-8">
-                                <div className="w-20 h-20 bg-gradient-to-br from-orange-400 to-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <div className="w-20 h-20 bg-gradient-to-br from-blue-400 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
                                     <Gift className="w-10 h-10 text-white" />
                                 </div>
                                 <h3 className="text-3xl font-bold text-gray-900 mb-2">Bundle Contents</h3>
@@ -240,7 +240,7 @@ export default function FestivalBundlePage() {
                     </div>
 
                     {/* Enhanced Pricing Breakdown */}
-                    <Card className="p-12 bg-gradient-to-r from-yellow-50 via-orange-50 to-red-50 border-4 border-yellow-300 shadow-2xl max-w-4xl mx-auto">
+                    <Card className="p-12 bg-gradient-to-r from-blue-50 via-blue-50 to-blue-50 border-4 border-blue-300 shadow-2xl max-w-4xl mx-auto">
                         <div className="text-center mb-10">
                             <h3 className="text-4xl font-black text-gray-900 mb-4">Festival Bundle Pricing</h3>
                             <p className="text-lg text-gray-600">See exactly what you're saving</p>
@@ -253,14 +253,14 @@ export default function FestivalBundlePage() {
                                 <p className="text-3xl font-bold text-gray-500 line-through">{bundleDetails.originalPrice}</p>
                                 <p className="text-sm text-gray-500">6 bags at regular price</p>
                             </div>
-
-                            <div className="text-center p-6 bg-gradient-to-br from-green-100 to-green-200 rounded-2xl border-4 border-green-400 shadow-lg transform scale-105">
+    
+                            <div className="text-center p-6 bg-gradient-to-br from-blue-100 to-blue-200 rounded-2xl border-4 border-blue-400 shadow-lg transform scale-105">
                                 <div className="text-6xl mb-2">🎉</div>
                                 <p className="text-gray-900 font-bold mb-2">Festival Bundle</p>
-                                <p className="text-4xl font-black text-green-600">{bundleDetails.bundlePrice}</p>
-                                <p className="text-sm text-green-700 font-semibold">Limited time offer!</p>
+                                <p className="text-4xl font-black text-blue-600">{bundleDetails.bundlePrice}</p>
+                                <p className="text-sm text-blue-700 font-semibold">Limited time offer!</p>
                             </div>
-
+    
                             <div className="text-center p-6 bg-white/50 rounded-2xl border-2 border-blue-200">
                                 <div className="text-6xl mb-2">💰</div>
                                 <p className="text-gray-600 font-medium mb-2">You Save</p>
@@ -299,15 +299,15 @@ export default function FestivalBundlePage() {
             </section>
 
             {/* Final CTA Section */}
-            <section className="py-24 bg-gradient-to-br from-orange-500 via-red-500 to-pink-600 relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br from-orange-400 to-red-500 opacity-20"></div>
+            <section className="py-24 bg-gradient-to-br from-blue-500 via-blue-500 to-blue-600 relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-400 to-blue-500 opacity-20"></div>
 
                 <div className="container mx-auto px-6 text-center relative z-10">
                     <div className="max-w-4xl mx-auto space-y-8">
                         <div className="space-y-4">
                             <h2 className="text-5xl lg:text-6xl font-black text-white leading-tight">
                                 Don't Miss Out on
-                                <span className="block text-yellow-300">Festival Savings!</span>
+                                <span className="block text-blue-300">Festival Savings!</span>
                             </h2>
                             <p className="text-xl text-white/90 max-w-2xl mx-auto leading-relaxed">
                                 This exclusive festival bundle won't last forever. Secure your hydration for all your celebrations today!
@@ -320,7 +320,7 @@ export default function FestivalBundlePage() {
                                 <Clock className="w-4 h-4 mr-2" />
                                 Limited Time Only
                             </Badge>
-                            <Badge className="bg-yellow-400 text-yellow-900 px-4 py-2 text-sm font-bold animate-pulse">
+                            <Badge className="bg-blue-400 text-blue-900 px-4 py-2 text-sm font-bold animate-pulse">
                                 🔥 While Supplies Last
                             </Badge>
                             <Badge className="bg-green-500 text-white px-4 py-2 text-sm">
@@ -329,13 +329,13 @@ export default function FestivalBundlePage() {
                         </div>
 
                         <div className="flex flex-col sm:flex-row gap-6 justify-center">
-                            <Button asChild size="lg" className="bg-white text-orange-600 hover:bg-gray-100 font-bold px-12 py-6 text-xl rounded-full shadow-2xl hover:shadow-white/25 transform hover:scale-105 transition-all duration-300 border-4 border-yellow-400">
+                            <Button asChild size="lg" className="bg-white text-blue-600 hover:bg-gray-100 font-bold px-12 py-6 text-xl rounded-full shadow-2xl hover:shadow-white/25 transform hover:scale-105 transition-all duration-300 border-4 border-blue-400">
                                 <Link href="/login?redirect=/checkout?promo=festival-bundle">
                                     <Heart className="w-6 h-6 mr-3" />
                                     Claim Festival Bundle Now
                                 </Link>
                             </Button>
-                            <Button asChild variant="outline" size="lg" className="border-2 border-white text-white hover:bg-white hover:text-orange-600 px-12 py-6 text-xl rounded-full backdrop-blur-sm bg-white/10 font-semibold">
+                            <Button asChild variant="outline" size="lg" className="border-2 border-white text-white hover:bg-white hover:text-blue-600 px-12 py-6 text-xl rounded-full backdrop-blur-sm bg-white/10 font-semibold">
                                 <Link href="/contact-us">
                                     Need Help? Contact Us
                                 </Link>
@@ -351,8 +351,8 @@ export default function FestivalBundlePage() {
                 </div>
 
                 {/* Decorative Elements */}
-                <div className="absolute top-10 left-10 w-32 h-32 bg-yellow-300 rounded-full opacity-20 animate-bounce"></div>
-                <div className="absolute bottom-10 right-10 w-24 h-24 bg-pink-300 rounded-full opacity-20 animate-pulse"></div>
+                <div className="absolute top-10 left-10 w-32 h-32 bg-blue-300 rounded-full opacity-20 animate-bounce"></div>
+                <div className="absolute bottom-10 right-10 w-24 h-24 bg-blue-300 rounded-full opacity-20 animate-pulse"></div>
                 <div className="absolute top-1/2 left-1/4 w-16 h-16 bg-white rounded-full opacity-10 animate-bounce"></div>
             </section>
         </div>

@@ -85,20 +85,20 @@ router.get('/:id', validateMongoId, handleValidationErrors, catchAsync(async (re
 
 // Create new product (admin only)
 router.post('/', authenticate, authorize('admin'), validateProductCreation, handleValidationErrors, catchAsync(async (req, res) => {
-    // const product = new Product(req.body);
-    const { name, description, price, sku, category, brand, inventory } = req.body;
-const product = new Product({
-  name,
-  description,
-  price,
-  sku,
-  category,
-  brand,
-  inventory,
-});
+    const { name, description, price, sku, category, brand, inventory, images } = req.body;
+    const product = new Product({
+        name,
+        description,
+        price,
+        sku,
+        category,
+        brand,
+        inventory,
+        images
+    });
 
     await product.save();
-    
+
     res.status(201).json({
         success: true,
         message: 'Product created successfully',

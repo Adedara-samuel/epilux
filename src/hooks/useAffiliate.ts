@@ -11,7 +11,7 @@ export const useAffiliateProfile = () => {
 		// FIX 2: Check affiliateAPI.getProfile signature. It likely expects the token.
     // If it expects a token, the original commented-out code was correct:
 		queryFn: () => affiliateAPI.getProfile(user?.token || ''),
-		enabled: !!user?.token && user.role === 'affiliate',
+		enabled: true,
 	});
 };
 
@@ -22,7 +22,6 @@ export const useUpdateAffiliateProfile = () => {
 
 	return useMutation({
 		mutationFn: (profileData: any) =>
-      // FIX: 'user' is now defined and accessible here
 			affiliateAPI.updateProfile(user?.token || '', profileData),
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ['affiliate', 'profile'] });
@@ -34,9 +33,8 @@ export const useAffiliateSales = () => {
 	const { user } = useAuth();
 	return useQuery({
 		queryKey: ['affiliate', 'sales'],
-		// FIX: Corrected to use || '' for clarity (?? '' is fine too)
 		queryFn: () => affiliateAPI.getSales(user?.token || ''), 
-		enabled: !!user?.token && user.role === 'affiliate',
+		enabled: true,
 	});
 };
 
@@ -45,7 +43,8 @@ export const useAffiliateReferrals = () => {
 	return useQuery({
 		queryKey: ['affiliate', 'referrals'],
 		queryFn: () => affiliateAPI.getReferrals(user?.token || ''),
-		enabled: !!user?.token && user.role === 'affiliate',
+		enabled: !!user?.token,
+		retry: 1,
 	});
 };
 
@@ -57,7 +56,7 @@ export const useAffiliateDashboard = () => {
 		// FIX 2: Check affiliateAPI.getDashboard signature. It likely expects the token.
     // If it expects a token, the original commented-out code was correct:
 		queryFn: () => affiliateAPI.getDashboard(user?.token || ''), 
-		enabled: !!user?.token && user.role === 'affiliate',
+		enabled: true,
 	});
 };
 

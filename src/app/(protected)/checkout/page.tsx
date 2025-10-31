@@ -21,7 +21,8 @@ import { toast } from 'sonner';
 import { useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 import ClientPaystackButton from '@/Components/payment/ClientPaystackButton';
-import { useCreateOrder } from '@/hooks/useOrders';
+import { useCreateOrder, useCancelOrder } from '@/hooks/useOrders';
+import { orderActionsAPI } from '@/services/orders';
 
 interface CartItem {
     id: string;
@@ -42,8 +43,10 @@ const formSchema = z.object({
 export default function CheckoutPage() {
     const router = useRouter();
     const { user, loading: authLoading } = useAuth();
-    const { cart, clearCart } = useCartStore();
+    const cart = useCartStore((s) => s.cart);
+    const clearCart = useCartStore((s) => s.clearCart);
     const createOrderMutation = useCreateOrder();
+    const cancelOrderMutation = useCancelOrder();
 
     const subtotal = cart.reduce((total: number, item: CartItem) => total + item.price * item.quantity, 0);
     const deliveryFee = subtotal >= 10000 ? 0 : 1500;
@@ -116,12 +119,21 @@ export default function CheckoutPage() {
         };
 
         try {
-            await createOrderMutation.mutateAsync(orderData);
-            toast.success("Order placed successfully!");
+            // POST /api/orders - Create new order
+            const orderResponse = await createOrderMutation.mutateAsync(orderData);
+
+            // POST /api/orders/:id/pay - Process order payment
+            await orderActionsAPI.payOrder(orderResponse.id, {
+                reference: reference.reference,
+                amount: totalAmount,
+                paymentMethod: 'paystack'
+            });
+
+            toast.success("Order placed and payment processed successfully!");
             clearCart();
             router.push(`/order/success?reference=${reference.reference}`);
         } catch (error) {
-            console.error('Error creating order:', error);
+            console.error('Error creating order or processing payment:', error);
             toast.error("Payment successful but order creation failed. Please contact support.");
         }
     };

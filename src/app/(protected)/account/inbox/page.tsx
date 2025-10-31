@@ -8,27 +8,12 @@ import { useRouter } from 'next/navigation';
 // NOTE: Ensure this import is available in your environment
 import { useQueryClient } from '@tanstack/react-query'; 
 import { useAuth } from '@/hooks/useAuth';
-import { useSupportTickets } from '@/hooks/useMessages'; 
+import { useMessages } from '@/hooks/useSupport';
 import { Loader2, Mail, ArrowLeft, Inbox, MessageSquare, Bell, X } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
 import { toast } from 'sonner';
 
-// --- MOCK API MUTATION HOOK (REPLACE WITH YOUR REAL IMPLEMENTATION) ---
-// This hook should be implemented in your /hooks/useMessages.ts file
-const useMarkMessageAsRead = () => {
-    // NOTE: Replace this mock implementation with your actual TanStack Query mutation
-    return {
-        mutate: (id: string, options: { onSuccess: () => void, onError: (error: any) => void }) => {
-            console.log(`[MOCK API] Attempting to mark message ${id} as read...`);
-            // Simulate a successful API response immediately for optimistic update
-            setTimeout(() => {
-                options.onSuccess();
-            }, 100); 
-        },
-        isPending: false,
-    }
-}
-// ----------------------------------------------------------------------
+import { useMarkMessageAsRead } from '@/hooks/useSupport';
 
 // --- BACKEND TYPE DEFINITIONS ---
 interface BackendSenderRecipient {
@@ -87,9 +72,9 @@ export default function MyInboxPage() {
     const [showModal, setShowModal] = useState(false);
 
     // Fetch data, using optional chaining for safe access
-    const { data: responseData, isLoading: loadingMessages } = useSupportTickets() as { data: BackendResponse | undefined, isLoading: boolean };
+    const { data: responseData, isLoading: loadingMessages } = useMessages() as { data: any, isLoading: boolean };
     
-    const backendMessages: BackendMessage[] = responseData?.data?.messages || [];
+    const backendMessages: any[] = responseData?.data?.messages || [];
 
     // --- DATA MAPPING: ALL MESSAGES ARE PULLED FROM THE BACKEND RESPONSE ---
     

@@ -4,6 +4,7 @@ export interface Product {
     _id?: string; // MongoDB ID
     name: string;
     image: string;
+    images?: { url: string; alt: string; isPrimary: boolean }[]; // Multiple images support
     price: number;
     originalPrice?: number; // Optional original price for discounts
     description: string;

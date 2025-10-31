@@ -110,7 +110,7 @@ export const affiliateAPI = {
     // Get affiliate commissions
     // FIX: Added 'token: string' as the first argument
     getCommissions: async (token: string): Promise<{ commissions: Commission[]; total: number }> => {
-        const response = await api.get('/api/affiliate/commissions', { headers: { Authorization: `Bearer ${token}` } });
+        const response = await api.get('/api/admin/commissions/me', { headers: { Authorization: `Bearer ${token}` } });
         return response.data;
     },
 

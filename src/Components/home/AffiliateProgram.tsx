@@ -27,7 +27,7 @@ const AffiliateProgram: React.FC = () => {
                         <ul className="space-y-3 md:space-y-4 mb-8 md:mb-10 text-sm sm:text-base md:text-lg">
                             <li className="flex items-center">
                                 <span className="text-green-300 mr-2 md:mr-3 text-xl md:text-2xl">✓</span>
-                                <span>Generous ₦50 commission per bag sold</span>
+                                <span>Earn commissions per bag sold, redeemed monthly as cash or product</span>
                             </li>
                             <li className="flex items-center">
                                 <span className="text-green-300 mr-2 md:mr-3 text-xl md:text-2xl">✓</span>

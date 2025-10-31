@@ -7,21 +7,12 @@ const API_BASE_URL = 'https://epilux-backend.vercel.app';
 
 // Create axios instance with default config
 export const api = axios.create({
-    baseURL: API_BASE_URL, // Always use production backend URL
+    baseURL: API_BASE_URL, // Use relative URLs for Next.js rewrites
     headers: {
         'Content-Type': 'application/json',
     },
     timeout: 10000,
 });
-
-// Request interceptor to handle different base URLs
-// api.interceptors.request.use((config) => {
-//     // Admin routes and user routes use local server, others use configured base URL
-//     if (config.url?.startsWith('/api/admin/') || config.url?.startsWith('/api/user/')) {
-//         config.baseURL = '';
-//     }
-//     return config;
-// });
 
 // Request interceptor to add auth token
 api.interceptors.request.use(

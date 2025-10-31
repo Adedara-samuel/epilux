@@ -58,7 +58,30 @@ export const productsAPI = {
         comment: string;
         title?: string;
     }) => {
-        const response = await api.post(`/api/products/${productId}/reviews`, reviewData);
+        const response = await api.post(`/api/products/${productId}/reviews`, reviewData, {
+            headers: {
+                // Ensure the base api client handles the base URL and proper headers
+                'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+            }
+        });
+        return response.data;
+    },
+
+    // Get product ratings
+    getProductRatings: async (productId: string) => {
+        const response = await api.get(`/api/products/${productId}/ratings`);
+        return response.data;
+    },
+
+    // Get product rating summary
+    getProductRatingSummary: async (productId: string) => {
+        const response = await api.get(`/api/products/${productId}/ratings/summary`);
+        return response.data;
+    },
+
+    // Get current user's ratings
+    getUserRatings: async () => {
+        const response = await api.get('/api/users/me/ratings');
         return response.data;
     },
 };
@@ -83,42 +106,10 @@ export const adminProductsAPI = {
         category: string;
         stock: number;
         brand?: string;
-        image?: string | string[];
-        images?: string[]; // Array field
+        images?: { url: string; alt: string; isPrimary: boolean }[];
         [key: string]: any;
     }) => {
-
-        // 1. Create a mutable copy of the product data
-        const payload = { ...productData };
-
-        // 2. Determine the single primary image string
-        let primaryImage: string = '';
-
-        // Prioritize the 'images' array if it exists and has data
-        if (Array.isArray(payload.images) && payload.images.length > 0) {
-            primaryImage = payload.images[0];
-        }
-        // Fallback: Check 'image' field if it's an array
-        else if (Array.isArray(payload.image) && payload.image.length > 0) {
-            primaryImage = payload.image[0];
-        }
-        // Fallback: Use 'image' field if it's already a string
-        else if (typeof payload.image === 'string') {
-            primaryImage = payload.image;
-        }
-
-        // 3. CRITICAL FIXES: Clean the payload for the backend
-
-        // A. Assign the single string to the 'image' field
-        payload.image = primaryImage;
-
-        // B. REMOVE the problematic 'images' array field 
-        if (payload.images !== undefined) {
-            delete payload.images;
-        }
-
-        // 4. Send the cleaned payload
-        const response = await api.post('/api/admin/products', payload);
+        const response = await api.post('/api/admin/products', productData);
         return response.data;
     },
 
@@ -135,28 +126,29 @@ export const adminProductsAPI = {
         price: number;
         category: string;
         stock: number;
-        image: string | string[]; // Allow array for consistency
+        images: { url: string; alt: string; isPrimary: boolean }[];
     }>) => {
-        const dataToSend: any = { ...productData }; // Use 'any' for the temporary addition of 'id'
-
-        // FIX: Add the id to the payload body as requested by the backend
-        dataToSend.id = id;
-
-        if (dataToSend.image !== undefined) {
-            if (Array.isArray(dataToSend.image)) {
-                dataToSend.image = dataToSend.image.length > 0 ? dataToSend.image[0] : '';
-            } else if (typeof dataToSend.image !== 'string') {
-                dataToSend.image = '';
-            }
-        }
-
-        const response = await api.put(`/api/admin/products/${id}`, dataToSend);
+        const response = await api.put(`/api/admin/products/${id}`, productData);
         return response.data;
     },
 
     // Delete product (admin only)
     deleteProduct: async (id: string) => {
         const response = await api.delete(`/api/admin/products/${id}`);
+        return response.data;
+    },
+
+    // Upload product images (admin only)
+    uploadProductImages: async (id: string, images: File[]) => {
+        const formData = new FormData();
+        images.forEach(image => {
+            formData.append('images', image);
+        });
+        const response = await api.post(`/api/products/${id}/images`, formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
         return response.data;
     },
 

@@ -44,8 +44,6 @@ function LoginPage() {
                 const role = user.role;
                 if (role === 'admin') {
                     router.replace('/admin/dashboard');
-                } else if (role === 'affiliate') {
-                    router.replace('/affiliate/dashboard');
                 } else if (role === 'marketer') {
                     router.replace('/marketer');
                 } else {
@@ -142,9 +140,9 @@ function LoginPage() {
                                     <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                                         Password
                                     </label>
-                                    <Link href="/forgot-password" className="text-sm text-blue-500 hover:underline cursor-pointer">
+                                    {/* <Link href="/forgot-password" className="text-sm text-blue-500 hover:underline cursor-pointer">
                                         Forgot password?
-                                    </Link>
+                                    </Link> */}
                                 </div>
                                 <div className="relative">
                                     <input

@@ -1,11 +1,11 @@
 // app/account/page.tsx
 'use client';
 
-import { useAuth } from '@/app/context/auth-context';
+import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import Link from 'next/link';
-import { ShoppingBag, Mail, HelpCircle, Phone, Settings, LogOut } from 'lucide-react';
+import { ShoppingBag, Mail, HelpCircle, Phone, Settings, LogOut, Truck } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
 
 export default function AccountPage() {
@@ -86,7 +86,10 @@ export default function AccountPage() {
                             )}
 
                             <Button
-                                onClick={logout}
+                                onClick={async () => {
+                                    await logout();
+                                    window.location.href = '/';
+                                }}
                                 className="w-full bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5 cursor-pointer"
                             >
                                 <LogOut className="w-5 h-5 mr-2" />
@@ -185,6 +188,24 @@ export default function AccountPage() {
                                         <div>
                                             <h3 className="text-xl font-bold">My Reviews</h3>
                                             <p className="text-indigo-100">View & manage reviews</p>
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <span className="text-2xl">→</span>
+                                    </div>
+                                </Link>
+
+                                <Link
+                                    href="/account/delivery"
+                                    className="group bg-gradient-to-br from-teal-500 to-teal-600 rounded-2xl p-6 text-white hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 hover:scale-105"
+                                >
+                                    <div className="flex items-center gap-4 mb-4">
+                                        <div className="p-3 bg-white/20 rounded-xl group-hover:bg-white/30 transition-colors">
+                                            <Truck className="w-8 h-8" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-xl font-bold">Delivery Tracking</h3>
+                                            <p className="text-teal-100">Track packages & estimate costs</p>
                                         </div>
                                     </div>
                                     <div className="text-right">

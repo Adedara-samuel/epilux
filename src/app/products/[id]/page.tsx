@@ -7,8 +7,9 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { useCartStore } from '@/app/context/cart-context';
 import { Button } from '@/Components/ui/button';
-import { useProduct, useProductReviews, useAddProductReview } from '@/hooks/useProducts';
+import { useProduct, useProductReviews, useAddProductReview, useProductRatings, useProductRatingSummary, useUserRatings } from '@/hooks/useProducts';
 import { useAuth } from '@/hooks/useAuth';
+import { useAddToCart } from '@/hooks/useCart';
 import { Star, MessageSquare, ThumbsUp, ShoppingCart, Plus, Minus } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/Components/ui/card';
 import { Badge } from '@/Components/ui/badge';
@@ -26,12 +27,16 @@ export default function ProductDetailPage() {
     const [reviewTitle, setReviewTitle] = useState('');
     const [isSubmittingReview, setIsSubmittingReview] = useState(false);
 
-    const { addToCart } = useCartStore();
+    const addToCart = useCartStore((s) => s.addToCart);
     const { user } = useAuth();
+    const addToCartAPI = useAddToCart();
 
     // Use API to fetch product
     const { data: productData, isLoading, error } = useProduct(id);
     const { data: reviewsData, isLoading: reviewsLoading } = useProductReviews(id);
+    const { data: ratingsData } = useProductRatings(id);
+    const { data: ratingSummaryData } = useProductRatingSummary(id);
+    const { data: userRatingsData } = useUserRatings();
     const addReviewMutation = useAddProductReview();
 
     const product = productData?.data || productData?.product;
@@ -51,9 +56,28 @@ export default function ProductDetailPage() {
         notFound(); // Renders Next.js not-found page if product isn't found
     }
 
-    const handleAddToCart = () => {
-        addToCart(product, quantity); // Pass quantity to addToCart
-        toast.success(`${quantity} ${product.name}${quantity > 1 ? 's' : ''} added to cart!`);
+    const handleAddToCart = async () => {
+        try {
+            // Add to local store for immediate UI feedback
+            addToCart({
+                id: product.id || product._id,
+                name: product.name,
+                price: product.price,
+                image: product.images?.[0]?.url || product.image || '/images/placeholder.jpg'
+            }, quantity);
+
+            // Also add to API if user is logged in
+            if (user?.token) {
+                await addToCartAPI.mutateAsync({
+                    productId: product.id || product._id,
+                    quantity
+                });
+            }
+
+            toast.success(`${quantity} ${product.name}${quantity > 1 ? 's' : ''} added to cart!`);
+        } catch (error: any) {
+            toast.error(error?.response?.data?.message || 'Failed to add item to cart');
+        }
     };
 
     const handleSubmitReview = async (e: React.FormEvent) => {
@@ -89,13 +113,33 @@ export default function ProductDetailPage() {
     return (
         <div className="container mx-auto px-4 py-12">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 bg-white p-8 rounded-lg shadow-xl">
-                <div className="relative h-96 lg:h-[500px] rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center">
-                    <img
-                        src={product.image}
-                        alt={product.name}
-                        className="object-contain"
-                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 50vw"
-                    />
+                <div className="space-y-4">
+                    {product.images && product.images.length > 0 ? (
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                            {product.images.map((image: any, index: number) => (
+                                <div key={index} className="relative aspect-square rounded-lg overflow-hidden bg-gray-100">
+                                    <img
+                                        src={image.url}
+                                        alt={image.alt || product.name}
+                                        className="w-full h-full object-cover"
+                                        sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+                                    />
+                                    {image.isPrimary && (
+                                        <Badge className="absolute top-2 left-2 bg-blue-600">Primary</Badge>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="relative h-96 lg:h-[500px] rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center">
+                            <img
+                                src={product.image || '/images/placeholder.jpg'}
+                                alt={product.name}
+                                className="object-contain"
+                                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 50vw"
+                            />
+                        </div>
+                    )}
                 </div>
 
                 <div>

@@ -14,7 +14,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '@/Components/ui/dropdown-menu';
-import { useAdminOrders, useOrderStats } from '@/hooks/useOrders';
+import { useAdminOrders, useUpdateOrderStatus, useCancelOrder } from '@/hooks/useOrders';
 
 export default function AdminOrdersPage() {
     const [searchTerm, setSearchTerm] = useState('');
@@ -58,23 +58,30 @@ export default function AdminOrdersPage() {
     }, []);
 
     const { data: ordersData, isLoading } = useAdminOrders();
-    const { data: statsData } = useOrderStats();
+    const updateOrderStatusMutation = useUpdateOrderStatus();
+    const cancelOrderMutation = useCancelOrder();
 
     const orders = ordersData?.data || [];
-    const stats = statsData?.stats || {
-        totalOrders: 0,
-        pendingOrders: 0,
-        deliveredOrders: 0,
-        confirmedDeliveries: 0,
-        totalRevenue: 0
-    };
 
     const filteredOrders = orders.filter((order: any) => {
         const matchesSearch = order._id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             order.customer?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             order.customer?.email?.toLowerCase().includes(searchTerm.toLowerCase());
-        return matchesSearch;
+        const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
+        return matchesSearch && matchesStatus;
     });
+
+    const handleUpdateOrderStatus = (orderId: string, newStatus: string) => {
+        // PUT /api/orders/:id - Update order status
+        updateOrderStatusMutation.mutate({ id: orderId, status: newStatus });
+    };
+
+    const handleCancelOrder = (orderId: string) => {
+        if (window.confirm('Are you sure you want to cancel this order?')) {
+            // DELETE /api/orders/:id - Cancel order
+            cancelOrderMutation.mutate(orderId);
+        }
+    };
 
     const getStatusBadge = (status: string) => {
         switch (status) {
@@ -218,10 +225,23 @@ export default function AdminOrdersPage() {
                                                                 </Button>
                                                             </DropdownMenuTrigger>
                                                             <DropdownMenuContent align="end">
-                                                                <DropdownMenuItem className="cursor-pointer">Update Status</DropdownMenuItem>
+                                                                <DropdownMenuItem
+                                                                    className="cursor-pointer"
+                                                                    onClick={() => {
+                                                                        const newStatus = prompt('Enter new status (pending, processing, shipped, delivered, cancelled):', order.status);
+                                                                        if (newStatus && ['pending', 'processing', 'shipped', 'delivered', 'cancelled'].includes(newStatus)) {
+                                                                            handleUpdateOrderStatus(order._id, newStatus);
+                                                                        }
+                                                                    }}
+                                                                >
+                                                                    Update Status
+                                                                </DropdownMenuItem>
                                                                 <DropdownMenuItem className="cursor-pointer">View Details</DropdownMenuItem>
                                                                 <DropdownMenuItem className="cursor-pointer">Print Invoice</DropdownMenuItem>
-                                                                <DropdownMenuItem className="text-red-600 cursor-pointer">
+                                                                <DropdownMenuItem
+                                                                    className="text-red-600 cursor-pointer"
+                                                                    onClick={() => handleCancelOrder(order._id)}
+                                                                >
                                                                     Cancel Order
                                                                 </DropdownMenuItem>
                                                             </DropdownMenuContent>
@@ -297,10 +317,23 @@ export default function AdminOrdersPage() {
                                                     </Button>
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end">
-                                                    <DropdownMenuItem className="cursor-pointer">Update Status</DropdownMenuItem>
+                                                    <DropdownMenuItem
+                                                        className="cursor-pointer"
+                                                        onClick={() => {
+                                                            const newStatus = prompt('Enter new status (pending, processing, shipped, delivered, cancelled):', order.status);
+                                                            if (newStatus && ['pending', 'processing', 'shipped', 'delivered', 'cancelled'].includes(newStatus)) {
+                                                                handleUpdateOrderStatus(order._id, newStatus);
+                                                            }
+                                                        }}
+                                                    >
+                                                        Update Status
+                                                    </DropdownMenuItem>
                                                     <DropdownMenuItem className="cursor-pointer">View Details</DropdownMenuItem>
                                                     <DropdownMenuItem className="cursor-pointer">Print Invoice</DropdownMenuItem>
-                                                    <DropdownMenuItem className="text-red-600 cursor-pointer">
+                                                    <DropdownMenuItem
+                                                        className="text-red-600 cursor-pointer"
+                                                        onClick={() => handleCancelOrder(order._id)}
+                                                    >
                                                         Cancel Order
                                                     </DropdownMenuItem>
                                                 </DropdownMenuContent>
@@ -324,14 +357,14 @@ export default function AdminOrdersPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 lg:gap-6 animate-fadeIn animation-delay-1100">
                     <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl hover-glow">
                         <CardContent className="p-4 lg:p-6">
-                            <div className="text-xl lg:text-2xl font-bold text-blue-600">{stats.totalOrders || orders.length}</div>
+                            <div className="text-xl lg:text-2xl font-bold text-blue-600">{orders.length}</div>
                             <p className="text-xs lg:text-sm text-gray-600">Total Orders</p>
                         </CardContent>
                     </Card>
                     <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl hover-glow">
                         <CardContent className="p-4 lg:p-6">
                             <div className="text-xl lg:text-2xl font-bold text-yellow-600">
-                                {stats.pendingOrders || orders.filter((o: any) => o.status === 'pending').length}
+                                {orders.filter((o: any) => o.status === 'pending').length}
                             </div>
                             <p className="text-xs lg:text-sm text-gray-600">Pending Orders</p>
                         </CardContent>
@@ -339,7 +372,7 @@ export default function AdminOrdersPage() {
                     <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl hover-glow">
                         <CardContent className="p-4 lg:p-6">
                             <div className="text-xl lg:text-2xl font-bold text-green-600">
-                                {stats.deliveredOrders || orders.filter((o: any) => o.status === 'delivered').length}
+                                {orders.filter((o: any) => o.status === 'delivered').length}
                             </div>
                             <p className="text-xs lg:text-sm text-gray-600">Delivered Orders</p>
                         </CardContent>
@@ -347,7 +380,7 @@ export default function AdminOrdersPage() {
                     <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl hover-glow">
                         <CardContent className="p-4 lg:p-6">
                             <div className="text-xl lg:text-2xl font-bold text-teal-600">
-                                {stats.confirmedDeliveries || orders.filter((o: any) => o.deliveryConfirmed).length}
+                                {orders.filter((o: any) => o.deliveryConfirmed).length}
                             </div>
                             <p className="text-xs lg:text-sm text-gray-600">Confirmed Deliveries</p>
                         </CardContent>
@@ -355,7 +388,7 @@ export default function AdminOrdersPage() {
                     <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl hover-glow sm:col-span-2 lg:col-span-1">
                         <CardContent className="p-4 lg:p-6">
                             <div className="text-lg lg:text-2xl font-bold text-purple-600">
-                                ₦{stats.totalRevenue?.toLocaleString() || orders.reduce((sum: number, order: any) => sum + (order.total || 0), 0).toLocaleString()}
+                                ₦{orders.reduce((sum: number, order: any) => sum + (order.total || 0), 0).toLocaleString()}
                             </div>
                             <p className="text-xs lg:text-sm text-gray-600">Total Revenue</p>
                         </CardContent>

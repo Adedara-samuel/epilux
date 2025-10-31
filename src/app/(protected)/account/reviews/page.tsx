@@ -39,7 +39,7 @@ export default function MyReviewsPage() {
     const fetchUserReviews = async () => {
         try {
             setLoadingReviews(true);
-            const response = await fetch('/api/user/reviews', {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://epilux-backend.vercel.app'}/api/user/reviews`, {
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`,
                 },

@@ -11,16 +11,35 @@ import {
   TrendingUp,
   DollarSign,
   Award,
-  Calendar
+  Calendar,
+  CreditCard
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/Components/ui/card';
 import { Badge } from '@/Components/ui/badge';
+import { Button } from '@/Components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/Components/ui/dialog';
+import { Input } from '@/Components/ui/input';
+import { Label } from '@/Components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/ui/select';
 import { useAffiliateProfile } from '@/hooks/useAffiliate';
+import { useRequestWithdrawal } from '@/hooks/useCommissions';
+import { toast } from 'sonner';
+import WithdrawalReceipt from './WithdrawalReceipt';
 
 export default function AffiliateWallet() {
   const { data: profileData } = useAffiliateProfile();
   const profile = profileData?.profile;
   const [showBalance, setShowBalance] = useState(false);
+  const [isWithdrawalModalOpen, setIsWithdrawalModalOpen] = useState(false);
+  const [withdrawalData, setWithdrawalData] = useState({
+    amount: '',
+    bankName: '',
+    accountNumber: '',
+    accountName: '',
+  });
+  const [receiptWithdrawal, setReceiptWithdrawal] = useState<any>(null);
+  const [showReceipt, setShowReceipt] = useState(false);
+  const requestWithdrawalMutation = useRequestWithdrawal();
 
   // Withdrawal countdown logic
   const getNextWithdrawalDate = () => {
@@ -78,6 +97,49 @@ export default function AffiliateWallet() {
 
   const withdrawalCountdown = getWithdrawalCountdown();
   const lockCountdown = getLockCountdown();
+
+  const handleWithdrawalRequest = async () => {
+    if (!withdrawalData.amount || !withdrawalData.bankName || !withdrawalData.accountNumber || !withdrawalData.accountName) {
+      toast.error('Please fill in all fields');
+      return;
+    }
+
+    const amount = parseFloat(withdrawalData.amount);
+    if (amount <= 0) {
+      toast.error('Amount must be greater than 0');
+      return;
+    }
+
+    if (amount > (profile?.availableBalance || 0)) {
+      toast.error('Insufficient balance');
+      return;
+    }
+
+    try {
+      const result = await requestWithdrawalMutation.mutateAsync({
+        amount,
+        bankName: withdrawalData.bankName,
+        accountNumber: withdrawalData.accountNumber,
+        accountName: withdrawalData.accountName,
+      });
+
+      setIsWithdrawalModalOpen(false);
+      setWithdrawalData({
+        amount: '',
+        bankName: '',
+        accountNumber: '',
+        accountName: '',
+      });
+
+      // Show receipt for successful withdrawal
+      if (result?.withdrawal) {
+        setReceiptWithdrawal(result.withdrawal);
+        setShowReceipt(true);
+      }
+    } catch (error) {
+      // Error handled by mutation
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -208,16 +270,94 @@ export default function AffiliateWallet() {
               </p>
             </div>
           ) : (
-            <div className="text-center py-6">
-              <div className="inline-flex items-center gap-2 bg-green-50 px-4 py-2 rounded-lg mb-4">
-                <Check className="w-4 h-4 text-green-600" />
-                <span className="text-sm font-medium text-green-800">Withdrawal period is active</span>
-              </div>
-              <p className="text-sm text-gray-600">
-                You can request withdrawals until the end of the month
-              </p>
+          <div className="text-center py-6">
+            <div className="inline-flex items-center gap-2 bg-green-50 px-4 py-2 rounded-lg mb-4">
+              <Check className="w-4 h-4 text-green-600" />
+              <span className="text-sm font-medium text-green-800">Withdrawal period is active</span>
             </div>
-          )}
+            <p className="text-sm text-gray-600 mb-4">
+              You can request withdrawals until the end of the month
+            </p>
+            <Dialog open={isWithdrawalModalOpen} onOpenChange={setIsWithdrawalModalOpen}>
+              <DialogTrigger asChild>
+                <Button className="bg-green-600 hover:bg-green-700 text-white">
+                  <CreditCard className="w-4 h-4 mr-2" />
+                  Request Withdrawal
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Request Withdrawal</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="amount">Amount (₦)</Label>
+                    <Input
+                      id="amount"
+                      type="number"
+                      placeholder="Enter amount"
+                      value={withdrawalData.amount}
+                      onChange={(e) => setWithdrawalData(prev => ({ ...prev, amount: e.target.value }))}
+                    />
+                    <p className="text-sm text-gray-500 mt-1">
+                      Available: ₦{profile?.availableBalance?.toLocaleString() || '0'}
+                    </p>
+                  </div>
+                  <div>
+                    <Label htmlFor="bankName">Bank Name</Label>
+                    <Select value={withdrawalData.bankName} onValueChange={(value) => setWithdrawalData(prev => ({ ...prev, bankName: value }))}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select bank" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="access">Access Bank</SelectItem>
+                        <SelectItem value="fidelity">Fidelity Bank</SelectItem>
+                        <SelectItem value="firstbank">First Bank</SelectItem>
+                        <SelectItem value="gtb">Guaranty Trust Bank (GTB)</SelectItem>
+                        <SelectItem value="heritage">Heritage Bank</SelectItem>
+                        <SelectItem value="keystone">Keystone Bank</SelectItem>
+                        <SelectItem value="polaris">Polaris Bank</SelectItem>
+                        <SelectItem value="providus">Providus Bank</SelectItem>
+                        <SelectItem value="stanbic">Stanbic IBTC Bank</SelectItem>
+                        <SelectItem value="sterling">Sterling Bank</SelectItem>
+                        <SelectItem value="uba">United Bank for Africa (UBA)</SelectItem>
+                        <SelectItem value="union">Union Bank</SelectItem>
+                        <SelectItem value="unity">Unity Bank</SelectItem>
+                        <SelectItem value="wema">Wema Bank</SelectItem>
+                        <SelectItem value="zenith">Zenith Bank</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="accountNumber">Account Number</Label>
+                    <Input
+                      id="accountNumber"
+                      placeholder="Enter account number"
+                      value={withdrawalData.accountNumber}
+                      onChange={(e) => setWithdrawalData(prev => ({ ...prev, accountNumber: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="accountName">Account Name</Label>
+                    <Input
+                      id="accountName"
+                      placeholder="Enter account name"
+                      value={withdrawalData.accountName}
+                      onChange={(e) => setWithdrawalData(prev => ({ ...prev, accountName: e.target.value }))}
+                    />
+                  </div>
+                  <Button
+                    onClick={handleWithdrawalRequest}
+                    disabled={requestWithdrawalMutation.isPending}
+                    className="w-full"
+                  >
+                    {requestWithdrawalMutation.isPending ? 'Processing...' : 'Submit Request'}
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
+        )}
         </CardContent>
       </Card>
 
@@ -241,6 +381,18 @@ export default function AffiliateWallet() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Withdrawal Receipt Modal */}
+      {receiptWithdrawal && (
+        <WithdrawalReceipt
+          withdrawal={receiptWithdrawal}
+          isOpen={showReceipt}
+          onClose={() => {
+            setShowReceipt(false);
+            setReceiptWithdrawal(null);
+          }}
+        />
+      )}
     </div>
   );
 }

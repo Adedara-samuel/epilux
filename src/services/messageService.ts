@@ -1,13 +1,8 @@
 // src/services/messageService.ts
 import { api } from './base'; // Assuming base.ts is in the same directory
 
-// For client-side requests, use relative URLs to leverage Next.js rewrites
+// Use the backend API URL directly
 const getBaseUrl = () => {
-  if (typeof window !== 'undefined') {
-    // Client-side: use relative URLs
-    return '';
-  }
-  // Server-side: use full URL
   return 'https://epilux-backend.vercel.app';
 };
 
@@ -47,10 +42,12 @@ export const messageAPI = {
      */
     sendMessage: async (data: SendMessagePayload): Promise<SupportTicket> => {
         const baseUrl = getBaseUrl();
+        const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
         const response = await fetch(`${baseUrl}/api/messages`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                ...(token && { 'Authorization': `Bearer ${token}` }),
             },
             body: JSON.stringify(data),
         });

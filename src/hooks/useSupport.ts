@@ -43,3 +43,44 @@ export const useReplyToTicket = () => {
     },
   });
 };
+
+// Hook for getting direct messages
+export const useMessages = (params?: { page?: number; limit?: number; isRead?: boolean }) => {
+  return useQuery({
+    queryKey: ['messages', params],
+    queryFn: () => supportAPI.getMessages(params),
+  });
+};
+
+// Hook for getting single message
+export const useMessage = (id: string) => {
+  return useQuery({
+    queryKey: ['message', id],
+    queryFn: () => supportAPI.getMessage(id),
+    enabled: !!id,
+  });
+};
+
+// Hook for sending message
+export const useSendMessage = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: supportAPI.sendMessage,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['messages'] });
+    },
+  });
+};
+
+// Hook for marking message as read
+export const useMarkMessageAsRead = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => supportAPI.markMessageAsRead(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['messages'] });
+    },
+  });
+};

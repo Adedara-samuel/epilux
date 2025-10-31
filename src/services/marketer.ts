@@ -52,4 +52,58 @@ export const marketerAPI = {
     const response = await api.get('/api/marketer/stats');
     return response.data;
   },
+
+  // Admin: Get all marketers
+  getAllMarketers: async () => {
+    const response = await api.get('/api/marketer');
+    return response.data;
+  },
+
+  // Admin: Get single marketer by ID
+  getMarketer: async (id: string) => {
+    const response = await api.get(`/api/marketers/${id}`);
+    return response.data;
+  },
+
+  // Admin: Get marketer's orders
+  getMarketerOrders: async (id: string) => {
+    const response = await api.get(`/api/marketers/${id}/orders`);
+    return response.data;
+  },
+
+  // Admin: Get marketer's commissions
+  getMarketerCommissions: async (id: string) => {
+    const response = await api.get(`/api/marketers/${id}/commissions`);
+    return response.data;
+  },
+
+  // Admin: Create new marketer
+  createMarketer: async (marketerData: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone?: string;
+    password: string;
+  }) => {
+    const response = await api.post('/api/marketers', marketerData);
+    return response.data;
+  },
+
+  // Admin: Update marketer
+  updateMarketer: async (id: string, updateData: {
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    phone?: string;
+    isActive?: boolean;
+  }) => {
+    const response = await api.put(`/api/marketers/${id}`, updateData);
+    return response.data;
+  },
+
+  // Admin: Delete marketer
+  deleteMarketer: async (id: string) => {
+    const response = await api.delete(`/api/marketers/${id}`);
+    return response.data;
+  },
 };

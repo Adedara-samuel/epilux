@@ -102,4 +102,14 @@ export const orderActionsAPI = {
     });
     return response.data;
   },
+
+  // Process order payment
+  payOrder: async (id: string, paymentData: {
+    reference: string;
+    amount: number;
+    paymentMethod: string;
+  }) => {
+    const response = await api.post(`/api/orders/${id}/pay`, paymentData);
+    return response.data;
+  },
 };

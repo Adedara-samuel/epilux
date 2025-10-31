@@ -25,7 +25,7 @@ interface ProductFormData {
     category: string;
     brand: string;
     stock: number;
-    images: string[];
+    images: { url: string; alt: string; isPrimary: boolean }[];
 }
 
 export default function AddProductPage() {
@@ -55,7 +55,8 @@ export default function AddProductPage() {
             // Add the SKU to the data
             const productData = {
                 ...data,
-                sku: uniqueSku
+                sku: uniqueSku,
+                inventory: { quantity: data.stock }
             };
 
             await createProduct.mutateAsync(productData);
@@ -228,14 +229,20 @@ export default function AddProductPage() {
                                                     <Textarea
                                                         placeholder="Enter image URLs, one per line"
                                                         className="min-h-[80px]"
-                                                        value={field.value?.join('\n') || ''}
+                                                        value={field.value?.map(img => img.url).join('\n') || ''}
                                                         onChange={(e) => {
                                                             const urls = e.target.value.split('\n').filter(url => url.trim());
-                                                            field.onChange(urls);
+                                                            const images = urls.map((url, index) => ({
+                                                                url,
+                                                                alt: `Image ${index + 1}`,
+                                                                isPrimary: index === 0
+                                                            }));
+                                                            field.onChange(images);
                                                         }}
                                                     />
                                                 </FormControl>
-                                            ) : (
+                                            ) : null}
+                                            {imageInputType === 'file' && (
                                                 <FormControl>
                                                     <Input
                                                         type="file"
@@ -243,16 +250,38 @@ export default function AddProductPage() {
                                                         accept="image/*"
                                                         onChange={async (e) => {
                                                             const files = Array.from(e.target.files || []);
-                                                            const dataUrls: string[] = [];
-                                                            for (const file of files) {
-                                                                const reader = new FileReader();
-                                                                reader.onload = () => {
-                                                                    dataUrls.push(reader.result as string);
-                                                                    if (dataUrls.length === files.length) {
-                                                                        field.onChange(dataUrls);
+                                                            if (files.length === 0) return;
+
+                                                            // Upload files to server
+                                                            const formData = new FormData();
+                                                            files.forEach(file => {
+                                                                formData.append('images', file);
+                                                            });
+
+                                                            try {
+                                                                const response = await fetch('https://epilux-backend.vercel.app/api/uploads/multiple', {
+                                                                    method: 'POST',
+                                                                    body: formData,
+                                                                    headers: {
+                                                                        'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
                                                                     }
-                                                                };
-                                                                reader.readAsDataURL(file);
+                                                                });
+
+                                                                if (response.ok) {
+                                                                    const result = await response.json();
+                                                                    const currentImages = field.value || [];
+                                                                    const newImages = (result.images || []).map((img: any, index: number) => ({
+                                                                        url: img.url,
+                                                                        alt: img.alt,
+                                                                        isPrimary: currentImages.length === 0 && index === 0
+                                                                    }));
+                                                                    field.onChange([...currentImages, ...newImages]);
+                                                                } else {
+                                                                    toast.error('Failed to upload images');
+                                                                }
+                                                            } catch (error) {
+                                                                console.error('Upload error:', error);
+                                                                toast.error('Failed to upload images');
                                                             }
                                                         }}
                                                     />

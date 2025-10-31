@@ -16,14 +16,14 @@ const coreFeatures = [
     {
         icon: DollarSign,
         title: "High Commissions & Rewards",
-        value: "₦50 Per Bag",
-        description: "Earn a fixed commission of ₦50 per bag sold. Redeem your earnings as cash (monthly payout) or product for extra profit.",
+        value: "12% Commission",
+        description: "Earn a 12% commission on every bag sold. Redeem your earnings as cash (monthly payout) or product for extra profit.",
     },
     {
         icon: Users,
         title: "Extended Referral Bonus",
-        value: "₦15 Per Bag",
-        description: "Recruit other marketers and earn a ₦15 bonus per bag on their sales for their first 3 months. Build a passive income stream.",
+        value: "50% of Referred's Commission",
+        description: "Recruit other marketers and earn 50% of the commission they earn on their sales for their first 3 months. Build a passive income stream.",
     },
     {
         icon: Truck,
