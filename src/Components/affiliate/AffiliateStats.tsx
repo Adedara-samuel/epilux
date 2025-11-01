@@ -43,12 +43,12 @@ const StatCard: React.FC<StatCardProps> = ({ title, value, icon, change, color }
     );
 };
 
-type AffiliateStatsProps = {
+interface AffiliateStatsProps {
     totalSales?: number;
     totalCommission?: number;
     activeReferrals?: number;
     referralBonus?: number;
-};
+}
 
 export const AffiliateStats = ({ totalSales, totalCommission, activeReferrals, referralBonus }: AffiliateStatsProps) => {
     return (

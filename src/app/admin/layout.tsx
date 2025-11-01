@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AdminSidebar, AdminHeader } from '@/Components/admin';
 
 interface AdminLayoutProps {
@@ -10,8 +10,9 @@ interface AdminLayoutProps {
 export default function AdminLayout({ children }: AdminLayoutProps) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
 
+
     return (
-        <div className="min-h-screen bg-gray-50 flex"> 
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex">
             {/* Sidebar */}
             <AdminSidebar
                 sidebarOpen={sidebarOpen}
@@ -22,10 +23,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 {/* Header */}
                 <AdminHeader setSidebarOpen={setSidebarOpen} />
                 {/* Page content */}
-                <main className="flex-1 p-6">
-                    <div className="">
-                        {children}
-                    </div>
+                <main className="flex-1 p-4 md:p-6 lg:pl-72 mt-16 overflow-y-auto">
+                    {children}
                 </main>
             </div>
         </div>

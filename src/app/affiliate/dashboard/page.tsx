@@ -14,6 +14,7 @@ import { CommissionHistory } from '@/Components/affiliate/CommissionHistory';
 import { PerformanceMilestones } from '@/Components/affiliate/PerformanceMilestones';
 import { useAuth } from '@/hooks/useAuth';
 import { useAffiliateProfile, useAffiliateDashboard, useAffiliateSales, useAffiliateReferrals } from '@/hooks/useAffiliate';
+import { useUserCommissions } from '@/hooks/useCommissions';
 
 // TODO: Implement milestones API
 
@@ -27,13 +28,14 @@ export default function AffiliateDashboard() {
     const { data: dashboardData, isLoading: dashboardLoading } = useAffiliateDashboard();
     const { data: salesData, isLoading: salesLoading } = useAffiliateSales();
     const { data: referralsData, isLoading: referralsLoading } = useAffiliateReferrals();
+    const { data: commissionsData, isLoading: commissionsLoading } = useUserCommissions();
 
     const profile = profileData?.profile;
     const dashboard = dashboardData?.dashboard;
     const sales = salesData?.sales || [];
     const referrals = referralsData?.referrals || [];
 
-    const isLoading = profileLoading || dashboardLoading || salesLoading || referralsLoading;
+    const isLoading = profileLoading || dashboardLoading || salesLoading || referralsLoading || commissionsLoading;
 
     // Calculate milestone progress
     const totalSales = sales.filter((s: any) => s.status === 'completed').length;
@@ -109,11 +111,17 @@ export default function AffiliateDashboard() {
 
                 {/* ROW 1: KEY PERFORMANCE INDICATORS (4-column grid) */}
                 <section className="mb-8">
-                    <AffiliateStats
+                    {/* <AffiliateStats
                         totalSales={dashboard?.totalEarnings || 0}
                         totalCommission={profile?.totalEarnings || 0}
                         activeReferrals={profile?.activeReferrals || 0}
                         referralBonus={profile?.availableBalance || 0}
+                    /> */}
+                    <AffiliateStats
+                        totalSales={dashboard?.totalEarnings ?? 0}
+                        totalCommission={profile?.totalEarned ?? 0}
+                        activeReferrals={dashboard?.totalReferrals ?? 0}
+                        referralBonus={profile?.availableBalance ?? 0}
                     />
                 </section>
 
@@ -137,7 +145,7 @@ export default function AffiliateDashboard() {
                     </div>
                     {/* Commission History (1/2 width) */}
                     <div className="lg:col-span-1">
-                        <CommissionHistory commissions={sales} />
+                        <CommissionHistory commissions={commissionsData?.data?.commissions || []} />
                     </div>
                 </section>
 

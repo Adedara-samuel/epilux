@@ -3,14 +3,13 @@ import User from '../models/User.js';
 import PasswordResetToken from '../models/PasswordResetToken.js';
 import { generateToken, verifyToken } from '../middleware/auth.js';
 import emailService from '../services/emailService.js';
-import { 
-    validateRegistration, 
-    validateLogin, 
+import {
+    validateRegistration,
+    validateLogin,
     validatePasswordUpdate,
-    validateProfileUpdate,
     validateForgotPassword,
     validateResetPassword,
-    handleValidationErrors 
+    handleValidationErrors
 } from '../middleware/validation.js';
 
 const router = express.Router();
@@ -237,118 +236,9 @@ router.post('/admin/login', async (req, res) => {
     }
 });
 
-// Get current user profile
-router.get('/profile', async (req, res) => {
-    try {
-        const token = req.header('Authorization')?.replace('Bearer ', '');
-        
-        if (!token) {
-            return res.status(401).json({
-                success: false,
-                message: 'No token provided'
-            });
-        }
-
-        const decoded = verifyToken(token);
-        
-        const user = await User.findById(decoded.userId).select('-password');
-        
-        if (!user) {
-            return res.status(404).json({
-                success: false,
-                message: 'User not found'
-            });
-        }
-
-        res.json({
-            success: true,
-            user: {
-                id: user._id,
-                email: user.email,
-                firstName: user.firstName,
-                lastName: user.lastName,
-                role: user.role,
-                emailVerified: user.emailVerified,
-                profile: user.profile,
-                affiliateInfo: user.affiliateInfo,
-                createdAt: user.createdAt,
-                lastLogin: user.lastLogin
-            }
-        });
-
-    } catch (error) {
-        console.error('Get profile error:', error);
-        res.status(401).json({
-            success: false,
-            message: 'Invalid or expired token'
-        });
-    }
-});
-
-// Update user profile
-router.put('/api/auth/profile', validateProfileUpdate, handleValidationErrors, async (req, res) => {
-    try {
-        const token = req.header('Authorization')?.replace('Bearer ', '');
-        
-        if (!token) {
-            return res.status(401).json({
-                success: false,
-                message: 'No token provided'
-            });
-        }
-
-        const decoded = verifyToken(token);
-        
-        const user = await User.findById(decoded.userId);
-        
-        if (!user) {
-            return res.status(404).json({
-                success: false,
-                message: 'User not found'
-            });
-        }
-
-        // Update user fields
-        const allowedUpdates = ['firstName', 'lastName', 'phone', 'profile'];
-        const updates = {};
-
-        Object.keys(req.body).forEach(key => {
-            if (allowedUpdates.includes(key) || key.startsWith('profile.')) {
-                updates[key] = req.body[key];
-            }
-        });
-
-        Object.assign(user, updates);
-        await user.save();
-
-        res.json({
-            success: true,
-            message: 'Profile updated successfully',
-            user: {
-                id: user._id,
-                email: user.email,
-                firstName: user.firstName,
-                lastName: user.lastName,
-                role: user.role,
-                emailVerified: user.emailVerified,
-                profile: user.profile,
-                affiliateInfo: user.affiliateInfo,
-                createdAt: user.createdAt,
-                lastLogin: user.lastLogin
-            }
-        });
-
-    } catch (error) {
-        console.error('Update profile error:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Internal server error during profile update'
-        });
-    }
-});
 
 // Change password
-router.put('/api/auth/password', validatePasswordUpdate, handleValidationErrors, async (req, res) => {
+router.put('/change-password', validatePasswordUpdate, handleValidationErrors, async (req, res) => {
     try {
         const token = req.header('Authorization')?.replace('Bearer ', '');
         

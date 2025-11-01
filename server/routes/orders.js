@@ -10,6 +10,11 @@ import {
     validatePagination,
     handleValidationErrors
 } from '../middleware/validation.js';
+import {
+    confirmOrderReceipt,
+    rateProduct,
+    rateMarketer
+} from '../controllers/orderController.js';
 
 const router = express.Router();
 
@@ -228,6 +233,129 @@ router.get('/', validatePagination, handleValidationErrors, authenticate, author
     });
 }));
 
+// Confirm order receipt
+router.put('/:id/confirm-receipt', validateMongoId, authenticate, catchAsync(async (req, res, next) => {
+    const order = await Order.findById(req.params.id);
+
+    if (!order) {
+        return next(new NotFoundError('Order not found'));
+    }
+
+    // Check if user owns this order
+    if (order.userId.toString() !== req.user._id.toString()) {
+        return next(new AppError('Access denied', 403));
+    }
+
+    // Check if order is delivered
+    if (order.status !== 'delivered') {
+        return next(new AppError('Order must be delivered before confirming receipt', 400));
+    }
+
+    // Update order
+    order.deliveryConfirmed = true;
+    order.deliveryConfirmedAt = new Date();
+    await order.save();
+
+    res.json({
+        success: true,
+        message: 'Order receipt confirmed successfully',
+        order
+    });
+}));
+
+// Rate product
+router.post('/:id/rate-product', validateMongoId, authenticate, catchAsync(async (req, res, next) => {
+    const { productId, rating, review } = req.body;
+    const order = await Order.findById(req.params.id);
+
+    if (!order) {
+        return next(new NotFoundError('Order not found'));
+    }
+
+    // Check if user owns this order
+    if (order.userId.toString() !== req.user._id.toString()) {
+        return next(new AppError('Access denied', 403));
+    }
+
+    // Check if order is confirmed
+    if (!order.deliveryConfirmed) {
+        return next(new AppError('Order must be confirmed before rating products', 400));
+    }
+
+    // Check if product exists in order
+    const orderItem = order.items.find(item => item.productId.toString() === productId);
+    if (!orderItem) {
+        return next(new AppError('Product not found in this order', 400));
+    }
+
+    // Check if product already rated
+    const existingRating = order.productRatings.find(r => r.productId === productId);
+    if (existingRating) {
+        return next(new AppError('Product already rated', 400));
+    }
+
+    // Add rating
+    order.productRatings.push({
+        productId,
+        rating: parseInt(rating),
+        review: review || '',
+        createdAt: new Date()
+    });
+
+    await order.save();
+
+    res.json({
+        success: true,
+        message: 'Product rated successfully',
+        order
+    });
+}));
+
+// Rate marketer
+router.post('/:id/rate-marketer', validateMongoId, authenticate, catchAsync(async (req, res, next) => {
+    const { rating, review } = req.body;
+    const order = await Order.findById(req.params.id);
+
+    if (!order) {
+        return next(new NotFoundError('Order not found'));
+    }
+
+    // Check if user owns this order
+    if (order.userId.toString() !== req.user._id.toString()) {
+        return next(new AppError('Access denied', 403));
+    }
+
+    // Check if order is confirmed
+    if (!order.deliveryConfirmed) {
+        return next(new AppError('Order must be confirmed before rating marketer', 400));
+    }
+
+    // Check if marketer exists
+    if (!order.marketerId) {
+        return next(new AppError('No marketer assigned to this order', 400));
+    }
+
+    // Check if marketer already rated
+    if (order.marketerRating.rating) {
+        return next(new AppError('Marketer already rated', 400));
+    }
+
+    // Add rating
+    order.marketerRating = {
+        rating: parseInt(rating),
+        review: review || '',
+        createdAt: new Date()
+    };
+
+    await order.save();
+
+    res.json({
+        success: true,
+        message: 'Marketer rated successfully',
+        order
+    });
+}));
+
 // Get order statistics (admin only)
 router.get('/stats/summary', authenticate, authorize('admin'), catchAsync(async (req, res) => {
     const stats = await Order.aggregate([
@@ -245,11 +373,14 @@ router.get('/stats/summary', authenticate, authorize('admin'), catchAsync(async 
                 },
                 deliveredOrders: {
                     $sum: { $cond: [{ $eq: ['$status', 'delivered'] }, 1, 0] }
+                },
+                confirmedDeliveries: {
+                    $sum: { $cond: [{ $eq: ['$deliveryConfirmed', true] }, 1, 0] }
                 }
             }
         }
     ]);
-    
+
     const monthlyStats = await Order.aggregate([
         {
             $group: {
@@ -264,7 +395,7 @@ router.get('/stats/summary', authenticate, authorize('admin'), catchAsync(async 
         { $sort: { '_id.year': -1, '_id.month': -1 } },
         { $limit: 12 }
     ]);
-    
+
     res.json({
         success: true,
         stats: stats[0] || {},

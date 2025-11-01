@@ -23,6 +23,7 @@ const allowedOrigins = [
     'http://localhost:3000',
     'http://192.168.1.100:3002',
     'http://192.168.1.100:3000',
+    'https://epilux-backend.vercel.app',
     'https://epilux48.vercel.app',
     'https://epilux48.vercel.app:3000',
     'https://epilux48.vercel.app:443'
@@ -103,6 +104,12 @@ import orderRoutes from './routes/orders.js';
 import affiliateRoutes from './routes/affiliate.js';
 import adminRoutes from './routes/admin.js';
 import userRoutes from './routes/user.js';
+import commissionRoutes from './routes/commissions.js';
+import deliveryRoutes from './routes/delivery.js';
+import marketerRoutes from './routes/marketers.js';
+import uploadRoutes from './routes/uploads.js';
+import walletRoutes from './routes/wallet.js';
+import cartRoutes from './routes/cart.js';
 
 // Use routes
 app.use('/api/auth', authRoutes);
@@ -111,7 +118,13 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/affiliate', affiliateRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/support', supportRoutes);
-app.use('/api/users', userRoutes);
+app.use('/api/user', userRoutes);
+app.use('/api/admin/commissions', commissionRoutes);
+app.use('/api/delivery', deliveryRoutes);
+app.use('/api/marketers', marketerRoutes);
+app.use('/api/uploads', uploadRoutes);
+app.use('/api/wallet', walletRoutes);
+app.use('/api/cart', cartRoutes);
 
 // Temporary admin route to list all users (remove in production)
 app.get('/api/admin/users', async (req, res) => {

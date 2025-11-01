@@ -21,6 +21,8 @@ import { toast } from 'sonner';
 import { useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 import ClientPaystackButton from '@/Components/payment/ClientPaystackButton';
+import { useCreateOrder, useCancelOrder } from '@/hooks/useOrders';
+import { orderActionsAPI } from '@/services/orders';
 
 interface CartItem {
     id: string;
@@ -41,7 +43,10 @@ const formSchema = z.object({
 export default function CheckoutPage() {
     const router = useRouter();
     const { user, loading: authLoading } = useAuth();
-    const { cart, clearCart } = useCartStore();
+    const cart = useCartStore((s) => s.cart);
+    const clearCart = useCartStore((s) => s.clearCart);
+    const createOrderMutation = useCreateOrder();
+    const cancelOrderMutation = useCancelOrder();
 
     const subtotal = cart.reduce((total: number, item: CartItem) => total + item.price * item.quantity, 0);
     const deliveryFee = subtotal >= 10000 ? 0 : 1500;
@@ -86,21 +91,90 @@ export default function CheckoutPage() {
     }, [user, authLoading, cart.length, router, form]);
 
 
-    const handlePaymentSuccess = (reference: any) => {
+    const handlePaymentSuccess = async (reference: any) => {
         console.log('Payment successful:', reference);
-        toast.success("Order placed successfully!");
-        clearCart();
-        router.push(`/order/success?reference=${reference.reference}`);
+
+        const deliveryInfo = form.getValues();
+        const orderData = {
+            items: cart.map(item => ({
+                productId: item.id,
+                quantity: item.quantity,
+            })),
+            shippingAddress: {
+                street: deliveryInfo.address,
+                city: deliveryInfo.city,
+                state: deliveryInfo.state,
+                zipCode: '000000', // Default
+                country: 'Nigeria',
+            },
+            billingAddress: {
+                street: deliveryInfo.address,
+                city: deliveryInfo.city,
+                state: deliveryInfo.state,
+                zipCode: '000000',
+                country: 'Nigeria',
+            },
+            paymentMethod: 'online',
+            notes: deliveryInfo.additionalInfo,
+        };
+
+        try {
+            // POST /api/orders - Create new order
+            const orderResponse = await createOrderMutation.mutateAsync(orderData);
+
+            // POST /api/orders/:id/pay - Process order payment
+            await orderActionsAPI.payOrder(orderResponse.id, {
+                reference: reference.reference,
+                amount: totalAmount,
+                paymentMethod: 'paystack'
+            });
+
+            toast.success("Order placed and payment processed successfully!");
+            clearCart();
+            router.push(`/order/success?reference=${reference.reference}`);
+        } catch (error) {
+            console.error('Error creating order or processing payment:', error);
+            toast.error("Payment successful but order creation failed. Please contact support.");
+        }
     };
 
     const handleCashOnDelivery = async () => {
         // Trigger form validation first
         const isValid = await form.trigger();
         if (isValid) {
-            // If the form is valid, then proceed to save the order
-            toast.success("Order placed successfully!");
-            clearCart();
-            router.push(`/order/success?reference=cod`);
+            const deliveryInfo = form.getValues();
+            const orderData = {
+                items: cart.map(item => ({
+                    productId: item.id,
+                    quantity: item.quantity,
+                })),
+                shippingAddress: {
+                    street: deliveryInfo.address,
+                    city: deliveryInfo.city,
+                    state: deliveryInfo.state,
+                    zipCode: '000000', // Default
+                    country: 'Nigeria',
+                },
+                billingAddress: {
+                    street: deliveryInfo.address,
+                    city: deliveryInfo.city,
+                    state: deliveryInfo.state,
+                    zipCode: '000000',
+                    country: 'Nigeria',
+                },
+                paymentMethod: 'cod',
+                notes: deliveryInfo.additionalInfo,
+            };
+
+            try {
+                await createOrderMutation.mutateAsync(orderData);
+                toast.success("Order placed successfully!");
+                clearCart();
+                router.push(`/order/success?reference=cod`);
+            } catch (error) {
+                console.error('Error creating order:', error);
+                toast.error("Failed to place order. Please try again.");
+            }
         } else {
             // If validation fails, show an error toast
             toast.error("Please fill in all required delivery details.");
