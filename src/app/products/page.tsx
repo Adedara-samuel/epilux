@@ -80,11 +80,11 @@ function ProductsPage() {
     useEffect(() => {
         const tab = searchParams.get('tab');
         if (tab === 'wallet') {
-            window.location.href = '/wallet';
+            router.push('/products/wallet');
         } else if (tab === 'referrals') {
-            window.location.href = '/referrals';
+            router.push('/products/referrals');
         }
-    }, [searchParams]);
+    }, [searchParams, router]);
 
     const handleCategoryChange = (categoryValue: string) => {
         setSelectedCategory(categoryValue);

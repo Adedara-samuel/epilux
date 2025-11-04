@@ -1,63 +1,93 @@
 // src/hooks/useCommissions.ts
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { commissionAPI } from '@/services/commissions';
-import { toast } from 'sonner';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { commissionsAPI, Commission, CommissionRate, CreateCommissionData, UpdateCommissionData } from '@/services/commissions';
 
-// Hook for getting user's commissions
-export const useUserCommissions = (params?: { page?: number; limit?: number; status?: string }) => {
+// Hook for getting all commissions
+export const useCommissions = (params?: {
+  status?: string;
+  type?: string;
+  limit?: number;
+  page?: number;
+}) => {
   return useQuery({
-    queryKey: ['commissions', 'user', params],
-    queryFn: () => commissionAPI.getUserCommissions(params),
+    queryKey: ['commissions', params],
+    queryFn: () => commissionsAPI.getCommissions(params),
   });
 };
 
-// Hook for getting commission details
-export const useCommissionDetails = (id: string) => {
+// Hook for getting all commission rates (admin)
+export const useCommissionRates = (params?: {
+  category?: string;
+  isActive?: boolean;
+  limit?: number;
+  page?: number;
+}) => {
+  return useQuery({
+    queryKey: ['commission-rates', params],
+    queryFn: () => commissionsAPI.getCommissions(params),
+  });
+};
+
+// Hook for getting single commission
+export const useCommission = (id: string) => {
   return useQuery({
     queryKey: ['commission', id],
-    queryFn: () => commissionAPI.getCommissionDetails(id),
+    queryFn: () => commissionsAPI.getCommission(id),
     enabled: !!id,
   });
 };
 
-// Hook for calculating commission
-export const useCalculateCommission = () => {
-  return useMutation({
-    mutationFn: commissionAPI.calculateCommission,
-  });
-};
-
-// Hook for all commissions (generic)
-export const useAllCommissions = (params?: { page?: number; limit?: number; status?: string }) => {
-  return useQuery({
-    queryKey: ['commissions', 'all', params],
-    queryFn: () => commissionAPI.getAllCommissions(params),
-  });
-};
-
-// Hook to update commission status (generic)
-export const useUpdateCommissionStatus = () => {
+// Hook for creating commission rate (admin)
+export const useCreateCommissionRate = () => {
   const queryClient = useQueryClient();
+
   return useMutation({
-    mutationFn: ({ id, status }: { id: string; status: string }) => commissionAPI.updateStatus(id, status),
+    mutationFn: (data: CreateCommissionData) => commissionsAPI.createCommission(data),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['commission-rates'] });
       queryClient.invalidateQueries({ queryKey: ['commissions'] });
     },
   });
 };
 
-// Hook for requesting withdrawal
-export const useRequestWithdrawal = () => {
+// Hook for updating commission rate (admin)
+export const useUpdateCommissionRate = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: commissionAPI.requestWithdrawal,
+    mutationFn: ({ id, data }: { id: string; data: UpdateCommissionData }) =>
+      commissionsAPI.updateCommission(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['affiliate', 'profile'] });
-      toast.success('Withdrawal request submitted successfully!');
+      queryClient.invalidateQueries({ queryKey: ['commission-rates'] });
+      queryClient.invalidateQueries({ queryKey: ['commissions'] });
+      queryClient.invalidateQueries({ queryKey: ['commission'] });
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to request withdrawal');
+  });
+};
+
+// Hook for deleting commission rate (admin)
+export const useDeleteCommissionRate = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => commissionsAPI.deleteCommission(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['commission-rates'] });
+      queryClient.invalidateQueries({ queryKey: ['commissions'] });
+    },
+  });
+};
+
+// Hook for updating commission status (admin)
+export const useUpdateCommissionStatus = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, status }: { id: string; status: Commission['status'] }) =>
+      commissionsAPI.updateCommission(id, { status }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['commissions'] });
+      queryClient.invalidateQueries({ queryKey: ['commission'] });
     },
   });
 };

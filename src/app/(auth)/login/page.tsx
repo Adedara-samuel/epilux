@@ -32,6 +32,8 @@ function LoginPage() {
         if (typeof window !== 'undefined') {
             const params = new URLSearchParams(window.location.search);
             setRedirectTo(params.get('redirect') || '/products');
+        } else {
+            setRedirectTo('/products');
         }
     }, []);
 

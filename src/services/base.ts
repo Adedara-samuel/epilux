@@ -35,14 +35,12 @@ api.interceptors.request.use(
 
         if (token && typeof window !== 'undefined') {
             config.headers.Authorization = `Bearer ${token}`;
-            // Also set token as cookie for backend compatibility (7 days)
-            document.cookie = `authToken=${token}; path=/; max-age=604800; samesite=strict${process.env.NODE_ENV === 'production' ? '; secure' : ''}`;
+            if (typeof document !== 'undefined') {
+                document.cookie = `authToken=${token}; path=/; max-age=604800; samesite=strict${process.env.NODE_ENV === 'production' ? '; secure' : ''}`;
+            }
         }
 
-        // Debug: Log token usage
-        if (token) {
-            console.log('Using auth token for request:', config.url);
-        }
+        // Remove debug logging - token is working correctly
 
         return config;
     },
@@ -85,7 +83,7 @@ export const tokenManager = {
 
     removeToken: () => {
         if (typeof window !== 'undefined') {
-            localStorage.removeItem('authToken');
+            localStorage.removeItem('auth_token');
         }
     },
 
@@ -116,7 +114,9 @@ export const tokenManager = {
             localStorage.removeItem('user');
             localStorage.removeItem('tokenTimestamp');
             // Clear the auth cookie
-            document.cookie = 'authToken=; path=/; max-age=0; samesite=strict';
+            if (typeof document !== 'undefined') {
+                document.cookie = 'authToken=; path=/; max-age=0; samesite=strict';
+            }
         }
     },
 };

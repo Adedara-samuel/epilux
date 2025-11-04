@@ -13,32 +13,23 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useAuth } from '@/hooks/useAuth';
 import { adminCommissionRatesAPI } from '@/services/admin';
 import { toast } from 'sonner';
-import { useAllCommissions, useUpdateCommissionStatus } from '@/hooks/useCommissions';
+import { useCommissions, useCommissionRates, useCreateCommissionRate, useUpdateCommissionRate, useDeleteCommissionRate, useUpdateCommissionStatus } from '@/hooks/useCommissions';
+import { Commission } from '@/services/commissions';
 
-interface CommissionRate {
-  _id: string;
-  name: string;
-  description?: string;
-  rate: number;
-  type: 'percentage' | 'fixed';
-  category: 'product' | 'service' | 'referral' | 'general';
-  isActive: boolean;
-  createdBy: {
-    firstName: string;
-    lastName: string;
-    email: string;
-  };
-  createdAt: string;
-  updatedAt: string;
-}
+import { CommissionRate } from '@/services/commissions';
 
 export default function CommissionRatesPage() {
    const { user } = useAuth();
    const currentUser = user;
-  const { data: commissionsData, isLoading: commissionsLoading } = useAllCommissions();
+  const { data: commissionsData, isLoading: commissionsLoading } = useCommissions();
+  const { data: commissionRatesData, isLoading: ratesLoading } = useCommissionRates();
+  const createCommissionRate = useCreateCommissionRate();
+  const updateCommissionRate = useUpdateCommissionRate();
+  const deleteCommissionRate = useDeleteCommissionRate();
   const updateCommissionStatus = useUpdateCommissionStatus();
   const [commissionRates, setCommissionRates] = useState<CommissionRate[]>([]);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -90,169 +81,17 @@ export default function CommissionRatesPage() {
     };
   }, []);
 
-  // Mock commission rates data
-  const mockCommissionRates: CommissionRate[] = [
-    {
-      _id: 'rate-1',
-      name: 'Standard Product Commission',
-      description: 'Default commission rate for all product sales',
-      rate: 15.0,
-      type: 'percentage',
-      category: 'product',
-      isActive: true,
-      createdBy: {
-        firstName: 'Admin',
-        lastName: 'User',
-        email: 'admin@epilux.com'
-      },
-      createdAt: '2024-01-15T10:00:00Z',
-      updatedAt: '2024-01-15T10:00:00Z'
-    },
-    {
-      _id: 'rate-2',
-      name: 'Premium Service Commission',
-      description: 'Higher commission for premium services',
-      rate: 25.0,
-      type: 'percentage',
-      category: 'service',
-      isActive: true,
-      createdBy: {
-        firstName: 'Admin',
-        lastName: 'User',
-        email: 'admin@epilux.com'
-      },
-      createdAt: '2024-01-20T14:30:00Z',
-      updatedAt: '2024-01-20T14:30:00Z'
-    },
-    {
-      _id: 'rate-3',
-      name: 'Referral Bonus',
-      description: 'Commission for successful referrals',
-      rate: 500.0,
-      type: 'fixed',
-      category: 'referral',
-      isActive: true,
-      createdBy: {
-        firstName: 'Admin',
-        lastName: 'User',
-        email: 'admin@epilux.com'
-      },
-      createdAt: '2024-02-01T09:15:00Z',
-      updatedAt: '2024-02-01T09:15:00Z'
-    },
-    {
-      _id: 'rate-4',
-      name: 'Bulk Order Discount',
-      description: 'Reduced commission for bulk orders',
-      rate: 10.0,
-      type: 'percentage',
-      category: 'product',
-      isActive: false,
-      createdBy: {
-        firstName: 'Admin',
-        lastName: 'User',
-        email: 'admin@epilux.com'
-      },
-      createdAt: '2024-02-10T16:45:00Z',
-      updatedAt: '2024-02-10T16:45:00Z'
-    },
-    {
-      _id: 'rate-5',
-      name: 'Seasonal Promotion',
-      description: 'Special commission for holiday season',
-      rate: 20.0,
-      type: 'percentage',
-      category: 'general',
-      isActive: true,
-      createdBy: {
-        firstName: 'Admin',
-        lastName: 'User',
-        email: 'admin@epilux.com'
-      },
-      createdAt: '2024-02-15T11:20:00Z',
-      updatedAt: '2024-02-15T11:20:00Z'
-    },
-    {
-      _id: 'rate-6',
-      name: 'New Affiliate Welcome',
-      description: 'Bonus commission for first 3 months',
-      rate: 1000.0,
-      type: 'fixed',
-      category: 'referral',
-      isActive: true,
-      createdBy: {
-        firstName: 'Admin',
-        lastName: 'User',
-        email: 'admin@epilux.com'
-      },
-      createdAt: '2024-03-01T08:00:00Z',
-      updatedAt: '2024-03-01T08:00:00Z'
-    },
-    {
-      _id: 'rate-7',
-      name: 'Loyalty Program',
-      description: 'Additional commission for loyal affiliates',
-      rate: 5.0,
-      type: 'percentage',
-      category: 'general',
-      isActive: false,
-      createdBy: {
-        firstName: 'Admin',
-        lastName: 'User',
-        email: 'admin@epilux.com'
-      },
-      createdAt: '2024-03-10T13:30:00Z',
-      updatedAt: '2024-03-10T13:30:00Z'
-    },
-    {
-      _id: 'rate-8',
-      name: 'High-Value Client',
-      description: 'Premium commission for enterprise clients',
-      rate: 30.0,
-      type: 'percentage',
-      category: 'service',
-      isActive: true,
-      createdBy: {
-        firstName: 'Admin',
-        lastName: 'User',
-        email: 'admin@epilux.com'
-      },
-      createdAt: '2024-03-20T15:45:00Z',
-      updatedAt: '2024-03-20T15:45:00Z'
-    }
-  ];
 
-  // Fetch commission rates (using mock data)
-  const fetchCommissionRates = async () => {
-    try {
-      setLoading(true);
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      // Filter mock data based on current filters
-      let filteredData = mockCommissionRates;
-
-      if (categoryFilter !== 'all') {
-        filteredData = filteredData.filter(rate => rate.category === categoryFilter);
-      }
-
-      if (statusFilter !== 'all') {
-        const isActive = statusFilter === 'active';
-        filteredData = filteredData.filter(rate => rate.isActive === isActive);
-      }
-
-      setCommissionRates(filteredData);
-    } catch (error) {
-      console.error('Error fetching commission rates:', error);
-      toast.error('Failed to load commission rates');
-    } finally {
+  // Update commission rates when API data changes
+  useEffect(() => {
+    if (commissionRatesData?.commissionRates) {
+      setCommissionRates(commissionRatesData.commissionRates);
+      setLoading(false);
+    } else if (!ratesLoading) {
+      setCommissionRates([]);
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    fetchCommissionRates();
-  }, [categoryFilter, statusFilter]);
+  }, [commissionRatesData, ratesLoading]);
 
   // Filter commission rates based on search
   const filteredRates = commissionRates.filter(rate =>
@@ -260,38 +99,22 @@ export default function CommissionRatesPage() {
     rate.description?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Handle form submission (mock implementation)
+  // Handle form submission with real API
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitting(true);
     try {
       if (selectedRate) {
-        // Update existing rate (mock)
-        setCommissionRates(prev => prev.map(rate =>
-          rate._id === selectedRate._id
-            ? {
-                ...rate,
-                ...formData,
-                updatedAt: new Date().toISOString()
-              }
-            : rate
-        ));
+        // Update existing rate
+        await updateCommissionRate.mutateAsync({
+          id: selectedRate._id,
+          data: formData
+        });
         toast.success('Commission rate updated successfully');
         setIsEditModalOpen(false);
       } else {
-        // Create new rate (mock)
-        const newRate: CommissionRate = {
-          _id: `rate-${Date.now()}`,
-          ...formData,
-          isActive: true,
-          createdBy: {
-            firstName: 'Admin',
-            lastName: 'User',
-            email: 'admin@epilux.com'
-          },
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        };
-        setCommissionRates(prev => [...prev, newRate]);
+        // Create new rate
+        await createCommissionRate.mutateAsync(formData);
         toast.success('Commission rate created successfully');
         setIsCreateModalOpen(false);
       }
@@ -300,17 +123,18 @@ export default function CommissionRatesPage() {
     } catch (error) {
       console.error('Error saving commission rate:', error);
       toast.error('Failed to save commission rate');
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  // Handle toggle status (mock implementation)
+  // Handle toggle status with real API
   const handleToggleStatus = async (rate: CommissionRate) => {
     try {
-      setCommissionRates(prev => prev.map(r =>
-        r._id === rate._id
-          ? { ...r, isActive: !r.isActive, updatedAt: new Date().toISOString() }
-          : r
-      ));
+      await updateCommissionRate.mutateAsync({
+        id: rate._id,
+        data: { isActive: !rate.isActive }
+      });
       toast.success(`Commission rate ${rate.isActive ? 'disabled' : 'enabled'} successfully`);
     } catch (error) {
       console.error('Error toggling commission rate status:', error);
@@ -318,12 +142,12 @@ export default function CommissionRatesPage() {
     }
   };
 
-  // Handle delete (mock implementation)
+  // Handle delete with real API
   const handleDelete = async (rate: CommissionRate) => {
     if (!confirm(`Are you sure you want to delete "${rate.name}"?`)) return;
 
     try {
-      setCommissionRates(prev => prev.filter(r => r._id !== rate._id));
+      await deleteCommissionRate.mutateAsync(rate._id);
       toast.success('Commission rate deleted successfully');
     } catch (error) {
       console.error('Error deleting commission rate:', error);
@@ -471,8 +295,8 @@ export default function CommissionRatesPage() {
                     <Button type="button" variant="outline" onClick={closeModals} className="flex-1">
                       Cancel
                     </Button>
-                    <Button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700">
-                      Create Rate
+                    <Button type="submit" disabled={submitting || createCommissionRate.isPending} className="flex-1 bg-blue-600 hover:bg-blue-700">
+                      {submitting || createCommissionRate.isPending ? 'Creating...' : 'Create Rate'}
                     </Button>
                   </div>
                 </form>
@@ -484,43 +308,50 @@ export default function CommissionRatesPage() {
 
       <div className="container mx-auto px-6 py-8">
         {/* Live Commissions Section */}
-        <Card className="bg-white/80 backdrop-blur-sm border border-gray-200 shadow-sm mb-8">
-          <CardHeader>
-            <CardTitle>Commissions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {commissionsLoading ? (
-              <div className="py-6 text-sm text-gray-600">Loading commissions...</div>
-            ) : (commissionsData?.commissions?.length ? (
-              <div className="space-y-3">
-                {commissionsData.commissions.slice(0, 10).map((c: any) => (
-                  <div key={c._id} className="flex items-center justify-between p-3 border rounded-lg">
-                    <div className="text-sm">
-                      <div className="font-semibold">₦{(c.amount || 0).toLocaleString()}</div>
-                      <div className="text-gray-600">{new Date(c.createdAt).toLocaleString()}</div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="capitalize">{c.status}</Badge>
-                      <Select onValueChange={(value) => updateCommissionStatus.mutate({ id: c._id, status: value })}>
-                        <SelectTrigger className="w-36">
-                          <SelectValue placeholder="Change status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="pending">Pending</SelectItem>
-                          <SelectItem value="available">Available</SelectItem>
-                          <SelectItem value="withdrawn">Withdrawn</SelectItem>
-                          <SelectItem value="rejected">Rejected</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+      {/* Live Commissions Section */}
+      <Card className="bg-white/80 backdrop-blur-sm border border-gray-200 shadow-sm mb-8">
+        <CardHeader>
+          <CardTitle>Live Commissions</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {commissionsLoading ? (
+            <div className="py-6 text-sm text-gray-600">Loading commissions...</div>
+          ) : (commissionsData?.commissions?.length ? (
+            <div className="space-y-3">
+              {commissionsData.commissions.slice(0, 10).map((c: Commission) => (
+                <div key={c._id} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div className="text-sm">
+                    <div className="font-semibold">₦{(c.amount || 0).toLocaleString()}</div>
+                    <div className="text-gray-600">{new Date(c.createdAt).toLocaleString()}</div>
+                    {c.user && (
+                      <div className="text-xs text-blue-600">{c.user.firstName} {c.user.lastName}</div>
+                    )}
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="py-6 text-sm text-gray-600">No commissions found.</div>
-            ))}
-          </CardContent>
-        </Card>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="capitalize">{c.status}</Badge>
+                    <Select
+                      onValueChange={(value) => updateCommissionStatus.mutate({ id: c._id, status: value as Commission['status'] })}
+                      disabled={updateCommissionStatus.isPending}
+                    >
+                      <SelectTrigger className="w-36">
+                        <SelectValue placeholder="Change status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pending">Pending</SelectItem>
+                        <SelectItem value="available">Available</SelectItem>
+                        <SelectItem value="withdrawn">Withdrawn</SelectItem>
+                        <SelectItem value="rejected">Rejected</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="py-6 text-sm text-gray-600">No commissions found.</div>
+          ))}
+        </CardContent>
+      </Card>
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8 animate-fadeIn animation-delay-700">
           <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl hover-glow">
@@ -620,7 +451,7 @@ export default function CommissionRatesPage() {
 
         {/* Commission Rates List */}
         <div className="space-y-4">
-          {loading ? (
+          {loading || ratesLoading ? (
             <div className="flex justify-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
             </div>
@@ -772,8 +603,8 @@ export default function CommissionRatesPage() {
                 <Button type="button" variant="outline" onClick={closeModals} className="flex-1">
                   Cancel
                 </Button>
-                <Button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700">
-                  Update Rate
+                <Button type="submit" disabled={submitting || updateCommissionRate.isPending} className="flex-1 bg-blue-600 hover:bg-blue-700">
+                  {submitting || updateCommissionRate.isPending ? 'Updating...' : 'Update Rate'}
                 </Button>
               </div>
             </form>

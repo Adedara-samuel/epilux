@@ -49,7 +49,7 @@ export const marketerAPI = {
 
   // Get dashboard stats
   getStats: async () => {
-    const response = await api.get('/api/marketer/stats');
+    const response = await api.get('/api/marketer/dashboard');
     return response.data;
   },
 

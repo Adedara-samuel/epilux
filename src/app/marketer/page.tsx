@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { MapPin, Package, Truck, CheckCircle, Clock, Navigation, Phone, MessageSquare, Search, Filter, User, Eye, EyeOff, Key, Settings, RefreshCw, TrendingUp, Calendar, Star, Zap, Bell, ChevronDown, ChevronUp, MoreVertical, Play, Pause, RotateCcw, Menu } from 'lucide-react';
+import { MapPin, Package, Truck, CheckCircle, Clock, Navigation, Phone, MessageSquare, Search, Filter, User, Eye, EyeOff, Key, Settings, RefreshCw, TrendingUp, Calendar, Star, Zap, Bell, ChevronDown, ChevronUp, MoreVertical, Play, Pause, RotateCcw, Menu, LogOut } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/Components/ui/card';
 import { Badge } from '@/Components/ui/badge';
@@ -13,8 +13,8 @@ import GoogleMap from '@/Components/GoogleMap';
 import { Order } from '@/services/marketer';
 
 export default function MarketerPage() {
-   const { user } = useAuth();
-   const currentUser = user;
+    const { user, logout } = useAuth();
+    const currentUser = user;
 
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [showMap, setShowMap] = useState(false);
@@ -36,12 +36,89 @@ export default function MarketerPage() {
     confirmPassword: ''
   });
 
+  // Dashboard API hook
+  const { data: dashboardData, isLoading: dashboardLoading } = useMarketerStats();
+
+  // Mobile navigation hide/show states
+  const [isMobileNavVisible, setIsMobileNavVisible] = useState(true);
+  const [lastActivity, setLastActivity] = useState(Date.now());
+
+  // Reset mobile nav visibility when component mounts/refreshes
+  useEffect(() => {
+    setIsMobileNavVisible(true);
+    setLastActivity(Date.now());
+  }, []);
+
+  // Handle user activity to show mobile nav
+  const handleUserActivity = () => {
+    setIsMobileNavVisible(true);
+    setLastActivity(Date.now());
+  };
+
+  // Auto-hide mobile nav after 2 minutes of inactivity
+  useEffect(() => {
+    const checkInactivity = () => {
+      const now = Date.now();
+      const timeSinceLastActivity = now - lastActivity;
+      const twoMinutes = 2 * 60 * 1000; // 2 minutes in milliseconds
+
+      if (timeSinceLastActivity > twoMinutes && isMobileNavVisible) {
+        setIsMobileNavVisible(false);
+      }
+    };
+
+    const interval = setInterval(checkInactivity, 10000); // Check every 10 seconds
+    return () => clearInterval(interval);
+  }, [lastActivity, isMobileNavVisible]);
+
+  // Add event listeners for user activity
+  useEffect(() => {
+    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
+
+    const handleActivity = () => handleUserActivity();
+
+    events.forEach(event => {
+      document.addEventListener(event, handleActivity, true);
+    });
+
+    return () => {
+      events.forEach(event => {
+        document.removeEventListener(event, handleActivity, true);
+      });
+    };
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      if (token) {
+        await fetch('https://epilux-backend.vercel.app/api/auth/logout', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+      }
+    } catch (error) {
+      console.error('Logout API failed:', error);
+    } finally {
+      // Clear local auth data
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('tokenTimestamp');
+      document.cookie = 'authToken=; path=/; max-age=0; samesite=strict';
+      window.location.href = '/login';
+    }
+  };
+
   // Animation states
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
     setIsLoaded(true);
   }, []);
+
 
   // Mock data for demonstration with diverse locations
   const mockOrders: Order[] = [
@@ -178,12 +255,6 @@ export default function MarketerPage() {
     }
   ];
 
-  const mockStats = {
-    totalOrders: 5,
-    pendingOrders: 2,
-    inTransitOrders: 2,
-    deliveredOrders: 1,
-  };
 
   // API hooks (commented out for mock data)
   // const { data: ordersData, isLoading } = useMarketerOrders({
@@ -242,8 +313,8 @@ export default function MarketerPage() {
     });
 
   const orders = filteredAndSortedOrders;
-  const stats = mockStats;
-  const isLoading = false;
+  const stats = dashboardData;
+  const isLoading = dashboardLoading;
 
   // Mock mutation functions with state updates
   const updateOrderStatusMutation = {
@@ -307,7 +378,7 @@ export default function MarketerPage() {
   }
 
   return (
-    <div className={`min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 transition-all duration-700 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}>
+    <div className={`min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 transition-all duration-700 ease-out ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
       {/* Main Content */}
       <div className="pb-20 lg:pb-0">
         {/* Top Header */}
@@ -349,24 +420,43 @@ export default function MarketerPage() {
         </div>
 
         {/* Mobile Bottom Navigation */}
-        <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl border-t border-slate-200 z-40 lg:hidden">
-          <div className="flex items-center justify-around py-2">
+        <div className={`fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl border-t border-slate-200 z-40 lg:hidden transition-all duration-300 ease-in-out ${
+          isMobileNavVisible
+            ? 'translate-y-0 opacity-100'
+            : 'translate-y-full opacity-0'
+        }`}>
+           <div className="flex items-center justify-around py-2">
             {[
               { id: 'dashboard', label: 'Dashboard', icon: TrendingUp },
               { id: 'orders', label: 'Orders', icon: Package },
-              { id: 'profile', label: 'Profile', icon: User }
+              { id: 'profile', label: 'Profile', icon: User },
+              { id: 'logout', label: 'Logout', icon: LogOut }
             ].map((item) => (
-              <button
-                key={item.id}
-                onClick={() => setActiveTab(item.id as any)}
-                className={`flex flex-col items-center gap-1 px-4 py-3 rounded-xl transition-all duration-200 ${activeTab === item.id
-                    ? 'bg-gradient-to-t from-blue-500 to-indigo-600 text-white shadow-lg'
-                    : 'text-slate-600 hover:bg-slate-100'
-                  }`}
-              >
-                <item.icon className="w-5 h-5" />
-                <span className="text-xs font-medium">{item.label}</span>
-              </button>
+              item.id === 'logout' ? (
+                <button
+                  key={item.id}
+                  onClick={handleLogout}
+                  className="flex flex-col items-center gap-1 px-4 py-3 rounded-xl transition-all duration-200 text-red-600 hover:bg-red-50"
+                >
+                  <item.icon className="w-5 h-5" />
+                  <span className="text-xs font-medium">{item.label}</span>
+                </button>
+              ) : (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    setActiveTab(item.id as any);
+                    handleUserActivity();
+                  }}
+                  className={`flex flex-col items-center gap-1 px-4 py-3 rounded-xl transition-all duration-200 ${activeTab === item.id
+                      ? 'bg-gradient-to-t from-blue-500 to-indigo-600 text-white shadow-lg'
+                      : 'text-slate-600 hover:bg-slate-100'
+                    }`}
+                >
+                  <item.icon className="w-5 h-5" />
+                  <span className="text-xs font-medium">{item.label}</span>
+                </button>
+              )
             ))}
           </div>
         </div>
@@ -415,7 +505,10 @@ export default function MarketerPage() {
                 ].map((item) => (
                   <button
                     key={item.id}
-                    onClick={() => setActiveTab(item.id as any)}
+                    onClick={() => {
+                      setActiveTab(item.id as any);
+                      handleUserActivity();
+                    }}
                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${activeTab === item.id
                         ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg'
                         : 'text-slate-700 hover:bg-slate-100 hover:shadow-md'
@@ -439,10 +532,20 @@ export default function MarketerPage() {
             </nav>
 
             {/* Sidebar Footer */}
-            <div className="p-4 border-t border-slate-200">
+            <div className="p-4 border-t border-slate-200 space-y-3">
               <div className="text-xs text-slate-500 text-center hidden sm:block">
                 Last updated: {lastUpdated ? lastUpdated.toLocaleTimeString() : 'Loading...'}
               </div>
+
+              {/* Logout Button */}
+              <Button
+                onClick={handleLogout}
+                variant="outline"
+                className="w-full border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 transition-all duration-200"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Logout
+              </Button>
             </div>
           </div>
         </div>
@@ -452,7 +555,7 @@ export default function MarketerPage() {
 
           {/* Orders Tab */}
           {activeTab === 'orders' && (
-            <div className="space-y-6 animate-in fade-in duration-500">
+            <div className="space-y-6 animate-in fade-in slide-in-from-right-2 duration-500">
 
               {/* Orders Header */}
               <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
@@ -541,7 +644,7 @@ export default function MarketerPage() {
                 {orders.map((order: Order, index) => (
                   <Card
                     key={order._id}
-                    className={`bg-white/90 backdrop-blur-sm border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer animate-in slide-in-from-bottom-4 ${selectedOrder?._id === order._id ? 'ring-2 ring-blue-500 shadow-2xl' : ''
+                    className={`bg-white/90 backdrop-blur-sm border-0 shadow-lg hover:shadow-xl transition-all duration-300 ease-out transform hover:-translate-y-1 hover:scale-[1.02] cursor-pointer animate-in slide-in-from-bottom-4 ${selectedOrder?._id === order._id ? 'ring-2 ring-blue-500 shadow-2xl' : ''
                       }`}
                     style={{ animationDelay: `${index * 50}ms` }}
                     onClick={() => setSelectedOrder(order)}
@@ -617,7 +720,7 @@ export default function MarketerPage() {
                               e.stopPropagation();
                               handleStartDelivery(order._id);
                             }}
-                            className="flex-1 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 shadow-sm transform hover:scale-105 transition-all duration-200 text-xs py-1.5 h-7"
+                            className="flex-1 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 shadow-sm transform hover:scale-105 hover:-translate-y-0.5 transition-all duration-200 ease-out text-xs py-1.5 h-7"
                           >
                             <Truck className="w-3 h-3 mr-1" />
                             Start
@@ -631,7 +734,7 @@ export default function MarketerPage() {
                               e.stopPropagation();
                               handleMarkDelivered(order._id);
                             }}
-                            className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 shadow-sm transform hover:scale-105 transition-all duration-200 text-xs py-1.5 h-7"
+                            className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 shadow-sm transform hover:scale-105 hover:-translate-y-0.5 transition-all duration-200 ease-out text-xs py-1.5 h-7"
                           >
                             <CheckCircle className="w-3 h-3 mr-1" />
                             Complete
@@ -695,83 +798,95 @@ export default function MarketerPage() {
 
           {/* Dashboard Tab */}
           {activeTab === 'dashboard' && (
-            <div className="space-y-8 animate-in fade-in duration-500">
+            <div className="space-y-8 animate-in fade-in slide-in-from-left-2 duration-500">
 
               {/* Welcome Section */}
-              <div className="text-center py-8">
-                <div className="inline-flex items-center gap-3 bg-gradient-to-r from-blue-500/10 to-indigo-500/10 px-6 py-3 rounded-full border border-blue-200/50">
-                  <Zap className="w-5 h-5 text-blue-600" />
-                  <span className="text-blue-700 font-medium">Good morning! You have {stats.pendingOrders} pending deliveries</span>
+              {stats && (
+                <div className="text-center py-8">
+                  <div className="inline-flex items-center gap-3 bg-gradient-to-r from-blue-500/10 to-indigo-500/10 px-6 py-3 rounded-full border border-blue-200/50">
+                    <Zap className="w-5 h-5 text-blue-600" />
+                    <span className="text-blue-700 font-medium">Good morning! You have {stats.pending || 0} pending deliveries</span>
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Enhanced Stats Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {[
-                  {
-                    title: 'Pending Orders',
-                    value: stats.pendingOrders,
-                    icon: Clock,
-                    color: 'from-yellow-500 to-orange-500',
-                    bgColor: 'from-yellow-50 to-orange-50',
-                    textColor: 'text-yellow-700',
-                    subtitle: 'Awaiting pickup'
-                  },
-                  {
-                    title: 'In Transit',
-                    value: stats.inTransitOrders,
-                    icon: Truck,
-                    color: 'from-blue-500 to-indigo-500',
-                    bgColor: 'from-blue-50 to-indigo-50',
-                    textColor: 'text-blue-700',
-                    subtitle: 'Currently delivering'
-                  },
-                  {
-                    title: 'Delivered Today',
-                    value: stats.deliveredOrders,
-                    icon: CheckCircle,
-                    color: 'from-green-500 to-emerald-500',
-                    bgColor: 'from-green-50 to-emerald-50',
-                    textColor: 'text-green-700',
-                    subtitle: 'Completed deliveries'
-                  },
-                  {
-                    title: 'Total Orders',
-                    value: stats.totalOrders,
-                    icon: Package,
-                    color: 'from-slate-500 to-slate-600',
-                    bgColor: 'from-slate-50 to-slate-100',
-                    textColor: 'text-slate-700',
-                    subtitle: 'Assigned today'
-                  }
-                ].map((stat, index) => (
-                  <Card
-                    key={stat.title}
-                    className={`bg-gradient-to-br ${stat.bgColor} border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 animate-in slide-in-from-bottom-4`}
-                    style={{ animationDelay: `${index * 150}ms` }}
-                  >
-                    <CardContent className="p-6">
-                      <div className="flex items-center justify-between mb-4">
-                        <div className={`p-3 rounded-xl bg-gradient-to-br ${stat.color} shadow-lg`}>
-                          <stat.icon className="h-6 w-6 text-white" />
+              {stats ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {[
+                    {
+                      title: 'Pending Orders',
+                      value: stats.pending || 0,
+                      icon: Clock,
+                      color: 'from-yellow-500 to-orange-500',
+                      bgColor: 'from-yellow-50 to-orange-50',
+                      textColor: 'text-yellow-700',
+                      subtitle: 'Awaiting pickup'
+                    },
+                    {
+                      title: 'In Transit',
+                      value: stats.inTransit || 0,
+                      icon: Truck,
+                      color: 'from-blue-500 to-indigo-500',
+                      bgColor: 'from-blue-50 to-indigo-50',
+                      textColor: 'text-blue-700',
+                      subtitle: 'Currently delivering'
+                    },
+                    {
+                      title: 'Delivered Today',
+                      value: stats.delivered || 0,
+                      icon: CheckCircle,
+                      color: 'from-green-500 to-emerald-500',
+                      bgColor: 'from-green-50 to-emerald-50',
+                      textColor: 'text-green-700',
+                      subtitle: 'Completed deliveries'
+                    },
+                    {
+                      title: 'Total Orders',
+                      value: stats.totalOrders || 0,
+                      icon: Package,
+                      color: 'from-slate-500 to-slate-600',
+                      bgColor: 'from-slate-50 to-slate-100',
+                      textColor: 'text-slate-700',
+                      subtitle: 'Assigned today'
+                    }
+                  ].map((stat, index) => (
+                    <Card
+                      key={stat.title}
+                      className={`bg-gradient-to-br ${stat.bgColor} border-0 shadow-lg hover:shadow-xl transition-all duration-300 ease-out transform hover:-translate-y-1 hover:scale-[1.02] animate-in slide-in-from-bottom-4`}
+                      style={{ animationDelay: `${index * 150}ms` }}
+                    >
+                      <CardContent className="p-6">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className={`p-3 rounded-xl bg-gradient-to-br ${stat.color} shadow-lg`}>
+                            <stat.icon className="h-6 w-6 text-white" />
+                          </div>
+                          <TrendingUp className="h-4 w-4 text-slate-400" />
                         </div>
-                        <TrendingUp className="h-4 w-4 text-slate-400" />
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-3xl font-bold text-slate-800">{stat.value}</p>
-                        <p className="text-sm font-medium text-slate-600">{stat.title}</p>
-                        <p className="text-xs text-slate-500">{stat.subtitle}</p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+                        <div className="space-y-1">
+                          <p className="text-3xl font-bold text-slate-800">{stat.value}</p>
+                          <p className="text-sm font-medium text-slate-600">{stat.title}</p>
+                          <p className="text-xs text-slate-500">{stat.subtitle}</p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <TrendingUp className="w-8 h-8 text-slate-400" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-slate-800 mb-2">Loading Dashboard Stats...</h3>
+                  <p className="text-slate-600">Please wait while we fetch your dashboard data.</p>
+                </div>
+              )}
 
               {/* Quick Actions */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <Button
                   onClick={() => setShowMap(!showMap)}
-                  className="h-16 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+                  className="h-16 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-300 ease-out transform hover:scale-105 hover:-translate-y-1"
                 >
                   <div className="flex items-center gap-3">
                     <Navigation className="w-5 h-5" />
@@ -783,9 +898,12 @@ export default function MarketerPage() {
                 </Button>
 
                 <Button
-                  onClick={() => setActiveTab('orders')}
+                  onClick={() => {
+                    setActiveTab('orders');
+                    handleUserActivity();
+                  }}
                   variant="outline"
-                  className="h-16 border-2 border-slate-200 hover:border-blue-300 hover:bg-blue-50 transition-all duration-300"
+                  className="h-16 border-2 border-slate-200 hover:border-blue-300 hover:bg-blue-50 transition-all duration-300 ease-out transform hover:scale-105 hover:-translate-y-1"
                 >
                   <div className="flex items-center gap-3">
                     <Package className="w-5 h-5 text-blue-600" />
@@ -800,7 +918,7 @@ export default function MarketerPage() {
                   onClick={handleRefresh}
                   disabled={isRefreshing}
                   variant="outline"
-                  className="h-16 border-2 border-slate-200 hover:border-green-300 hover:bg-green-50 transition-all duration-300"
+                  className="h-16 border-2 border-slate-200 hover:border-green-300 hover:bg-green-50 transition-all duration-300 ease-out transform hover:scale-105 hover:-translate-y-1"
                 >
                   <div className="flex items-center gap-3">
                     <RefreshCw className={`w-5 h-5 text-green-600 ${isRefreshing ? 'animate-spin' : ''}`} />
@@ -856,10 +974,149 @@ export default function MarketerPage() {
               )}
 
               {/* Recent Orders Preview */}
-              <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-xl">
-                <CardHeader className="bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200">
-                  <CardTitle className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
+              {stats?.recentOrders && stats.recentOrders.length > 0 ? (
+                <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-xl">
+                  <CardHeader className="bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200">
+                    <CardTitle className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-slate-100 rounded-lg">
+                          <Package className="w-5 h-5 text-slate-600" />
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-semibold text-slate-800">Recent Orders</h3>
+                          <p className="text-sm text-slate-600">Your latest deliveries</p>
+                        </div>
+                      </div>
+                      <Button
+                        onClick={() => {
+                          setActiveTab('orders');
+                          setSelectedOrder(null); // Clear any selected order when switching tabs
+                          handleUserActivity();
+                        }}
+                        variant="outline"
+                        size="sm"
+                        className="border-slate-300 hover:bg-slate-50"
+                      >
+                        View All
+                      </Button>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-6">
+                    <div className="space-y-4">
+                      {stats.recentOrders.slice(0, 3).map((order: any, index: number) => (
+                        <div
+                          key={order._id || index}
+                          className={`border border-slate-200 rounded-xl p-4 hover:bg-slate-50/50 transition-all duration-300 cursor-pointer transform hover:scale-[1.02] animate-in slide-in-from-left-4 ${selectedOrder?._id === order._id ? 'ring-2 ring-blue-500 bg-blue-50/50' : ''
+                            }`}
+                          style={{ animationDelay: `${index * 100}ms` }}
+                          onClick={() => setSelectedOrder(order)}
+                        >
+                          <div className="flex items-start justify-between mb-4">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-3 mb-3">
+                                <div className={`p-2 rounded-lg ${order.status === 'pending' ? 'bg-yellow-100' :
+                                    order.status === 'in_transit' ? 'bg-blue-100' : 'bg-green-100'
+                                  }`}>
+                                  {getStatusIcon(order.status)}
+                                </div>
+                                <div>
+                                  <h4 className="font-semibold text-slate-800">Order #{order.orderNumber}</h4>
+                                  <p className="text-sm text-slate-600">{order.customerName}</p>
+                                </div>
+                                {getStatusBadge(order.status)}
+                              </div>
+
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-3">
+                                <div className="flex items-center gap-2 text-sm text-slate-600">
+                                  <Phone className="w-4 h-4" />
+                                  {order.customerPhone}
+                                </div>
+                                <div className="flex items-center gap-2 text-sm text-slate-600">
+                                  <MapPin className="w-4 h-4" />
+                                  {order.address?.split(',')[0] || order.address}
+                                </div>
+                              </div>
+
+                              <div className="flex items-center justify-between">
+                                <div className="text-lg font-bold text-slate-800">
+                                  ₦{order.totalAmount?.toLocaleString() || '0'}
+                                </div>
+                                <div className="text-xs text-slate-500">
+                                  {order.createdAt ? new Date(order.createdAt).toLocaleDateString('en-US', {
+                                    year: 'numeric',
+                                    month: 'short',
+                                    day: 'numeric'
+                                  }) : 'N/A'}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Action Buttons at Bottom */}
+                          <div className="flex flex-wrap gap-2 pt-3 border-t border-slate-200">
+                            {order.status === 'pending' && (
+                              <Button
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleStartDelivery(order._id);
+                                }}
+                                className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 shadow-sm transform hover:scale-105 transition-all duration-200"
+                              >
+                                <Truck className="w-3 h-3 mr-1" />
+                                Start
+                              </Button>
+                            )}
+
+                            {order.status === 'in_transit' && (
+                              <Button
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleMarkDelivered(order._id);
+                                }}
+                                className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 shadow-sm transform hover:scale-105 transition-all duration-200"
+                              >
+                                <CheckCircle className="w-3 h-3 mr-1" />
+                                Complete
+                              </Button>
+                            )}
+
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedOrderMap(order);
+                              }}
+                              className="border-slate-300 hover:bg-slate-50 transform hover:scale-105 transition-all duration-200"
+                            >
+                              <Navigation className="w-3 h-3 mr-1" />
+                              Navigate
+                            </Button>
+
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedOrder(order);
+                              }}
+                              className="border-slate-300 hover:bg-slate-50 transform hover:scale-105 transition-all duration-200"
+                            >
+                              <MessageSquare className="w-3 h-3 mr-1" />
+                              Contact
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : (
+                <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-xl">
+                  <CardHeader className="bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200">
+                    <CardTitle className="flex items-center gap-3">
                       <div className="p-2 bg-slate-100 rounded-lg">
                         <Package className="w-5 h-5 text-slate-600" />
                       </div>
@@ -867,139 +1124,19 @@ export default function MarketerPage() {
                         <h3 className="text-lg font-semibold text-slate-800">Recent Orders</h3>
                         <p className="text-sm text-slate-600">Your latest deliveries</p>
                       </div>
-                    </div>
-                    <Button
-                      onClick={() => setActiveTab('orders')}
-                      variant="outline"
-                      size="sm"
-                      className="border-slate-300 hover:bg-slate-50"
-                    >
-                      View All
-                    </Button>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-6">
-                  <div className="space-y-4">
-                    {orders.slice(0, 3).map((order: Order, index) => (
-                      <div
-                        key={order._id}
-                        className={`border border-slate-200 rounded-xl p-4 hover:bg-slate-50/50 transition-all duration-300 cursor-pointer transform hover:scale-[1.02] animate-in slide-in-from-left-4 ${selectedOrder?._id === order._id ? 'ring-2 ring-blue-500 bg-blue-50/50' : ''
-                          }`}
-                        style={{ animationDelay: `${index * 100}ms` }}
-                        onClick={() => setSelectedOrder(order)}
-                      >
-                        <div className="flex items-start justify-between mb-4">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-3 mb-3">
-                              <div className={`p-2 rounded-lg ${order.status === 'pending' ? 'bg-yellow-100' :
-                                  order.status === 'in_transit' ? 'bg-blue-100' : 'bg-green-100'
-                                }`}>
-                                {getStatusIcon(order.status)}
-                              </div>
-                              <div>
-                                <h4 className="font-semibold text-slate-800">Order #{order.orderNumber}</h4>
-                                <p className="text-sm text-slate-600">{order.customerName}</p>
-                              </div>
-                              {getStatusBadge(order.status)}
-                            </div>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-3">
-                              <div className="flex items-center gap-2 text-sm text-slate-600">
-                                <Phone className="w-4 h-4" />
-                                {order.customerPhone}
-                              </div>
-                              <div className="flex items-center gap-2 text-sm text-slate-600">
-                                <MapPin className="w-4 h-4" />
-                                {order.address.split(',')[0]}
-                              </div>
-                            </div>
-
-                            <div className="flex items-center justify-between">
-                              <div className="text-lg font-bold text-slate-800">
-                                ₦{order.totalAmount.toLocaleString()}
-                              </div>
-                              <div className="text-xs text-slate-500">
-                                {new Date(order.createdAt).toLocaleDateString('en-US', {
-                                  year: 'numeric',
-                                  month: 'short',
-                                  day: 'numeric'
-                                })}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Action Buttons at Bottom */}
-                        <div className="flex flex-wrap gap-2 pt-3 border-t border-slate-200">
-                          {order.status === 'pending' && (
-                            <Button
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleStartDelivery(order._id);
-                              }}
-                              className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 shadow-sm transform hover:scale-105 transition-all duration-200"
-                            >
-                              <Truck className="w-3 h-3 mr-1" />
-                              Start
-                            </Button>
-                          )}
-
-                          {order.status === 'in_transit' && (
-                            <Button
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleMarkDelivered(order._id);
-                              }}
-                              className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 shadow-sm transform hover:scale-105 transition-all duration-200"
-                            >
-                              <CheckCircle className="w-3 h-3 mr-1" />
-                              Complete
-                            </Button>
-                          )}
-
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedOrderMap(order);
-                            }}
-                            className="border-slate-300 hover:bg-slate-50 transform hover:scale-105 transition-all duration-200"
-                          >
-                            <Navigation className="w-3 h-3 mr-1" />
-                            Navigate
-                          </Button>
-
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedOrder(order);
-                            }}
-                            className="border-slate-300 hover:bg-slate-50 transform hover:scale-105 transition-all duration-200"
-                          >
-                            <MessageSquare className="w-3 h-3 mr-1" />
-                            Contact
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {orders.length === 0 && (
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-6">
                     <div className="text-center py-12">
                       <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
                         <Package className="w-8 h-8 text-slate-400" />
                       </div>
-                      <h3 className="text-lg font-semibold text-slate-800 mb-2">No orders yet</h3>
-                      <p className="text-slate-600">Your deliveries will appear here when assigned.</p>
+                      <h3 className="text-lg font-semibold text-slate-800 mb-2">No recent orders</h3>
+                      <p className="text-slate-600">Your recent deliveries will appear here when available.</p>
                     </div>
-                  )}
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Contact Modal */}
               {selectedOrder && (
@@ -1015,7 +1152,7 @@ export default function MarketerPage() {
                           <p className="text-sm text-slate-600">Order #{selectedOrder.orderNumber}</p>
                         </div>
                       </div>
-                      <Button variant="ghost" size="sm" onClick={() => setSelectedOrder(null)} className="hover:bg-slate-100 rounded-full">
+                      <Button variant="ghost" size="sm" onClick={() => setSelectedOrder(null)} className="hover:bg-slate-100 rounded-full transition-all duration-200 ease-out transform hover:scale-110 hover:rotate-90">
                         ×
                       </Button>
                     </div>
@@ -1168,7 +1305,7 @@ export default function MarketerPage() {
 
           {/* Profile Tab */}
           {activeTab === 'profile' && (
-            <div className="space-y-8 animate-in fade-in duration-500">
+            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
 
               {/* Profile Header */}
               <Card className="bg-gradient-to-br from-slate-800 via-blue-800 to-indigo-800 text-white border-0 shadow-2xl overflow-hidden relative">
@@ -1334,9 +1471,36 @@ export default function MarketerPage() {
                       />
                     </div>
 
-                    <Button className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200">
+                    <Button className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transform hover:scale-[1.02] hover:-translate-y-0.5 transition-all duration-200 ease-out">
                       <Key className="w-4 h-4 mr-2" />
                       Update Password
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Logout Section */}
+              <Card className="bg-white/90 backdrop-blur-sm border-0 shadow-xl">
+                <CardHeader className="bg-gradient-to-r from-red-50 to-pink-50 border-b border-red-100">
+                  <CardTitle className="flex items-center gap-3">
+                    <div className="p-2 bg-red-100 rounded-lg">
+                      <LogOut className="w-5 h-5 text-red-600" />
+                    </div>
+                    Account Actions
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <div className="space-y-4">
+                    <p className="text-sm text-slate-600">
+                      Need to sign out? You can securely log out of your account here.
+                    </p>
+                    <Button
+                      onClick={handleLogout}
+                      variant="outline"
+                      className="w-full border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 transition-all duration-200 ease-out transform hover:scale-[1.02] hover:-translate-y-0.5"
+                    >
+                      <LogOut className="w-4 h-4 mr-2" />
+                      Logout from Account
                     </Button>
                   </div>
                 </CardContent>

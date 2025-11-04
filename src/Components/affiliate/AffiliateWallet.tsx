@@ -22,7 +22,6 @@ import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/ui/select';
 import { useAffiliateProfile } from '@/hooks/useAffiliate';
-import { useRequestWithdrawal } from '@/hooks/useCommissions';
 import { toast } from 'sonner';
 import WithdrawalReceipt from './WithdrawalReceipt';
 
@@ -39,7 +38,8 @@ export default function AffiliateWallet() {
   });
   const [receiptWithdrawal, setReceiptWithdrawal] = useState<any>(null);
   const [showReceipt, setShowReceipt] = useState(false);
-  const requestWithdrawalMutation = useRequestWithdrawal();
+  // TODO: Implement withdrawal functionality when API is available
+  const requestWithdrawalMutation = { mutateAsync: async (data: any) => ({ withdrawal: null }), isPending: false };
 
   // Withdrawal countdown logic
   const getNextWithdrawalDate = () => {

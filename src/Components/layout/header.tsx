@@ -8,13 +8,23 @@ import { useState } from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { useAuth } from '@/hooks/useAuth';
-import { useAffiliateProfile } from '@/hooks/useAffiliate';
+import React from 'react';
+import { useWalletBalance } from '@/hooks/useWallet';
 
 export default function Header() {
     const totalItems = useCartStore((s) => s.getTotalItems());
     const { user } = useAuth();
-    const { data: profileData } = useAffiliateProfile();
-    const profile = profileData?.profile;
+    const { data: walletData, error: walletError } = useWalletBalance();
+    const balance = walletData?.availableBalance || 0;
+
+    // Debug wallet error
+    React.useEffect(() => {
+        if (walletError) {
+            console.log('Wallet balance error:', walletError);
+            // Don't show error toast for wallet balance - it's not critical
+            // The balance will just show as 0 if there's an error
+        }
+    }, [walletError]);
 
     const [searchQuery, setSearchQuery] = useState('');
     const [showMobileSearch, setShowMobileSearch] = useState(false);
@@ -93,7 +103,7 @@ export default function Header() {
                                         <div className="text-right">
                                             <p className="text-xs opacity-90">Balance</p>
                                             <p className="font-bold text-sm leading-tight">
-                                                {showBalance ? `₦${profile?.availableBalance?.toLocaleString() || '0'}` : '••••••'}
+                                                {showBalance ? `₦${balance?.toLocaleString() || '0'}` : '••••••'}
                                             </p>
                                         </div>
                                         <Button
@@ -180,14 +190,14 @@ export default function Header() {
                                 Products
                             </Link>
                             <Link
-                                href="/wallet"
+                                href="/products/wallet"
                                 className="flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 rounded-xl font-medium whitespace-nowrap border border-green-200"
                             >
                                 <Wallet className="w-4 h-4" />
                                 Wallet
                             </Link>
                             <Link
-                                href="/referrals"
+                                href="/products/referrals"
                                 className="flex items-center gap-2 px-4 py-2 bg-purple-50 text-purple-700 rounded-xl font-medium whitespace-nowrap border border-purple-200"
                             >
                                 <Users className="w-4 h-4" />

@@ -21,6 +21,7 @@ import { Textarea } from '@/Components/ui/textarea';
 import Link from 'next/link';
 import { useAdminProducts, useAdminProduct, useUpdateProduct, useDeleteProduct, useUploadProductImages } from '@/hooks/useProducts';
 import { useQueryClient } from '@tanstack/react-query';
+import { ImageUploadField } from '@/Components/ui/image-upload-field';
 
 export default function AdminProductsPage() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -36,8 +37,6 @@ export default function AdminProductsPage() {
     stock: '',
     images: [] as { url: string; alt: string; isPrimary: boolean }[],
   });
-  const [newImages, setNewImages] = useState<File[]>([]);
-  const [isUploadingImages, setIsUploadingImages] = useState(false);
 
   // Add global animations
   useEffect(() => {
@@ -106,7 +105,6 @@ export default function AdminProductsPage() {
       stock: product.stock?.toString() || '',
       images: product.images || [],
     });
-    setNewImages([]);
     setEditOpen(true);
   };
 
@@ -123,24 +121,7 @@ export default function AdminProductsPage() {
       return `SKU-${timestamp}-${random}`.toUpperCase();
     };
 
-    // First upload new images if any
-    if (newImages.length > 0) {
-      setIsUploadingImages(true);
-      try {
-        await uploadImagesMutation.mutateAsync({
-          id: selectedProduct._id,
-          images: newImages,
-        });
-        setNewImages([]);
-      } catch (error) {
-        console.error('Failed to upload images:', error);
-        // Continue with product update even if image upload fails
-      } finally {
-        setIsUploadingImages(false);
-      }
-    }
-
-    // Then update product details
+    // Update product details
     updateMutation.mutate(
       {
         // FIX: Use selectedProduct._id to get the unique identifier,
@@ -244,16 +225,22 @@ export default function AdminProductsPage() {
           // Using product.id || product._id for the key ensures a unique key is used.
           <Card key={product.id || product._id} className="overflow-hidden hover:shadow-lg transition-shadow">
             <div className="aspect-square bg-gray-100 relative">
-              <img
-                src={product.images?.[0]}
-                alt={product.name}
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  if (e.currentTarget.src !== '/images/placeholder.jpg') {
-                    e.currentTarget.src = '/images/placeholder.jpg';
-                  }
-                }}
-              />
+              {product.images?.[0] ? (
+                <img
+                  src={product.images[0].url || product.images[0]}
+                  alt={product.name}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    if (e.currentTarget.src !== '/images/placeholder.jpg') {
+                      e.currentTarget.src = '/images/placeholder.jpg';
+                    }
+                  }}
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-gray-200">
+                  <span className="text-gray-500 text-sm">No Image</span>
+                </div>
+              )}
               <div className="absolute top-2 right-2">
                 {getStatusBadge(product.stock > 0 ? 'active' : 'out_of_stock')}
               </div>
@@ -391,93 +378,16 @@ export default function AdminProductsPage() {
               </div>
               <div>
                 <Label htmlFor="images">Images</Label>
-                <div className="space-y-4">
-                  {/* Existing Images */}
-                  {editForm.images.length > 0 && (
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium">Current Images</Label>
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                        {editForm.images.map((image, index) => (
-                          <div key={index} className="relative group">
-                            <img
-                              src={image.url}
-                              alt={image.alt || `Image ${index + 1}`}
-                              className="w-full h-20 object-cover rounded border"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).src = '/images/placeholder.jpg';
-                              }}
-                            />
-                            <Button
-                              type="button"
-                              variant="destructive"
-                              size="sm"
-                              className="absolute top-1 right-1 w-6 h-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                              onClick={() => {
-                                const newImages = editForm.images.filter((_, i) => i !== index);
-                                setEditForm({ ...editForm, images: newImages });
-                              }}
-                            >
-                              ×
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Upload New Images */}
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">Upload New Images</Label>
-                    <Input
-                      type="file"
-                      multiple
-                      accept="image/*"
-                      onChange={(e) => {
-                        const files = Array.from(e.target.files || []);
-                        setNewImages(files);
-                      }}
-                      className="cursor-pointer"
-                    />
-                    {newImages.length > 0 && (
-                      <div className="flex items-center justify-between">
-                        <div className="text-sm text-gray-600">
-                          {newImages.length} image{newImages.length > 1 ? 's' : ''} selected for upload
-                        </div>
-                        <Button
-                          type="button"
-                          size="sm"
-                          onClick={async () => {
-                            if (newImages.length === 0) return;
-                            setIsUploadingImages(true);
-                            try {
-                              await uploadImagesMutation.mutateAsync({
-                                id: selectedProduct._id,
-                                images: newImages,
-                              });
-                              setNewImages([]);
-                              // Refresh the product data to show new images
-                              queryClient.invalidateQueries({ queryKey: ['admin', 'products'] });
-                            } catch (error) {
-                              console.error('Failed to upload images:', error);
-                            } finally {
-                              setIsUploadingImages(false);
-                            }
-                          }}
-                          disabled={isUploadingImages}
-                          className="cursor-pointer"
-                        >
-                          {isUploadingImages ? 'Uploading...' : 'Upload Images'}
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                </div>
+                <ImageUploadField
+                  value={editForm.images}
+                  onChange={(images) => setEditForm({ ...editForm, images })}
+                />
               </div>
             </div>
             <div className="flex justify-end gap-2 mt-4">
               <Button variant="outline" onClick={() => setEditOpen(false)} className="cursor-pointer">Cancel</Button>
-              <Button onClick={handleUpdateProduct} disabled={updateMutation.isPending || isUploadingImages} className="cursor-pointer">
-                {updateMutation.isPending || isUploadingImages ? 'Updating...' : 'Update Product'}
+              <Button onClick={handleUpdateProduct} disabled={updateMutation.isPending} className="cursor-pointer">
+                {updateMutation.isPending ? 'Updating...' : 'Update Product'}
               </Button>
             </div>
           </div>

@@ -38,10 +38,6 @@ export interface Withdrawal {
 export const walletAPI = {
   // Get wallet balance
   getBalance: async (): Promise<WalletBalance> => {
-    const token = tokenManager.getToken();
-    if (!token) {
-      throw new Error('No authentication token found');
-    }
     const response = await api.get('/api/wallet/balance');
     return response.data;
   },

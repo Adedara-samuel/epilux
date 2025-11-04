@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import { usePendingWithdrawals, useProcessWithdrawal } from '@/hooks/useWallet';
@@ -34,7 +34,9 @@ export default function AdminWithdrawalsPage() {
   const withdrawals = withdrawalsData?.withdrawals || [];
 
   // Add global animations
-  useState(() => {
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
     const styleSheet = document.createElement('style');
     styleSheet.textContent = `
       @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -72,7 +74,7 @@ export default function AdminWithdrawalsPage() {
       document.head.removeChild(styleSheet);
       document.body.classList.remove('scroll-smooth');
     };
-  });
+  }, []);
 
   if (!user) {
     router.push('/login');

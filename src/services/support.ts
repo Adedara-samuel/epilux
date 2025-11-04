@@ -30,7 +30,7 @@ export const supportAPI = {
   replyToTicket: async (id: string, replyData: {
     message: string;
   }) => {
-    const response = await api.post(`/api/support/tickets/${id}/messages`, replyData);
+    const response = await api.post(`/api/support/${id}/reply`, replyData);
     return response.data;
   },
 

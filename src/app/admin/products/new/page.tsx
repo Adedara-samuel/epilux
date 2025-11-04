@@ -17,6 +17,7 @@ import {
 } from '@/Components/ui/form';
 import { useCreateProduct } from '@/hooks/useProducts';
 import { toast } from 'sonner';
+import { ImageUploadField } from '@/Components/ui/image-upload-field';
 
 interface ProductFormData {
     name: string;
@@ -25,7 +26,7 @@ interface ProductFormData {
     category: string;
     brand: string;
     stock: number;
-    images: { url: string; alt: string; isPrimary: boolean }[];
+    images: { url: string; alt: string; isPrimary: boolean; file?: File }[];
 }
 
 export default function AddProductPage() {
@@ -52,16 +53,48 @@ export default function AddProductPage() {
             // Generate a unique SKU for the product
             const uniqueSku = `SKU_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-            // Add the SKU to the data
+            // Prepare images for upload - extract files from image data
+            const imageFiles = data.images
+                .filter(img => img.file) // Only images with files (local previews)
+                .map(img => img.file!);
+
+            // Create FormData for multipart upload
+            const formData = new FormData();
+
+            // Add product data
             const productData = {
-                ...data,
+                name: data.name,
+                description: data.description,
+                price: data.price,
+                category: data.category,
+                brand: data.brand || '',
                 sku: uniqueSku,
                 inventory: { quantity: data.stock }
             };
 
-            await createProduct.mutateAsync(productData);
-            toast.success('Product created successfully');
-            router.push('/admin/products');
+            formData.append('data', JSON.stringify(productData));
+
+            // Add image files
+            imageFiles.forEach((file, index) => {
+                formData.append('images', file);
+            });
+
+            // Upload via API
+            const response = await fetch('https://epilux-backend.vercel.app/api/admin/products', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+                },
+                body: formData
+            });
+
+            if (response.ok) {
+                toast.success('Product created successfully');
+                router.push('/admin/products');
+            } else {
+                const errorData = await response.json();
+                toast.error(errorData.message || 'Failed to create product');
+            }
         } catch (error) {
             toast.error('Failed to create product');
             console.error('Create product error:', error);
@@ -212,82 +245,10 @@ export default function AddProductPage() {
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Product Images</FormLabel>
-                                        <div className="space-y-4">
-                                            <div>
-                                                <label className="text-sm font-medium">Image Input Type</label>
-                                                <select
-                                                    value={imageInputType}
-                                                    onChange={(e) => setImageInputType(e.target.value as 'url' | 'file')}
-                                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                                                >
-                                                    <option value="url">Enter URLs</option>
-                                                    <option value="file">Upload Files</option>
-                                                </select>
-                                            </div>
-                                            {imageInputType === 'url' ? (
-                                                <FormControl>
-                                                    <Textarea
-                                                        placeholder="Enter image URLs, one per line"
-                                                        className="min-h-[80px]"
-                                                        value={field.value?.map(img => img.url).join('\n') || ''}
-                                                        onChange={(e) => {
-                                                            const urls = e.target.value.split('\n').filter(url => url.trim());
-                                                            const images = urls.map((url, index) => ({
-                                                                url,
-                                                                alt: `Image ${index + 1}`,
-                                                                isPrimary: index === 0
-                                                            }));
-                                                            field.onChange(images);
-                                                        }}
-                                                    />
-                                                </FormControl>
-                                            ) : null}
-                                            {imageInputType === 'file' && (
-                                                <FormControl>
-                                                    <Input
-                                                        type="file"
-                                                        multiple
-                                                        accept="image/*"
-                                                        onChange={async (e) => {
-                                                            const files = Array.from(e.target.files || []);
-                                                            if (files.length === 0) return;
-
-                                                            // Upload files to server
-                                                            const formData = new FormData();
-                                                            files.forEach(file => {
-                                                                formData.append('images', file);
-                                                            });
-
-                                                            try {
-                                                                const response = await fetch('https://epilux-backend.vercel.app/api/uploads/multiple', {
-                                                                    method: 'POST',
-                                                                    body: formData,
-                                                                    headers: {
-                                                                        'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
-                                                                    }
-                                                                });
-
-                                                                if (response.ok) {
-                                                                    const result = await response.json();
-                                                                    const currentImages = field.value || [];
-                                                                    const newImages = (result.images || []).map((img: any, index: number) => ({
-                                                                        url: img.url,
-                                                                        alt: img.alt,
-                                                                        isPrimary: currentImages.length === 0 && index === 0
-                                                                    }));
-                                                                    field.onChange([...currentImages, ...newImages]);
-                                                                } else {
-                                                                    toast.error('Failed to upload images');
-                                                                }
-                                                            } catch (error) {
-                                                                console.error('Upload error:', error);
-                                                                toast.error('Failed to upload images');
-                                                            }
-                                                        }}
-                                                    />
-                                                </FormControl>
-                                            )}
-                                        </div>
+                                        <ImageUploadField
+                                            value={field.value || []}
+                                            onChange={field.onChange}
+                                        />
                                         <FormMessage />
                                     </FormItem>
                                 )}

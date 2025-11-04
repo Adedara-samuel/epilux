@@ -58,12 +58,7 @@ export const productsAPI = {
         comment: string;
         title?: string;
     }) => {
-        const response = await api.post(`/api/products/${productId}/reviews`, reviewData, {
-            headers: {
-                // Ensure the base api client handles the base URL and proper headers
-                'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
-            }
-        });
+        const response = await api.post(`/api/products/${productId}/reviews`, reviewData);
         return response.data;
     },
 

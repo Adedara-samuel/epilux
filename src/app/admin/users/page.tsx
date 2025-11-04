@@ -228,8 +228,6 @@ export default function AdminUsersPage() {
     switch (role) {
       case 'admin':
         return <Badge variant="destructive">Admin</Badge>;
-      case 'affiliate':
-        return <Badge variant="secondary">Affiliate</Badge>;
       case 'marketer':
         return <Badge className="bg-green-100 text-green-800">Marketer</Badge>;
       default:
@@ -477,7 +475,6 @@ export default function AdminUsersPage() {
                   onChange={(e) => setNewUserForm(prev => ({ ...prev, role: e.target.value }))}
                 >
                   <option value="user">User</option>
-                  <option value="affiliate">Affiliate</option>
                   <option value="marketer">Marketer</option>
                   <option value="admin">Admin</option>
                 </select>
@@ -602,7 +599,6 @@ export default function AdminUsersPage() {
                   onChange={(e) => setEditForm(prev => ({ ...prev, role: e.target.value }))}
                 >
                   <option value="user">User</option>
-                  <option value="affiliate">Affiliate</option>
                   <option value="marketer">Marketer</option>
                   <option value="admin">Admin</option>
                 </select>
@@ -641,7 +637,6 @@ export default function AdminUsersPage() {
                   onChange={(e) => setSelectedRole(e.target.value)}
                 >
                   <option value="user">User</option>
-                  <option value="affiliate">Affiliate</option>
                   <option value="marketer">Marketer</option>
                   <option value="admin">Admin</option>
                 </select>

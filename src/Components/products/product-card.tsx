@@ -83,9 +83,8 @@ export default function ProductCard({ product }: ProductCardProps) {
     const stockStatus = getStockStatus(product.stock);
 
     const handleSubmitReview = async (e: React.FormEvent) => {
-        console.log('handleSubmitReview called'); // Console log retained for debugging
         e.preventDefault();
-        
+
         if (!user) {
             toast.error('You must be logged in to submit a review.');
             return;
@@ -114,7 +113,7 @@ export default function ProductCard({ product }: ProductCardProps) {
             setReviewTitle('');
             setReviewRating(5);
             setShowReviewForm(false);
-            
+
         } catch (error: any) {
             console.error('Review submission error:', error);
             // Display error from server response or a fallback message
@@ -462,7 +461,14 @@ export default function ProductCard({ product }: ProductCardProps) {
                                                 type="submit"
                                                 disabled={isSubmittingReview || !reviewComment.trim()}
                                                 className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
-                                                // Removed the redundant console.log from onClick, relying on form onSubmit
+                                                onClick={(e) => {
+                                                    // Manually trigger form submission if needed
+                                                    const form = (e.target as HTMLElement).closest('form');
+                                                    if (form && !isSubmittingReview && reviewComment.trim()) {
+                                                        const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
+                                                        form.dispatchEvent(submitEvent);
+                                                    }
+                                                }}
                                             >
                                                 {isSubmittingReview ? 'Submitting...' : 'Submit Review'}
                                             </button>
@@ -504,6 +510,22 @@ export default function ProductCard({ product }: ProductCardProps) {
                             <Star className="w-3 h-3" />
                             ₦{(product.affiliateCommission || 0).toLocaleString()}/sale
                         </div>
+                        {/* Individual Product Reviews */}
+                        {reviews.length > 0 && (
+                            <div className="flex items-center gap-1 text-xs text-gray-600">
+                                <MessageSquare className="w-3 h-3" />
+                                <span>{reviews.length} review{reviews.length > 1 ? 's' : ''}</span>
+                                {averageRating > 0 && (
+                                    <>
+                                        <span>•</span>
+                                        <div className="flex items-center gap-1">
+                                            <Star className="w-3 h-3 text-yellow-400 fill-current" />
+                                            <span>{averageRating.toFixed(1)}</span>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                        )}
                     </div>
 
                     {/* Quick Actions */}

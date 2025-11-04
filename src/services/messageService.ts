@@ -13,7 +13,7 @@ export interface SupportTicket {
     subject: string;
     message: string;
     createdAt: string;
-    status: 'pending' | 'read' | 'resolved'; // Dynamically used status
+    status: 'pending' | 'read' | 'resolved';
     userId: string;
     // Sender details
     name: string;
@@ -42,7 +42,7 @@ export const messageAPI = {
      */
     sendMessage: async (data: SendMessagePayload): Promise<SupportTicket> => {
         const baseUrl = getBaseUrl();
-        const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+        const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
         const response = await fetch(`${baseUrl}/api/messages`, {
             method: 'POST',
             headers: {
@@ -63,7 +63,7 @@ export const messageAPI = {
      */
     getMessages: async (): Promise<MessagesListResponse> => {
         const baseUrl = getBaseUrl();
-        const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+        const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
         const response = await fetch(`${baseUrl}/api/messages`, {
             method: 'GET',
             headers: {
@@ -83,7 +83,7 @@ export const messageAPI = {
      */
     getMessage: async (id: string): Promise<SupportTicket> => {
         const baseUrl = getBaseUrl();
-        const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+        const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
         const response = await fetch(`${baseUrl}/api/messages/${id}`, {
             method: 'GET',
             headers: {
@@ -101,18 +101,18 @@ export const messageAPI = {
 
     /**
      * Update the status of a ticket (Mark as Read/Unread/Resolved).
-     * Maps to: PATCH /api/messages/:id
+     * Maps to: PUT /api/messages/:id/read
      */
     updateStatus: async (id: string, newStatus: 'read' | 'pending' | 'resolved'): Promise<SupportTicket> => {
         const baseUrl = getBaseUrl();
-        const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
-        const response = await fetch(`${baseUrl}/api/messages/${id}`, {
-            method: 'PATCH',
+        const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+        const response = await fetch(`${baseUrl}/api/messages/${id}/read`, {
+            method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
                 ...(token && { 'Authorization': `Bearer ${token}` }),
             },
-            body: JSON.stringify({ status: newStatus }),
+            body: JSON.stringify({ read: newStatus === 'read' }),
         });
         if (!response.ok) {
             throw new Error('Failed to update status');
@@ -126,7 +126,7 @@ export const messageAPI = {
      */
     deleteMessage: async (id: string): Promise<void> => {
         const baseUrl = getBaseUrl();
-        const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+        const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
         const response = await fetch(`${baseUrl}/api/messages/${id}`, {
             method: 'DELETE',
             headers: {

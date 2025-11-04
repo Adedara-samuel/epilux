@@ -14,7 +14,7 @@ import { CommissionHistory } from '@/Components/affiliate/CommissionHistory';
 import { PerformanceMilestones } from '@/Components/affiliate/PerformanceMilestones';
 import { useAuth } from '@/hooks/useAuth';
 import { useAffiliateProfile, useAffiliateDashboard, useAffiliateSales, useAffiliateReferrals } from '@/hooks/useAffiliate';
-import { useUserCommissions } from '@/hooks/useCommissions';
+import { useCommissions } from '@/hooks/useCommissions';
 
 // TODO: Implement milestones API
 
@@ -28,7 +28,7 @@ export default function AffiliateDashboard() {
     const { data: dashboardData, isLoading: dashboardLoading } = useAffiliateDashboard();
     const { data: salesData, isLoading: salesLoading } = useAffiliateSales();
     const { data: referralsData, isLoading: referralsLoading } = useAffiliateReferrals();
-    const { data: commissionsData, isLoading: commissionsLoading } = useUserCommissions();
+    const { data: commissionsData, isLoading: commissionsLoading } = useCommissions();
 
     const profile = profileData?.profile;
     const dashboard = dashboardData?.dashboard;

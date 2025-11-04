@@ -14,8 +14,28 @@ const Header: React.FC = () => {
     const totalItems = useCartStore((s) => s.getTotalItems());
     const [hoveredItem, setHoveredItem] = useState<string | null>(null);
 
-    const handleLogout = () => {
-        logout();
+    const handleLogout = async () => {
+        try {
+            const token = localStorage.getItem('auth_token');
+            if (token) {
+                await fetch('https://epilux-backend.vercel.app/api/auth/logout', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                });
+            }
+        } catch (error) {
+            console.error('Logout API failed:', error);
+        } finally {
+            // Clear local auth data
+            localStorage.removeItem('auth_token');
+            localStorage.removeItem('user');
+            localStorage.removeItem('tokenTimestamp');
+            document.cookie = 'authToken=; path=/; max-age=0; samesite=strict';
+            window.location.href = '/login';
+        }
     };
 
     return (

@@ -134,7 +134,7 @@ export const useAddProductReview = () => {
       queryClient.invalidateQueries({ queryKey: ['product', productId] });
       queryClient.invalidateQueries({ queryKey: ['product', 'ratings', productId] });
       queryClient.invalidateQueries({ queryKey: ['product', 'rating-summary', productId] });
-      // FIX: Removed the erroneous 'enabled: !!productId;' line
+      
     },
   });
 };

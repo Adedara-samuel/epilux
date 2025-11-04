@@ -4,7 +4,9 @@
 // All necessary hooks from the useMessages file are correctly imported
 import { useSupportTickets, useDeleteMessage, useUpdateTicketStatus, useResolveTicket } from '@/hooks/useMessages';
 // The SupportTicket interface is correctly imported
-import { SupportTicket } from '@/services/messageService'; 
+import { SupportTicket } from '@/services/messageService';
+// Import the messageAPI for direct API calls if needed
+import { messageAPI } from '@/services/messageService';
 
 import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/Components/ui/button';
@@ -99,21 +101,33 @@ export default function AdminNotificationsPage() {
 
     // --- Data Mapping and Derivation ---
 
-    const mappedNotifications: NotificationView[] = (ticketsData?.tickets || []).map(ticket => ({
-        ...ticket,
-        // CORRECT: 'pending' means unread, anything else ('read' or 'resolved') means read
-        read: ticket.status !== 'pending', 
-        // NECESSARY DEFAULT: All records are customer messages/tickets.
-        type: 'message', 
-        // NECESSARY DEFAULT: The API does not provide a priority field.
-        priority: 'medium', 
-        // MAPPED: Use 'subject' for the 'title' field.
-        title: ticket.subject,
-        // MAPPED: Use 'createdAt' for the 'timestamp' field.
-        timestamp: ticket.createdAt,
-        // MAPPED: Use 'email' for the 'customerEmail' field.
-        customerEmail: ticket.email, 
+    // API returns { data: { messages: [...], ... } } structure
+    const messages = (ticketsData as any)?.data?.messages || [];
+
+    const mappedNotifications: NotificationView[] = messages.map((message: any) => ({
+        // Map API fields to component expected fields
+        id: message._id,
+        subject: message.subject,
+        message: message.content, // API has 'content', component expects 'message'
+        status: message.isRead ? 'read' : 'pending', // Map isRead to status
+        createdAt: message.createdAt,
+        email: message.sender?.email || '', // API has sender.email, component expects email
+        name: `${message.sender?.firstName || ''} ${message.sender?.lastName || ''}`.trim() || 'Unknown',
+
+        // Component-specific fields
+        read: message.isRead, // API has isRead boolean
+        type: 'message',
+        priority: 'medium',
+        title: message.subject,
+        timestamp: message.createdAt,
+        customerEmail: message.sender?.email || '',
     }));
+
+    // Debug: Log the API response and mapped data
+    console.log('API Response:', ticketsData);
+    console.log('Messages Array:', messages);
+    console.log('Mapped Notifications:', mappedNotifications);
+    console.log('Number of notifications:', mappedNotifications.length);
 
     // --- Utility Functions ---
 

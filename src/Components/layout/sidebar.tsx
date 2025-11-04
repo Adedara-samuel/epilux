@@ -149,9 +149,28 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                                     <li>
                                         <button
                                             onClick={async () => {
-                                                await logout();
-                                                onClose();
-                                                window.location.href = '/login';
+                                                try {
+                                                    const token = localStorage.getItem('auth_token');
+                                                    if (token) {
+                                                        await fetch('https://epilux-backend.vercel.app/api/auth/logout', {
+                                                            method: 'POST',
+                                                            headers: {
+                                                                'Authorization': `Bearer ${token}`,
+                                                                'Content-Type': 'application/json',
+                                                            },
+                                                        });
+                                                    }
+                                                } catch (error) {
+                                                    console.error('Logout API failed:', error);
+                                                } finally {
+                                                    // Clear local auth data
+                                                    localStorage.removeItem('auth_token');
+                                                    localStorage.removeItem('user');
+                                                    localStorage.removeItem('tokenTimestamp');
+                                                    document.cookie = 'authToken=; path=/; max-age=0; samesite=strict';
+                                                    onClose();
+                                                    window.location.href = '/login';
+                                                }
                                             }}
                                             className="flex items-center gap-3 px-3 py-2.5 rounded-md text-red-600 hover:bg-red-50 w-full text-left transition-colors"
                                         >

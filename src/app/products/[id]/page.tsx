@@ -70,7 +70,10 @@ export default function ProductDetailPage() {
             if (user?.token) {
                 await addToCartAPI.mutateAsync({
                     productId: product.id || product._id,
-                    quantity
+                    quantity,
+                    image: product.images?.[0]?.url || product.image || '/images/placeholder.jpg',
+                    name: product.name,
+                    price: product.price
                 });
             }
 
