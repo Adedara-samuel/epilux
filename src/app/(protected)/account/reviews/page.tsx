@@ -39,9 +39,17 @@ export default function MyReviewsPage() {
     const fetchUserReviews = async () => {
         try {
             setLoadingReviews(true);
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://epilux-backend.vercel.app'}/api/user/reviews`, {
+            const token = localStorage.getItem('auth_token');
+
+            if (!token) {
+                toast.error('Authentication required');
+                return;
+            }
+
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://epilux-backend.vercel.app'}/api/users/me/ratings`, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
                 },
             });
 
@@ -63,10 +71,18 @@ export default function MyReviewsPage() {
         if (!confirm('Are you sure you want to delete this review?')) return;
 
         try {
-            const response = await fetch(`/api/products/reviews/${reviewId}`, {
+            const token = localStorage.getItem('auth_token');
+
+            if (!token) {
+                toast.error('Authentication required');
+                return;
+            }
+
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://epilux-backend.vercel.app'}/api/products/reviews/${reviewId}`, {
                 method: 'DELETE',
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
                 },
             });
 

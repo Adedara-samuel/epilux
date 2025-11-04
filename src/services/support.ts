@@ -36,7 +36,7 @@ export const supportAPI = {
 
   // Direct Messages
   getMessages: async (params?: { page?: number; limit?: number; isRead?: boolean }) => {
-    const response = await api.get('/api/support/messages', { params });
+    const response = await api.get('/api/messages', { params });
     return response.data;
   },
 
@@ -57,7 +57,19 @@ export const supportAPI = {
   },
 
   markMessageAsRead: async (id: string) => {
-    const response = await api.put(`/api/support/messages/${id}/read`);
+    // Get token from localStorage
+    const token = localStorage.getItem('auth_token');
+
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+
+    const response = await api.put(`/api/messages/${id}/read`, {}, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
     return response.data;
   },
 };

@@ -33,25 +33,25 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             {/* Overlay */}
             {isOpen && (
                 <div
-                    className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden transition-opacity duration-300"
+                    className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden transition-opacity duration-300 animate-fade-in-scale"
                     onClick={onClose}
                 />
             )}
 
             {/* Sidebar - Now completely fixed */}
             <aside
-                className={`fixed top-0 left-0 h-screen w-72 bg-white shadow-xl z-50 transform transition-all duration-300 ease-in-out overflow-y-auto
+                className={`fixed top-0 left-0 h-screen w-72 bg-white shadow-xl z-50 transform transition-all duration-300 ease-in-out overflow-y-auto animate-slide-in-left
                     ${isOpen ? 'translate-x-0' : '-translate-x-full'}
                     lg:fixed lg:translate-x-0 lg:w-64 lg:shadow-none lg:border-r lg:border-gray-200 lg:bg-gray-50`}
             >
                 <div className="h-full flex flex-col">
                     {/* Header */}
-                    <div className="p-4 flex items-center justify-between border-b border-gray-200 bg-white text-blue-700 lg:bg-white lg:border-b-0 lg:pt-6 sticky top-0 z-10">
-                        <Link href="/" className="flex items-center gap-2" onClick={handleLinkClick}>
+                    <div className="p-4 flex items-center justify-between border-b border-gray-200 bg-white text-blue-700 lg:bg-white lg:border-b-0 lg:pt-6 sticky top-0 z-10 animate-fade-in-scale">
+                        <Link href="/" className="flex items-center gap-2 hover-lift" onClick={handleLinkClick}>
                             <img
                                 src="/images/logo.png"
                                 alt="Epilux Water Logo"
-                                className="h-8 w-auto rounded-full border-2 border-white lg:border-gray-200"
+                                className="h-8 w-auto rounded-full border-2 border-white lg:border-gray-200 hover-glow transition-all duration-300"
                             />
                             <span className="text-xl font-bold text-blue-800 hidden sm:block">
                                 Epilux <span className="text-blue-600">Water</span>
@@ -61,21 +61,21 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                             variant="ghost"
                             size="icon"
                             onClick={onClose}
-                            className="text-white hover:bg-blue-800 lg:hidden"
+                            className="text-white hover:bg-blue-800 lg:hidden hover-scale transition-all duration-200"
                         >
                             <X className="h-6 w-6" />
                         </Button>
                     </div>
 
                     {/* User Info */}
-                    <div className="p-4 border-b border-gray-100 bg-white">
+                    <div className="p-4 border-b border-gray-100 bg-white animate-fade-in-scale">
                         {user ? (
                             <Link
                                 href="/account"
-                                className="flex items-center gap-3 hover:bg-blue-50 p-2 rounded-md transition-colors"
+                                className="flex items-center gap-3 hover:bg-blue-50 p-2 rounded-md transition-colors hover-lift"
                                 onClick={handleLinkClick}
                             >
-                                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-semibold">
+                                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-semibold hover-glow transition-all duration-300">
                                     {user.displayName ? user.displayName.charAt(0).toUpperCase() : user.email?.charAt(0).toUpperCase() || <User size={20} />}
                                 </div>
                                 <div>
@@ -90,10 +90,10 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                         ) : (
                             <Link
                                 href="/login"
-                                className="flex items-center gap-3 hover:bg-blue-50 p-2 rounded-md transition-colors"
+                                className="flex items-center gap-3 hover:bg-blue-50 p-2 rounded-md transition-colors hover-lift"
                                 onClick={handleLinkClick}
                             >
-                                <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
+                                <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover-glow transition-all duration-300">
                                     <User className="h-5 w-5 text-gray-500" />
                                 </div>
                                 <p className="font-medium text-gray-700">Sign In</p>
@@ -103,11 +103,11 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
                     {/* Navigation */}
                     <nav className="flex-1 overflow-y-auto bg-white">
-                        <div className="p-4 border-b border-gray-100">
+                        <div className="p-4 border-b border-gray-100 animate-fade-in-scale">
                             <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-2">
                                 Menu
                             </h3>
-                            <ul className="space-y-1">
+                            <ul className="space-y-1 stagger-children">
                                 {categories.map((item) => {
                                     // Only show admin panel link if user is admin
                                     if (item.adminOnly && user?.role !== 'admin') {
@@ -118,7 +118,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                                         <li key={item.name}>
                                             <Link
                                                 href={item.href}
-                                                className="flex items-center gap-3 px-3 py-2.5 rounded-md text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors"
+                                                className="flex items-center gap-3 px-3 py-2.5 rounded-md text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors hover-lift"
                                                 onClick={handleLinkClick}
                                             >
                                                 <item.icon className="h-5 w-5 text-blue-600" />
@@ -130,7 +130,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                             </ul>
                         </div>
 
-                        <div className="p-4">
+                        <div className="p-4 animate-fade-in-scale">
                             <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-2">
                                 Account
                             </h3>
@@ -138,7 +138,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                                 <li>
                                     <Link
                                         href="/account"
-                                        className="flex items-center gap-3 px-3 py-2.5 rounded-md text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors"
+                                        className="flex items-center gap-3 px-3 py-2.5 rounded-md text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors hover-lift"
                                         onClick={handleLinkClick}
                                     >
                                         <User className="h-5 w-5 text-blue-600" />
@@ -172,7 +172,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                                                     window.location.href = '/login';
                                                 }
                                             }}
-                                            className="flex items-center gap-3 px-3 py-2.5 rounded-md text-red-600 hover:bg-red-50 w-full text-left transition-colors"
+                                            className="flex items-center gap-3 px-3 py-2.5 rounded-md text-red-600 hover:bg-red-50 w-full text-left transition-colors hover-lift"
                                         >
                                             <LogOut className="h-5 w-5" />
                                             <span className="font-medium">Sign Out</span>

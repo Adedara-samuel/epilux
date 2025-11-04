@@ -37,25 +37,25 @@ export default function Header() {
     };
 
     return (
-        <header className="bg-gradient-to-r from-white via-blue-50/30 to-indigo-50/30 shadow-lg sticky top-0 z-40 border-b border-blue-100/50 backdrop-blur-sm">
+        <header className="bg-gradient-to-r from-white via-blue-50/30 to-indigo-50/30 shadow-lg sticky top-0 z-40 border-b border-blue-100/50 backdrop-blur-sm animate-slide-in-top">
             <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center justify-between h-16">
                     {/* Left: Hamburger Menu & Logo */}
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-4 animate-slide-in-left">
                         <Button
                             variant="ghost"
                             size="icon"
                             onClick={() => window.dispatchEvent(new Event('toggleMobileSidebar'))}
-                            className="lg:hidden text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl"
+                            className="lg:hidden text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl hover-scale transition-all duration-200"
                         >
                             <Menu className="h-5 w-5" />
                         </Button>
-                        <Link href="/" className="flex items-center gap-3 group">
-                            <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-md group-hover:shadow-lg transition-all duration-300">
+                        <Link href="/" className="flex items-center gap-3 group hover-lift">
+                            <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-md group-hover:shadow-lg transition-all duration-300 hover-glow">
                                 <img src="/images/logo.png" alt="" />
                             </div>
                             <div className="hidden sm:block">
-                                <span className="text-xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
+                                <span className="text-xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors duration-300">
                                     Epilux <span className="text-blue-600">Water</span>
                                 </span>
                                 <p className="text-xs text-gray-500 -mt-1">Premium Water Solutions</p>
@@ -65,24 +65,24 @@ export default function Header() {
 
                     {/* Center: Navigation Tabs - For all logged-in users */}
                     {user && (
-                        <div className="hidden lg:flex items-center gap-1 bg-white/60 backdrop-blur-sm rounded-2xl p-1 border border-gray-200/50">
+                        <div className="hidden lg:flex items-center gap-1 bg-white/60 backdrop-blur-sm rounded-2xl p-1 border border-gray-200/50 animate-fade-in-scale">
                             <Link
                                 href="/products"
-                                className="flex items-center gap-2 px-4 py-2 rounded-xl text-gray-700 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200 font-medium"
+                                className="flex items-center gap-2 px-4 py-2 rounded-xl text-gray-700 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200 font-medium hover-lift"
                             >
                                 <ShoppingCart className="w-4 h-4" />
                                 Products
                             </Link>
                             <Link
                                 href="/products/wallet"
-                                className="flex items-center gap-2 px-4 py-2 rounded-xl text-gray-700 hover:text-green-600 hover:bg-green-50 transition-all duration-200 font-medium"
+                                className="flex items-center gap-2 px-4 py-2 rounded-xl text-gray-700 hover:text-green-600 hover:bg-green-50 transition-all duration-200 font-medium hover-lift"
                             >
                                 <Wallet className="w-4 h-4" />
                                 My Wallet
                             </Link>
                             <Link
                                 href="/products/referrals"
-                                className="flex items-center gap-2 px-4 py-2 rounded-xl text-gray-700 hover:text-purple-600 hover:bg-purple-50 transition-all duration-200 font-medium"
+                                className="flex items-center gap-2 px-4 py-2 rounded-xl text-gray-700 hover:text-purple-600 hover:bg-purple-50 transition-all duration-200 font-medium hover-lift"
                             >
                                 <Users className="w-4 h-4" />
                                 Referrals
@@ -91,11 +91,11 @@ export default function Header() {
                     )}
 
                     {/* Right: User Actions */}
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 animate-slide-in-right">
                         {/* User Balance - For all logged-in users */}
                         {user && (
                             <div className="hidden sm:flex">
-                                <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-2 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer group">
+                                <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-2 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer group hover-lift hover-glow">
                                     <div className="flex items-center gap-3">
                                         <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-sm">
                                             <Wallet className="w-4 h-4" />
@@ -110,7 +110,7 @@ export default function Header() {
                                             variant="ghost"
                                             size="sm"
                                             onClick={() => setShowBalance(!showBalance)}
-                                            className="text-white hover:bg-white/20 rounded-full p-1"
+                                            className="text-white hover:bg-white/20 rounded-full p-1 hover-scale transition-all duration-200"
                                         >
                                             {showBalance ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
                                         </Button>
@@ -124,25 +124,25 @@ export default function Header() {
                             variant="ghost"
                             size="icon"
                             onClick={() => setShowMobileSearch(true)}
-                            className="lg:hidden text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl"
+                            className="lg:hidden text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl hover-scale transition-all duration-200"
                         >
                             <Search className="h-5 w-5" />
                         </Button>
 
                         <Link
                             href="/account"
-                            className="p-2 rounded-xl hover:bg-blue-50 transition-colors hidden md:block"
+                            className="p-2 rounded-xl hover:bg-blue-50 transition-colors hidden md:block hover-lift"
                         >
-                            <UserCircle2 className="h-6 w-6 text-gray-600 hover:text-blue-600 transition-colors" />
+                            <UserCircle2 className="h-6 w-6 text-gray-600 hover:text-blue-600 transition-colors duration-200" />
                         </Link>
 
                         <Link
                             href="/cart"
-                            className="relative p-2 rounded-xl hover:bg-blue-50 transition-colors"
+                            className="relative p-2 rounded-xl hover:bg-blue-50 transition-colors hover-lift"
                         >
-                            <ShoppingCart className="h-6 w-6 text-gray-600 hover:text-blue-600 transition-colors" />
+                            <ShoppingCart className="h-6 w-6 text-gray-600 hover:text-blue-600 transition-colors duration-200" />
                             {totalItems > 0 && (
-                                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center shadow-md">
+                                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center shadow-md animate-bounce-in">
                                     {totalItems}
                                 </span>
                             )}
@@ -180,25 +180,25 @@ export default function Header() {
 
                 {/* Mobile Navigation Tabs - For all logged-in users */}
                 {user && (
-                    <div className="lg:hidden border-t border-gray-200/50 pt-3 pb-2">
-                        <div className="flex gap-2 overflow-x-auto">
+                    <div className="lg:hidden border-t border-gray-200/50 pt-3 pb-2 animate-slide-in-bottom">
+                        <div className="flex gap-2 overflow-x-auto stagger-children">
                             <Link
                                 href="/products"
-                                className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-xl font-medium whitespace-nowrap border border-blue-200"
+                                className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-xl font-medium whitespace-nowrap border border-blue-200 hover-lift hover-scale transition-all duration-200"
                             >
                                 <ShoppingCart className="w-4 h-4" />
                                 Products
                             </Link>
                             <Link
                                 href="/products/wallet"
-                                className="flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 rounded-xl font-medium whitespace-nowrap border border-green-200"
+                                className="flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 rounded-xl font-medium whitespace-nowrap border border-green-200 hover-lift hover-scale transition-all duration-200"
                             >
                                 <Wallet className="w-4 h-4" />
                                 Wallet
                             </Link>
                             <Link
                                 href="/products/referrals"
-                                className="flex items-center gap-2 px-4 py-2 bg-purple-50 text-purple-700 rounded-xl font-medium whitespace-nowrap border border-purple-200"
+                                className="flex items-center gap-2 px-4 py-2 bg-purple-50 text-purple-700 rounded-xl font-medium whitespace-nowrap border border-purple-200 hover-lift hover-scale transition-all duration-200"
                             >
                                 <Users className="w-4 h-4" />
                                 Referrals
