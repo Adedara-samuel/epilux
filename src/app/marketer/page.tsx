@@ -8,7 +8,7 @@ import { Badge } from '@/Components/ui/badge';
 import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
 import { useAuth } from '@/hooks/useAuth';
-import { useMarketerOrders, useUpdateOrderStatus, useMarketerStats } from '@/hooks/useMarketer';
+import { useMarketerOrders, useMarketerStats } from '@/hooks/useMarketer';
 import GoogleMap from '@/Components/GoogleMap';
 import { Order } from '@/services/marketer';
 
@@ -19,7 +19,7 @@ export default function MarketerPage() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [showMap, setShowMap] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('assigned');
   const [locationFilter, setLocationFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'amount'>('newest');
   const [showDirections, setShowDirections] = useState(false);
@@ -256,13 +256,12 @@ export default function MarketerPage() {
   ];
 
 
-  // API hooks (commented out for mock data)
-  // const { data: ordersData, isLoading } = useMarketerOrders({
-  //   search: searchTerm || undefined,
-  //   status: statusFilter !== 'all' ? statusFilter : undefined,
-  // });
-  // const { data: statsData } = useMarketerStats();
-  // const updateOrderStatusMutation = useUpdateOrderStatus();
+  // API hooks
+  const { data: ordersData, isLoading: ordersLoading } = useMarketerOrders({
+    search: searchTerm || undefined,
+    status: statusFilter !== 'all' ? statusFilter : undefined,
+  });
+  const { data: statsData } = useMarketerStats();
 
   // Real-time refresh function
   const handleRefresh = async () => {
@@ -314,7 +313,7 @@ export default function MarketerPage() {
 
   const orders = filteredAndSortedOrders;
   const stats = dashboardData;
-  const isLoading = dashboardLoading;
+  const isLoading = ordersLoading || dashboardLoading;
 
   // Mock mutation functions with state updates
   const updateOrderStatusMutation = {
@@ -378,11 +377,11 @@ export default function MarketerPage() {
   }
 
   return (
-    <div className={`min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 transition-all duration-700 ease-out ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+    <div className={`min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 transition-all duration-700 ease-out overflow-hidden ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
       {/* Main Content */}
-      <div className="pb-20 lg:pb-0">
+      <div className="pb-20 lg:pb-0 overflow-y-auto h-screen">
         {/* Top Header */}
-        <div className="bg-white/70 backdrop-blur-xl border-b border-white/20 sticky top-0 z-40 shadow-sm">
+        <div className="bg-white/70 backdrop-blur-xl border-b border-white/20 fixed top-0 lg:left-64 left-0 right-0 z-40 shadow-sm">
           <div className="flex items-center justify-between px-6 py-4">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
@@ -420,10 +419,10 @@ export default function MarketerPage() {
         </div>
 
         {/* Mobile Bottom Navigation */}
-        <div className={`fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl border-t border-slate-200 z-40 lg:hidden transition-all duration-300 ease-in-out ${
+        <div className={`fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl border-t border-slate-200 z-40 lg:hidden transition-all duration-500 ease-out ${
           isMobileNavVisible
-            ? 'translate-y-0 opacity-100'
-            : 'translate-y-full opacity-0'
+            ? 'translate-y-0 opacity-100 scale-100'
+            : 'translate-y-full opacity-0 scale-95'
         }`}>
            <div className="flex items-center justify-around py-2">
             {[
@@ -462,7 +461,7 @@ export default function MarketerPage() {
         </div>
 
         {/* Desktop Sidebar */}
-        <div className="hidden lg:block fixed left-0 top-0 h-full w-64 bg-white/95 backdrop-blur-xl border-r border-white/20 shadow-xl">
+        <div className="hidden lg:block fixed left-0 top-0 h-full w-64 bg-white/95 backdrop-blur-xl border-r border-white/20 shadow-xl z-50 overflow-hidden">
           <div className="flex flex-col h-full">
             {/* Sidebar Header */}
             <div className="flex items-center justify-center p-6 border-b border-slate-200">
@@ -551,7 +550,7 @@ export default function MarketerPage() {
         </div>
 
         {/* Content Area */}
-        <div className="lg:ml-64 px-6 py-8">
+        <div className="lg:ml-64 px-6 py-8 pt-24">
 
           {/* Orders Tab */}
           {activeTab === 'orders' && (
@@ -1508,7 +1507,7 @@ export default function MarketerPage() {
             </div>
           )}
         </div>
-      </div >
+      </div>
     </div>
   );
 }

@@ -37,9 +37,9 @@ const Footer: React.FC = () => {
                             </Link>
                         </li>
                         <li>
-                            <Link href="/admin-login" className="hover:text-white transition-colors text-sm">
+                            {/* <Link href="/admin-login" className="hover:text-white transition-colors text-sm">
                                 Admin Portal
-                            </Link>
+                            </Link> */}
                         </li>
                     </ul>
                 </div>
@@ -64,7 +64,7 @@ const Footer: React.FC = () => {
                         <a href="https://x.com/Epilux_NG" className="text-gray-400 hover:text-white transition-colors">
                             <Twitter className="h-4 w-4 transition-transform duration-200 hover:scale-110 active:scale-95" />
                         </a>
-                        <a href="https://www.instagram.com/@epilux_industries.NG" className="text-gray-400 hover:text-white transition-colors">
+                        <a href="https://www.instagram.com/epilux_industries.NG" className="text-gray-400 hover:text-white transition-colors">
                             <Instagram className="h-4 w-4 transition-transform duration-200 hover:scale-110 active:scale-95" />
                         </a>
                         <a href="https://www.youtube.com/EpiluxNg" className="text-gray-400 hover:text-white transition-colors">

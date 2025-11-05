@@ -227,10 +227,6 @@ export default function ProductCard({ product }: ProductCardProps) {
                                                         </span>
                                                     )}
                                                 </div>
-                                                <div className="flex items-center gap-2 text-sm text-green-600 font-medium">
-                                                    <Star className="w-4 h-4" />
-                                                    Earn ₦{(product.affiliateCommission || 0).toLocaleString()} per sale
-                                                </div>
                                             </div>
 
                                             {/* Quantity Selector */}
@@ -263,16 +259,6 @@ export default function ProductCard({ product }: ProductCardProps) {
                                                 </div>
                                             </div>
 
-                                            {/* Commission Info */}
-                                            <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                                                <div className="flex items-center gap-2 text-green-700 font-medium text-sm">
-                                                    <Info className="w-4 h-4" />
-                                                    Affiliate Commission
-                                                </div>
-                                                <p className="text-green-600 text-sm mt-1">
-                                                    You'll earn ₦{((product.affiliateCommission || 0) * quantity).toLocaleString()} when this sells
-                                                </p>
-                                            </div>
 
                                             {/* Reviews Section */}
                                             <div className="border-t border-gray-200 pt-4">
@@ -496,37 +482,22 @@ export default function ProductCard({ product }: ProductCardProps) {
                         </div>
                     </div>
 
-                    {/* Price & Commission */}
-                    <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                            <span className="text-lg font-bold text-gray-900">₦{(product.price || 0).toLocaleString()}</span>
-                            {product.originalPrice && (
-                                <span className="text-sm text-gray-500 line-through">
-                                    ₦{(product.originalPrice || 0).toLocaleString()}
-                                </span>
+                    {/* Individual Product Reviews */}
+                    {reviews.length > 0 && (
+                        <div className="flex items-center gap-1 text-xs text-gray-600">
+                            <MessageSquare className="w-3 h-3" />
+                            <span>{reviews.length} review{reviews.length > 1 ? 's' : ''}</span>
+                            {averageRating > 0 && (
+                                <>
+                                    <span>•</span>
+                                    <div className="flex items-center gap-1">
+                                        <Star className="w-3 h-3 text-yellow-400 fill-current" />
+                                        <span>{averageRating.toFixed(1)}</span>
+                                    </div>
+                                </>
                             )}
                         </div>
-                        <div className="flex items-center gap-1 text-xs text-green-600 font-medium">
-                            <Star className="w-3 h-3" />
-                            ₦{(product.affiliateCommission || 0).toLocaleString()}/sale
-                        </div>
-                        {/* Individual Product Reviews */}
-                        {reviews.length > 0 && (
-                            <div className="flex items-center gap-1 text-xs text-gray-600">
-                                <MessageSquare className="w-3 h-3" />
-                                <span>{reviews.length} review{reviews.length > 1 ? 's' : ''}</span>
-                                {averageRating > 0 && (
-                                    <>
-                                        <span>•</span>
-                                        <div className="flex items-center gap-1">
-                                            <Star className="w-3 h-3 text-yellow-400 fill-current" />
-                                            <span>{averageRating.toFixed(1)}</span>
-                                        </div>
-                                    </>
-                                )}
-                            </div>
-                        )}
-                    </div>
+                    )}
 
                     {/* Quick Actions */}
                     <div className="flex gap-2">
