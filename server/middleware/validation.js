@@ -30,7 +30,12 @@ const validateRegistration = [
     body('role')
         .optional()
         .isIn(['user', 'admin', 'affiliate'])
-        .withMessage('Role must be one of: user, admin, affiliate')
+        .withMessage('Role must be one of: user, admin, affiliate'),
+
+    body('phone')
+        .optional()
+        .isMobilePhone()
+        .withMessage('Please provide a valid phone number')
 ];
 
 // Validation rules for user login

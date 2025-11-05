@@ -9,7 +9,7 @@ export interface AuthContextType {
     /* eslint-disable @typescript-eslint/no-explicit-any */
     user: any;
     loading: boolean;
-    register: UseMutationResult<{ user: any; token: any; }, Error, { firstName: string; lastName: string; email: string; password: string; role?: string; }, unknown>;
+    register: UseMutationResult<{ user: any; token: any; }, Error, { firstName: string; lastName: string; email: string; password: string; phone?: string; role?: string; }, unknown>;
     login: UseMutationResult<{ user: any; token: any; }, Error, { email: string; password: string; }, unknown>;
     adminLogin: UseMutationResult<{ user: any; token: any; }, Error, { email: string; password: string; }, unknown>;
     logout: () => void;

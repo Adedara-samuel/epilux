@@ -19,6 +19,7 @@ const AdminRegisterPage = () => {
         firstName: '',
         lastName: '',
         email: '',
+        phone: '',
         password: '',
         confirmPassword: ''
     });
@@ -49,6 +50,7 @@ const AdminRegisterPage = () => {
             password: formData.password,
             firstName: formData.firstName,
             lastName: formData.lastName,
+            phone: formData.phone,
             role: 'admin'
         });
     };
@@ -117,6 +119,22 @@ const AdminRegisterPage = () => {
                                 onChange={handleChange}
                                 className="w-full px-4 py-3 text-black rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                                 placeholder="admin@epilux.com"
+                            />
+                        </div>
+
+                        <div>
+                            <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+                                Phone Number
+                            </label>
+                            <input
+                                id="phone"
+                                name="phone"
+                                type="tel"
+                                required
+                                value={formData.phone}
+                                onChange={handleChange}
+                                className="w-full px-4 py-3 text-black rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                                placeholder="+234..."
                             />
                         </div>
 

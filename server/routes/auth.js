@@ -17,7 +17,7 @@ const router = express.Router();
 // Register new user
 router.post('/register', validateRegistration, handleValidationErrors, async (req, res) => {
     try {
-        const { email, password, firstName, lastName, role = 'user' } = req.body;
+        const { email, password, firstName, lastName, phone, role = 'user' } = req.body;
 
         // Check if user already exists
         const existingUser = await User.findOne({ email });
@@ -35,7 +35,8 @@ router.post('/register', validateRegistration, handleValidationErrors, async (re
             firstName,
             lastName,
             role,
-            emailVerified: true
+            emailVerified: true,
+            profile: phone ? { phone } : undefined
         });
 
         await user.save();
