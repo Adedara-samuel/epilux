@@ -55,7 +55,7 @@ export const marketerAPI = {
 
   // Admin: Get all marketers
   getAllMarketers: async () => {
-    const response = await api.get('/api/marketer');
+    const response = await api.get('/api/marketer/orders');
     return response.data;
   },
 

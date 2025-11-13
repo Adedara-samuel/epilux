@@ -50,33 +50,24 @@ export default function AddProductPage() {
     const onSubmit = async (data: ProductFormData) => {
         setIsSubmitting(true);
         try {
-            // Generate a unique SKU for the product
-            const uniqueSku = `SKU_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-            // Prepare images for upload - extract files from image data
-            const imageFiles = data.images
-                .filter(img => img.file) // Only images with files (local previews)
-                .map(img => img.file!);
-
             // Create FormData for multipart upload
             const formData = new FormData();
 
             // Add product data
-            const productData = {
-                name: data.name,
-                description: data.description,
-                price: data.price,
-                category: data.category,
-                brand: data.brand || '',
-                sku: uniqueSku,
-                inventory: { quantity: data.stock }
-            };
-
-            formData.append('data', JSON.stringify(productData));
+            formData.append('name', data.name);
+            formData.append('description', data.description);
+            formData.append('price', data.price.toString());
+            formData.append('stock', data.stock.toString());
+            formData.append('category', data.category);
+            if (data.brand) {
+                formData.append('brand', data.brand);
+            }
 
             // Add image files
-            imageFiles.forEach((file, index) => {
-                formData.append('images', file);
+            data.images.forEach(img => {
+                if (img.file) {
+                    formData.append('images', img.file);
+                }
             });
 
             // Upload via API

@@ -155,7 +155,10 @@ export default function CartPage() {
                                         alt={item.name}
                                         className="w-20 h-20 object-cover rounded-lg"
                                         onError={(e) => {
-                                            (e.target as HTMLImageElement).src = '/images/product-placeholder.jpg';
+                                            // Don't set fallback if already set to avoid infinite loop
+                                            if ((e.target as HTMLImageElement).src !== '/images/placeholder.jpg') {
+                                                (e.target as HTMLImageElement).src = '/images/placeholder.jpg';
+                                            }
                                         }}
                                     />
                                 </Link>

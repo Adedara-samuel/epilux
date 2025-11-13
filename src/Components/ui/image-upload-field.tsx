@@ -141,7 +141,10 @@ export function ImageUploadField({ value, onChange }: ImageUploadFieldProps) {
                                         alt={image.alt}
                                         className="w-full h-full object-cover"
                                         onError={(e) => {
-                                            (e.target as HTMLImageElement).src = '/images/placeholder.jpg';
+                                            // Don't set fallback if already set to avoid infinite loop
+                                            if ((e.target as HTMLImageElement).src !== '/images/placeholder.jpg') {
+                                                (e.target as HTMLImageElement).src = '/images/placeholder.jpg';
+                                            }
                                         }}
                                     />
                                     {image.isPrimary && (

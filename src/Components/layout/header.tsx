@@ -38,7 +38,7 @@ export default function Header() {
 
     return (
         <header className="bg-gradient-to-r from-white via-blue-50/30 to-indigo-50/30 shadow-lg sticky top-0 z-40 border-b border-blue-100/50 backdrop-blur-sm animate-slide-in-top">
-            <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
                 <div className="flex items-center justify-between h-16">
                     {/* Left: Hamburger Menu & Logo */}
                     <div className="flex items-center gap-4 animate-slide-in-left">
@@ -91,8 +91,20 @@ export default function Header() {
                     )}
 
                     {/* Right: User Actions */}
-                    <div className="flex items-center gap-3 animate-slide-in-right">
-                        {/* User Balance - For all logged-in users */}
+                    <div className="flex items-center gap-2 animate-slide-in-right">
+                        {/* Mobile: Simplified Balance Icon */}
+                        {user && (
+                            <Link
+                                href="/products/wallet"
+                                className="sm:hidden p-2 rounded-xl hover:bg-green-50 transition-colors hover-lift"
+                            >
+                                <div className="w-6 h-6 bg-gradient-to-r from-green-500 to-emerald-600 rounded-lg flex items-center justify-center">
+                                    <Wallet className="w-4 h-4 text-white" />
+                                </div>
+                            </Link>
+                        )}
+
+                        {/* Desktop Balance - For all logged-in users */}
                         {user && (
                             <div className="hidden sm:flex">
                                 <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-2 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer group hover-lift hover-glow">
@@ -119,16 +131,17 @@ export default function Header() {
                             </div>
                         )}
 
-                        {/* Mobile Search Button */}
+                        {/* Mobile Search Button - Simplified */}
                         <Button
                             variant="ghost"
                             size="icon"
                             onClick={() => setShowMobileSearch(true)}
-                            className="lg:hidden text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl hover-scale transition-all duration-200"
+                            className="lg:hidden text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl hover-scale transition-all duration-200 p-2"
                         >
                             <Search className="h-5 w-5" />
                         </Button>
 
+                        {/* Account Icon - Only on larger screens */}
                         <Link
                             href="/account"
                             className="p-2 rounded-xl hover:bg-blue-50 transition-colors hidden md:block hover-lift"
@@ -136,6 +149,7 @@ export default function Header() {
                             <UserCircle2 className="h-6 w-6 text-gray-600 hover:text-blue-600 transition-colors duration-200" />
                         </Link>
 
+                        {/* Cart Icon - Always visible, simplified */}
                         <Link
                             href="/cart"
                             className="relative p-2 rounded-xl hover:bg-blue-50 transition-colors hover-lift"
@@ -178,30 +192,30 @@ export default function Header() {
                     </form>
                 )}
 
-                {/* Mobile Navigation Tabs - For all logged-in users */}
+                {/* Mobile Navigation Tabs - For all logged-in users - Simplified */}
                 {user && (
                     <div className="lg:hidden border-t border-gray-200/50 pt-3 pb-2 animate-slide-in-bottom">
-                        <div className="flex gap-2 overflow-x-auto stagger-children">
+                        <div className="flex justify-center gap-6 stagger-children">
                             <Link
                                 href="/products"
-                                className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-xl font-medium whitespace-nowrap border border-blue-200 hover-lift hover-scale transition-all duration-200"
+                                className="flex flex-col items-center gap-1 p-2 rounded-xl hover:bg-blue-50 transition-all duration-200 hover-lift hover-scale"
                             >
-                                <ShoppingCart className="w-4 h-4" />
-                                Products
+                                <ShoppingCart className="w-5 h-5 text-blue-600" />
+                                <span className="text-xs font-medium text-gray-700">Products</span>
                             </Link>
                             <Link
                                 href="/products/wallet"
-                                className="flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 rounded-xl font-medium whitespace-nowrap border border-green-200 hover-lift hover-scale transition-all duration-200"
+                                className="flex flex-col items-center gap-1 p-2 rounded-xl hover:bg-green-50 transition-all duration-200 hover-lift hover-scale"
                             >
-                                <Wallet className="w-4 h-4" />
-                                Wallet
+                                <Wallet className="w-5 h-5 text-green-600" />
+                                <span className="text-xs font-medium text-gray-700">Wallet</span>
                             </Link>
                             <Link
                                 href="/products/referrals"
-                                className="flex items-center gap-2 px-4 py-2 bg-purple-50 text-purple-700 rounded-xl font-medium whitespace-nowrap border border-purple-200 hover-lift hover-scale transition-all duration-200"
+                                className="flex flex-col items-center gap-1 p-2 rounded-xl hover:bg-purple-50 transition-all duration-200 hover-lift hover-scale"
                             >
-                                <Users className="w-4 h-4" />
-                                Referrals
+                                <Users className="w-5 h-5 text-purple-600" />
+                                <span className="text-xs font-medium text-gray-700">Referrals</span>
                             </Link>
                         </div>
                     </div>

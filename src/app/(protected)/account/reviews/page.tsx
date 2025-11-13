@@ -194,7 +194,10 @@ export default function MyReviewsPage() {
                                                         alt={review.productName}
                                                         className="w-full h-full object-cover"
                                                         onError={(e) => {
-                                                            (e.target as HTMLImageElement).src = '/images/product-1.jpeg';
+                                                            // Don't set fallback if already set to avoid infinite loop
+                                                            if ((e.target as HTMLImageElement).src !== '/images/placeholder.jpg') {
+                                                                (e.target as HTMLImageElement).src = '/images/placeholder.jpg';
+                                                            }
                                                         }}
                                                     />
                                                 </div>

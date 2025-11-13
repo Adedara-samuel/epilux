@@ -63,7 +63,7 @@ export default function ProductDetailPage() {
                 id: product.id || product._id,
                 name: product.name,
                 price: product.price,
-                image: product.images?.[0]?.url || product.image || '/images/placeholder.jpg'
+                image: product.images?.[0]?.absoluteUrl || `http://your-server.com${product.images?.[0]?.url}` || product.image || '/images/placeholder.jpg'
             }, quantity);
 
             // Also add to API if user is logged in
@@ -71,7 +71,7 @@ export default function ProductDetailPage() {
                 await addToCartAPI.mutateAsync({
                     productId: product.id || product._id,
                     quantity,
-                    image: product.images?.[0]?.url || product.image || '/images/placeholder.jpg',
+                    image: product.images?.[0]?.absoluteUrl || `http://your-server.com${product.images?.[0]?.url}` || product.image || '/images/placeholder.jpg',
                     name: product.name,
                     price: product.price
                 });

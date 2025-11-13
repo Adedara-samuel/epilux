@@ -35,12 +35,11 @@ api.interceptors.request.use(
 
         if (token && typeof window !== 'undefined') {
             config.headers.Authorization = `Bearer ${token}`;
+            console.log('Authorization token being sent:', `Bearer ${token.substring(0, 20)}...`);
             if (typeof document !== 'undefined') {
                 document.cookie = `authToken=${token}; path=/; max-age=604800; samesite=strict${process.env.NODE_ENV === 'production' ? '; secure' : ''}`;
             }
         }
-
-        // Remove debug logging - token is working correctly
 
         return config;
     },
@@ -64,6 +63,83 @@ api.interceptors.response.use(
         return Promise.reject(error);
     }
 );
+
+// Enhanced API wrapper with loading states
+export class ApiService {
+    static async request<T>(
+        config: any,
+        options: {
+            showLoading?: boolean;
+            loadingMessage?: string;
+            showSuccessToast?: boolean;
+            successMessage?: string;
+            showErrorToast?: boolean;
+            errorMessage?: string;
+        } = {}
+    ): Promise<T> {
+        const {
+            showLoading = true,
+            loadingMessage = 'Loading...',
+            showSuccessToast = false,
+            successMessage,
+            showErrorToast = true,
+            errorMessage
+        } = options;
+
+        try {
+            // Show loading state if requested
+            if (showLoading && typeof window !== 'undefined') {
+                // Import toast dynamically to avoid circular dependencies
+                const { toast } = await import('sonner');
+                toast.loading(loadingMessage, { id: 'api-loading' });
+            }
+
+            const response = await api.request(config);
+
+            // Hide loading and show success if requested
+            if (showLoading && typeof window !== 'undefined') {
+                const { toast } = await import('sonner');
+                toast.dismiss('api-loading');
+
+                if (showSuccessToast && successMessage) {
+                    toast.success(successMessage);
+                }
+            }
+
+            return response.data;
+        } catch (error: any) {
+            // Hide loading and show error
+            if (showLoading && typeof window !== 'undefined') {
+                const { toast } = await import('sonner');
+                toast.dismiss('api-loading');
+
+                if (showErrorToast) {
+                    const message = errorMessage || error.response?.data?.message || 'An error occurred';
+                    toast.error(message);
+                }
+            }
+
+            throw error;
+        }
+    }
+
+    // Convenience methods
+    static async get<T>(url: string, options?: any) {
+        return this.request<T>({ method: 'GET', url }, options);
+    }
+
+    static async post<T>(url: string, data?: any, options?: any) {
+        return this.request<T>({ method: 'POST', url, data }, options);
+    }
+
+    static async put<T>(url: string, data?: any, options?: any) {
+        return this.request<T>({ method: 'PUT', url, data }, options);
+    }
+
+    static async delete<T>(url: string, options?: any) {
+        return this.request<T>({ method: 'DELETE', url }, options);
+    }
+}
 
 // Utility functions for token management
 export const tokenManager = {

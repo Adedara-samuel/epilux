@@ -20,7 +20,8 @@ import { CommissionRate } from '@/services/commissions';
 
 export default function CommissionRatesPage() {
    const { user } = useAuth();
-   const currentUser = user;
+    const currentUser = user;
+    const currentUserId = user?._id || user?.id;
   const { data: commissionsData, isLoading: commissionsLoading } = useCommissions();
   const { data: commissionRatesData, isLoading: ratesLoading } = useCommissionRates();
   const createCommissionRate = useCreateCommissionRate();
@@ -114,7 +115,11 @@ export default function CommissionRatesPage() {
         setIsEditModalOpen(false);
       } else {
         // Create new rate
-        await createCommissionRate.mutateAsync(formData);
+        const commissionData = {
+          ...formData,
+          userId: currentUserId // Add userId to the commission data
+        };
+        await createCommissionRate.mutateAsync(commissionData);
         toast.success('Commission rate created successfully');
         setIsCreateModalOpen(false);
       }
@@ -206,21 +211,21 @@ export default function CommissionRatesPage() {
       {/* Header */}
       <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-40">
         <div className="container mx-auto px-6 py-6">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent animate-bounceIn">
+              <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent animate-bounceIn">
                 Commission Rates Management
               </h1>
               <p className="text-gray-600 mt-1 animate-fadeIn animation-delay-300">Manage affiliate commission rates and settings</p>
             </div>
             <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
               <DialogTrigger asChild>
-                <Button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg shadow-md hover:shadow-lg transition-all hover-lift animate-fadeIn animation-delay-500">
+                <Button className="bg-blue-600 hover:bg-blue-700 text-white px-4 sm:px-6 py-2 rounded-lg shadow-md hover:shadow-lg transition-all hover-lift animate-fadeIn animation-delay-500 w-full sm:w-auto">
                   <Plus className="w-4 h-4 mr-2" />
                   Add Commission Rate
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-md animate-scaleIn z-1000 sm:rounded-lg">
+              <DialogContent className="sm:max-w-md animate-scaleIn z-1000 sm:rounded-lg max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle className="flex items-center gap-2">
                     <Percent className="w-5 h-5 text-blue-600" />
@@ -319,21 +324,21 @@ export default function CommissionRatesPage() {
           ) : (commissionsData?.commissions?.length ? (
             <div className="space-y-3">
               {commissionsData.commissions.slice(0, 10).map((c: Commission) => (
-                <div key={c._id} className="flex items-center justify-between p-3 border rounded-lg">
-                  <div className="text-sm">
+                <div key={c._id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 border rounded-lg gap-3">
+                  <div className="text-sm flex-1">
                     <div className="font-semibold">₦{(c.amount || 0).toLocaleString()}</div>
                     <div className="text-gray-600">{new Date(c.createdAt).toLocaleString()}</div>
                     {c.user && (
                       <div className="text-xs text-blue-600">{c.user.firstName} {c.user.lastName}</div>
                     )}
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="capitalize">{c.status}</Badge>
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
+                    <Badge variant="outline" className="capitalize self-start">{c.status}</Badge>
                     <Select
                       onValueChange={(value) => updateCommissionStatus.mutate({ id: c._id, status: value as Commission['status'] })}
                       disabled={updateCommissionStatus.isPending}
                     >
-                      <SelectTrigger className="w-36">
+                      <SelectTrigger className="w-full sm:w-36">
                         <SelectValue placeholder="Change status" />
                       </SelectTrigger>
                       <SelectContent>
@@ -353,7 +358,7 @@ export default function CommissionRatesPage() {
         </CardContent>
       </Card>
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8 animate-fadeIn animation-delay-700">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 animate-fadeIn animation-delay-700">
           <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl hover-glow">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
@@ -471,27 +476,29 @@ export default function CommissionRatesPage() {
             filteredRates.map((rate, index) => (
               <Card key={rate._id} className="bg-white/80 backdrop-blur-sm border-0 shadow-xl hover-glow animate-fadeIn" style={{ animationDelay: `${index * 100}ms` }}>
                 <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-2">
                         <h3 className="text-lg font-semibold text-gray-900">{rate.name}</h3>
-                        <Badge variant={rate.isActive ? "default" : "secondary"} className={rate.isActive ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}>
-                          {rate.isActive ? 'Active' : 'Inactive'}
-                        </Badge>
-                        <Badge variant="outline" className="capitalize">
-                          {rate.category}
-                        </Badge>
+                        <div className="flex flex-wrap gap-2">
+                          <Badge variant={rate.isActive ? "default" : "secondary"} className={rate.isActive ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}>
+                            {rate.isActive ? 'Active' : 'Inactive'}
+                          </Badge>
+                          <Badge variant="outline" className="capitalize">
+                            {rate.category}
+                          </Badge>
+                        </div>
                       </div>
                       {rate.description && (
                         <p className="text-gray-600 mb-3">{rate.description}</p>
                       )}
-                      <div className="flex items-center gap-4 text-sm text-gray-500">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-gray-500">
                         <span>Rate: <strong className="text-gray-900">{rate.rate}{rate.type === 'percentage' ? '%' : '₦'}</strong></span>
                         <span>Type: <strong className="text-gray-900 capitalize">{rate.type}</strong></span>
                         <span>Created: <strong className="text-gray-900">{new Date(rate.createdAt).toLocaleDateString()}</strong></span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 self-start sm:self-center">
                       <Button
                         variant="ghost"
                         size="sm"
@@ -530,7 +537,7 @@ export default function CommissionRatesPage() {
 
         {/* Edit Modal */}
         <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-          <DialogContent className="sm:max-w-md animate-scaleIn">
+          <DialogContent className="sm:max-w-md animate-scaleIn max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Edit className="w-5 h-5 text-blue-600" />

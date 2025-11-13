@@ -43,9 +43,19 @@ export const useCreateCommissionRate = () => {
 
   return useMutation({
     mutationFn: (data: CreateCommissionData) => commissionsAPI.createCommission(data),
-    onSuccess: () => {
+    onSuccess: (data) => {
+      // Invalidate and refetch commission rates
       queryClient.invalidateQueries({ queryKey: ['commission-rates'] });
       queryClient.invalidateQueries({ queryKey: ['commissions'] });
+
+      // Also update the cache directly with the new commission rate
+      queryClient.setQueryData(['commission-rates'], (oldData: any) => {
+        if (!oldData) return oldData;
+        return {
+          ...oldData,
+          commissionRates: [data.commissionRate, ...oldData.commissionRates]
+        };
+      });
     },
   });
 };
@@ -57,7 +67,19 @@ export const useUpdateCommissionRate = () => {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateCommissionData }) =>
       commissionsAPI.updateCommission(id, data),
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
+      // Update the cache directly for the specific commission rate
+      queryClient.setQueryData(['commission-rates'], (oldData: any) => {
+        if (!oldData) return oldData;
+        return {
+          ...oldData,
+          commissionRates: oldData.commissionRates.map((rate: any) =>
+            rate._id === variables.id ? data.commissionRate : rate
+          )
+        };
+      });
+
+      // Also invalidate to ensure fresh data
       queryClient.invalidateQueries({ queryKey: ['commission-rates'] });
       queryClient.invalidateQueries({ queryKey: ['commissions'] });
       queryClient.invalidateQueries({ queryKey: ['commission'] });
@@ -71,7 +93,17 @@ export const useDeleteCommissionRate = () => {
 
   return useMutation({
     mutationFn: (id: string) => commissionsAPI.deleteCommission(id),
-    onSuccess: () => {
+    onSuccess: (_, deletedId) => {
+      // Remove the deleted item from cache immediately
+      queryClient.setQueryData(['commission-rates'], (oldData: any) => {
+        if (!oldData) return oldData;
+        return {
+          ...oldData,
+          commissionRates: oldData.commissionRates.filter((rate: any) => rate._id !== deletedId)
+        };
+      });
+
+      // Also invalidate to ensure fresh data
       queryClient.invalidateQueries({ queryKey: ['commission-rates'] });
       queryClient.invalidateQueries({ queryKey: ['commissions'] });
     },
@@ -85,7 +117,19 @@ export const useUpdateCommissionStatus = () => {
   return useMutation({
     mutationFn: ({ id, status }: { id: string; status: Commission['status'] }) =>
       commissionsAPI.updateCommission(id, { status }),
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
+      // Update the cache directly for the specific commission
+      queryClient.setQueryData(['commissions'], (oldData: any) => {
+        if (!oldData) return oldData;
+        return {
+          ...oldData,
+          commissions: oldData.commissions.map((commission: any) =>
+            commission._id === variables.id ? { ...commission, status: variables.status } : commission
+          )
+        };
+      });
+
+      // Also invalidate to ensure fresh data
       queryClient.invalidateQueries({ queryKey: ['commissions'] });
       queryClient.invalidateQueries({ queryKey: ['commission'] });
     },

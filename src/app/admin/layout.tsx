@@ -23,7 +23,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 {/* Header */}
                 <AdminHeader setSidebarOpen={setSidebarOpen} />
                 {/* Page content */}
-                <main className="flex-1 p-4 md:p-6 lg:pl-72 mt-16 overflow-y-auto">
+                <main className="flex-1 p-6 lg:pl-72 mt-16 overflow-y-auto">
                     {children}
                 </main>
             </div>

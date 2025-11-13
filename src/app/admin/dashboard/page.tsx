@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/Components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/Components/ui/card';
 import { Skeleton } from '@/Components/ui/skeleton';
+import { Badge } from '@/Components/ui/badge';
 import { useAdminDashboardStats } from '@/hooks/useAdmin';
 import {
   AlertCircle,
@@ -20,7 +21,9 @@ import {
   ShoppingCart,
   TrendingUp,
   Users,
-  XCircle // Added for potential error status
+  XCircle, // Added for potential error status
+  Calendar,
+  UserCheck
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -30,8 +33,17 @@ interface DashboardStats {
   totalProducts: number;
   totalOrders: number;
   totalRevenue: number;
+  monthlyRevenue: number;
   pendingOrders: number;
+  completedOrders: number;
   lowStockItems: number;
+  activeAffiliates: number;
+  changes: {
+    totalOrders: number;
+    totalRevenue: number;
+    pendingOrders: number;
+    activeAffiliates: number;
+  };
 }
 
 interface RecentActivity {
@@ -45,6 +57,7 @@ interface RecentActivity {
 interface TransformedDashboardData {
   stats: DashboardStats;
   recentActivities: RecentActivity[];
+  recentUsers: any[];
 }
 
 const DEFAULT_STATS: DashboardStats = {
@@ -52,8 +65,17 @@ const DEFAULT_STATS: DashboardStats = {
   totalProducts: 0,
   totalOrders: 0,
   totalRevenue: 0,
+  monthlyRevenue: 0,
   pendingOrders: 0,
+  completedOrders: 0,
   lowStockItems: 0,
+  activeAffiliates: 0,
+  changes: {
+    totalOrders: 0,
+    totalRevenue: 0,
+    pendingOrders: 0,
+    activeAffiliates: 0,
+  },
 };
 
 export default function AdminDashboard() {
@@ -82,9 +104,9 @@ export default function AdminDashboard() {
   // Combined loading state
   if (authLoading || statsLoading) {
     return (
-      <div className="space-y-6 p-4">
+      <div className="space-y-6">
         <div className="h-24 bg-gray-200 rounded-lg animate-pulse"></div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <Skeleton className="h-[120px]" />
           <Skeleton className="h-[120px]" />
           <Skeleton className="h-[120px]" />
@@ -114,6 +136,7 @@ export default function AdminDashboard() {
   const stats: DashboardStats = statsData?.stats ?? DEFAULT_STATS;
   // This line is now fixed because RecentActivity[] type is now compatible
   const recentActivities: RecentActivity[] = statsData?.recentActivities ?? [];
+  const recentUsers: any[] = statsData?.recentUsers ?? [];
 
   // Safety check for critical data (optional, but good practice)
   if (!stats) {
@@ -143,15 +166,15 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="space-y-4 md:space-y-6">
+    <div className="space-y-6">
       {/* Welcome Section */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg p-4 md:p-6 text-white animate-bounceIn">
-        <h1 className="text-xl md:text-2xl font-bold mb-2">Welcome back, {user?.firstName}!</h1>
-        <p className="text-blue-100 text-sm md:text-base animate-fadeIn animation-delay-300">Here's what's happening with your store today.</p>
+      <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg p-6 text-white animate-bounceIn">
+        <h1 className="text-2xl font-bold mb-2">Welcome back, {user?.firstName}!</h1>
+        <p className="text-blue-100 text-base animate-fadeIn animation-delay-300">Here's what's happening with your store today.</p>
       </div>
 
       {/* Stats Cards - NOW USING API DATA */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 animate-fadeIn animation-delay-700">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 animate-fadeIn animation-delay-700">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Users</CardTitle>
@@ -160,7 +183,7 @@ export default function AdminDashboard() {
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalUsers.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">
-              <span className="text-green-600">+12%</span> from last month
+              Active users
             </p>
           </CardContent>
         </Card>
@@ -173,7 +196,7 @@ export default function AdminDashboard() {
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalProducts.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">
-              <span className="text-green-600">+3</span> new this week
+              In inventory
             </p>
           </CardContent>
         </Card>
@@ -186,7 +209,7 @@ export default function AdminDashboard() {
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalOrders.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">
-              <span className="text-green-600">+8%</span> from last month
+              {stats.changes.totalOrders !== 0 ? `${stats.changes.totalOrders > 0 ? '+' : ''}${stats.changes.totalOrders}` : 'No change'} from last month
             </p>
           </CardContent>
         </Card>
@@ -199,14 +222,41 @@ export default function AdminDashboard() {
           <CardContent>
             <div className="text-2xl font-bold">₦{(stats.totalRevenue / 1000000).toFixed(1)}M</div>
             <p className="text-xs text-muted-foreground">
-              <span className="text-green-600">+15%</span> from last month
+              {stats.changes.totalRevenue !== 0 ? `${stats.changes.totalRevenue > 0 ? '+' : ''}₦${(stats.changes.totalRevenue / 1000000).toFixed(1)}M` : 'No change'} from last month
             </p>
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Monthly Revenue</CardTitle>
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">₦{(stats.monthlyRevenue / 1000000).toFixed(1)}M</div>
+            <p className="text-xs text-muted-foreground">
+              This month
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Completed Orders</CardTitle>
+            <CheckCircle className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.completedOrders.toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground">
+              Successfully fulfilled
+            </p>
+          </CardContent>
+        </Card>
+
       </div>
 
       {/* Quick Actions & Alerts */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 animate-fadeIn animation-delay-900">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fadeIn animation-delay-900">
         {/* Quick Actions (Unchanged) */}
         <Card>
           <CardHeader>
@@ -265,27 +315,35 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
 
-        {/* Recent Activity - NOW USING API DATA */}
+        {/* Recent Users - NOW USING API DATA */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Recent Activity</CardTitle>
+            <CardTitle className="text-lg">Recent Users</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {recentActivities.length > 0 ? (
-                recentActivities.map((activity, index) => (
-                  <div key={activity.id || index} className="flex items-start gap-3">
-                    <div className="mt-0.5">
-                      {getActivityIcon(activity.status)}
+              {recentUsers.length > 0 ? (
+                recentUsers.slice(0, 5).map((user, index) => (
+                  <div key={user._id || index} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                    <div className="w-10 h-10 bg-blue-500 text-white rounded-full flex items-center justify-center font-semibold">
+                      {user.firstName?.[0]}{user.lastName?.[0]}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-gray-900">{activity.message}</p>
-                      <p className="text-xs text-gray-500">{activity.time}</p>
+                      <p className="text-sm font-medium text-gray-900">{user.firstName} {user.lastName}</p>
+                      <p className="text-xs text-gray-500">{user.email}</p>
+                    </div>
+                    <div className="flex flex-col items-end gap-1">
+                      <Badge variant={user.role === 'admin' ? 'default' : user.role === 'marketer' ? 'secondary' : 'outline'}>
+                        {(user.role === 'affiliate' || user.role === 'user') ? 'customer' : user.role}
+                      </Badge>
+                      <p className="text-xs text-gray-400">
+                        {new Date(user.createdAt).toLocaleDateString()}
+                      </p>
                     </div>
                   </div>
                 ))
               ) : (
-                <p className="text-sm text-gray-500">No recent activity to display.</p>
+                <p className="text-sm text-gray-500">No recent users to display.</p>
               )}
             </div>
           </CardContent>
@@ -298,7 +356,7 @@ export default function AdminDashboard() {
           <CardTitle className="text-lg">Performance Overview</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
             <div className="text-center">
               <div className="text-2xl font-bold text-green-600 mb-1">98.5%</div>
               <p className="text-sm text-gray-600">Order Fulfillment Rate</p>

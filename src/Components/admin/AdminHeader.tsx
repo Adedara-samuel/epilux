@@ -95,7 +95,7 @@ export function AdminHeader({ setSidebarOpen }: AdminHeaderProps) {
     return (
         <>
         <header className="fixed top-0 left-0 lg:left-64 right-0 z-1000 bg-white border-b border-gray-200 shadow-sm">
-            <div className="px-4 sm:px-6 lg:px-8">
+            <div className="px-6 lg:px-8">
                 <div className="flex items-center justify-between h-16">
                     {/* Left side - Mobile menu button and page title */}
                     <div className="flex items-center gap-4">
@@ -175,7 +175,7 @@ export function AdminHeader({ setSidebarOpen }: AdminHeaderProps) {
             </div>
 
             {/* Mobile page title */}
-            <div className="sm:hidden px-4 pb-3">
+            <div className="sm:hidden px-6 pb-3">
                 <h1 className="text-lg font-semibold text-gray-900">
                     {currentPage}
                 </h1>
@@ -184,8 +184,8 @@ export function AdminHeader({ setSidebarOpen }: AdminHeaderProps) {
 
         {/* Profile Dialog - Remains the same */}
         {profileOpen && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md cursor-pointer" onClick={() => setProfileOpen(false)}>
-                <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4" onClick={(e) => e.stopPropagation()}>
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md cursor-pointer p-4" onClick={() => setProfileOpen(false)}>
+                <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-auto" onClick={(e) => e.stopPropagation()}>
                     <div className="p-6">
                         <div className="text-center mb-6">
                             <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -226,8 +226,8 @@ export function AdminHeader({ setSidebarOpen }: AdminHeaderProps) {
 
         {/* Notifications Dialog - DYNAMIC CONTENT */}
         {notificationsOpen && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md cursor-pointer" onClick={() => setNotificationsOpen(false)}>
-                <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md cursor-pointer p-4" onClick={() => setNotificationsOpen(false)}>
+                <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-auto max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
                     <div className="p-6">
                         <div className="flex items-center justify-between mb-6 sticky top-0 bg-white pb-3 border-b">
                             <h3 className="text-xl font-bold text-gray-900">Customer Messages</h3>

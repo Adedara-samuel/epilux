@@ -129,11 +129,14 @@ export default function ProductCard({ product }: ProductCardProps) {
                 <Link href={loginLinkHref}>
                     <div className="aspect-square bg-gray-100 relative overflow-hidden">
                         <img
-                            src={product.images?.[0]?.url || product.image}
-                            alt={product.name}
+                            src={product.images?.[0]?.absoluteUrl || `http://your-server.com${product.images?.[0]?.url}` || product.image}
+                            alt={product.images?.[0]?.altText || product.name}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                             onError={(e) => {
-                                (e.target as HTMLImageElement).src = '/images/product-1.jpeg';
+                                // Don't set fallback if already set to avoid infinite loop
+                                if ((e.target as HTMLImageElement).src !== '/images/placeholder.jpg') {
+                                    (e.target as HTMLImageElement).src = '/images/placeholder.jpg';
+                                }
                             }}
                         />
                         {product.originalPrice && product.originalPrice > product.price && (
@@ -175,11 +178,14 @@ export default function ProductCard({ product }: ProductCardProps) {
                                         <div className="space-y-4">
                                             <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
                                                 <img
-                                                    src={product.images?.[0]?.url || product.image}
-                                                    alt={product.name}
+                                                    src={product.images?.[0]?.absoluteUrl || `http://your-server.com${product.images?.[0]?.url}` || product.image}
+                                                    alt={product.images?.[0]?.altText || product.name}
                                                     className="w-full h-full object-cover"
                                                     onError={(e) => {
-                                                        (e.target as HTMLImageElement).src = '/images/product-1.jpeg';
+                                                        // Don't set fallback if already set to avoid infinite loop
+                                                        if ((e.target as HTMLImageElement).src !== '/images/placeholder.jpg') {
+                                                            (e.target as HTMLImageElement).src = '/images/placeholder.jpg';
+                                                        }
                                                     }}
                                                 />
                                             </div>
@@ -352,7 +358,7 @@ export default function ProductCard({ product }: ProductCardProps) {
                                                                 await addToCartAPI.mutateAsync({
                                                                     productId: productId,
                                                                     quantity,
-                                                                    image: product.images?.[0]?.url || product.image || '',
+                                                                    image: product.images?.[0]?.absoluteUrl || `http://your-server.com${product.images?.[0]?.url}` || product.image || '',
                                                                     name: product.name,
                                                                     price: product.price
                                                                 });
@@ -525,7 +531,7 @@ export default function ProductCard({ product }: ProductCardProps) {
                                          await addToCartAPI.mutateAsync({
                                              productId: productId,
                                              quantity,
-                                             image: product.images?.[0]?.url || product.image || '',
+                                             image: product.images?.[0]?.absoluteUrl || `http://your-server.com${product.images?.[0]?.url}` || product.image || '',
                                              name: product.name,
                                              price: product.price
                                          });

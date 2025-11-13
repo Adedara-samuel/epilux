@@ -33,7 +33,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             {/* Overlay */}
             {isOpen && (
                 <div
-                    className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden transition-opacity duration-300 animate-fade-in-scale"
+                    className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden transition-opacity duration-300 animate-fade-in-scale"
                     onClick={onClose}
                 />
             )}
@@ -78,7 +78,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                                 <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-semibold hover-glow transition-all duration-300">
                                     {user.displayName ? user.displayName.charAt(0).toUpperCase() : user.email?.charAt(0).toUpperCase() || <User size={20} />}
                                 </div>
-                                <div>
+                                <div className="min-w-0 flex-1">
                                     <p className="font-medium text-gray-800 text-sm truncate">
                                         {user.displayName || 'My Account'}
                                     </p>
@@ -96,7 +96,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                                 <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover-glow transition-all duration-300">
                                     <User className="h-5 w-5 text-gray-500" />
                                 </div>
-                                <p className="font-medium text-gray-700">Sign In</p>
+                                <p className="font-medium text-gray-700 truncate">Sign In</p>
                             </Link>
                         )}
                     </div>

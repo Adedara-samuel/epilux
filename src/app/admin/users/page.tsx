@@ -246,14 +246,14 @@ export default function AdminUsersPage() {
       {/* Header */}
       <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-40">
         <div className="container mx-auto px-6 py-6">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent animate-bounceIn">
+              <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent animate-bounceIn">
                 Users Management
               </h1>
               <p className="text-gray-600 mt-1 animate-fadeIn animation-delay-300">Manage user accounts and permissions</p>
             </div>
-            <Button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg shadow-md hover:shadow-lg transition-all hover-lift animate-fadeIn animation-delay-500" onClick={() => setShowAddDialog(true)}>
+            <Button className="bg-blue-600 hover:bg-blue-700 text-white px-4 sm:px-6 py-2 rounded-lg shadow-md hover:shadow-lg transition-all hover-lift animate-fadeIn animation-delay-500 w-full sm:w-auto" onClick={() => setShowAddDialog(true)}>
               <UserPlus className="w-4 h-4 mr-2" />
               Add User
             </Button>
@@ -413,8 +413,8 @@ export default function AdminUsersPage() {
 
       {/* Add User Dialog */}
       {showAddDialog && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-in fade-in duration-300">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md animate-in slide-in-from-bottom-4 duration-300">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-in fade-in duration-300 p-4">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-auto max-h-[90vh] overflow-y-auto animate-in slide-in-from-bottom-4 duration-300">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold">Add New User</h3>
               <Button variant="ghost" size="sm" onClick={() => setShowAddDialog(false)}>
@@ -494,8 +494,8 @@ export default function AdminUsersPage() {
 
       {/* View User Dialog */}
       {showViewDialog && selectedUser && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-in fade-in duration-300">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md animate-in slide-in-from-bottom-4 duration-300">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-in fade-in duration-300 p-4">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-auto max-h-[90vh] overflow-y-auto animate-in slide-in-from-bottom-4 duration-300">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold">User Details</h3>
               <Button variant="ghost" size="sm" onClick={() => setShowViewDialog(false)} className='cursor-pointer'>
@@ -546,8 +546,8 @@ export default function AdminUsersPage() {
 
       {/* Edit User Dialog */}
       {showEditDialog && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-in fade-in duration-300">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md animate-in slide-in-from-bottom-4 duration-300">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-in fade-in duration-300 p-4">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-auto max-h-[90vh] overflow-y-auto animate-in slide-in-from-bottom-4 duration-300">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold">Edit User</h3>
               <Button variant="ghost" size="sm" onClick={() => setShowEditDialog(false)}>
@@ -618,8 +618,8 @@ export default function AdminUsersPage() {
 
       {/* Change Role Dialog */}
       {showRoleDialog && selectedUser && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-in fade-in duration-300">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md animate-in slide-in-from-bottom-4 duration-300">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-in fade-in duration-300 p-4">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-auto max-h-[90vh] overflow-y-auto animate-in slide-in-from-bottom-4 duration-300">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold">Change User Role</h3>
               <Button variant="ghost" size="sm" onClick={() => setShowRoleDialog(false)}>
@@ -656,8 +656,8 @@ export default function AdminUsersPage() {
 
       {/* Suspend User Dialog */}
       {showSuspendDialog && selectedUser && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-in fade-in duration-300">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md animate-in slide-in-from-bottom-4 duration-300">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-in fade-in duration-300 p-4">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-auto max-h-[90vh] overflow-y-auto animate-in slide-in-from-bottom-4 duration-300">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold text-orange-600">Suspend User</h3>
               <Button variant="ghost" size="sm" onClick={() => setShowSuspendDialog(false)}>
@@ -682,8 +682,8 @@ export default function AdminUsersPage() {
 
       {/* Delete User Dialog */}
       {showDeleteDialog && selectedUser && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-in fade-in duration-300">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md animate-in slide-in-from-bottom-4 duration-300">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-in fade-in duration-300 p-4">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-auto max-h-[90vh] overflow-y-auto animate-in slide-in-from-bottom-4 duration-300">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold text-red-600">Delete User</h3>
               <Button variant="ghost" size="sm" onClick={() => setShowDeleteDialog(false)}>

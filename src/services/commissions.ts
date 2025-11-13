@@ -41,6 +41,7 @@ export interface CreateCommissionData {
   rate: number;
   type: 'percentage' | 'fixed';
   category: 'product' | 'service' | 'referral' | 'general';
+  userId?: string; // Add userId for commission creation
 }
 
 export interface UpdateCommissionData extends Partial<CreateCommissionData> {
@@ -63,7 +64,11 @@ export const commissionsAPI = {
 
   // Create commission rate
   createCommission: async (data: CreateCommissionData) => {
-    const response = await api.post('/api/admin/commissions', data);
+    const response = await api.post('/api/admin/commission-rates', {
+      ...data,
+      updateBy: "Admin"
+    });
+    console.log("message: ", response.data);
     return response.data;
   },
 

@@ -48,8 +48,17 @@ interface TransformedDashboardStats {
   totalProducts: number;
   totalOrders: number;
   totalRevenue: number;
+  monthlyRevenue: number;
   pendingOrders: number;
+  completedOrders: number;
   lowStockItems: number;
+  activeAffiliates: number;
+  changes: {
+    totalOrders: number;
+    totalRevenue: number;
+    pendingOrders: number;
+    activeAffiliates: number;
+  };
 }
 
 type ActivityType = 'order' | 'user' | 'product' | 'system';
@@ -66,6 +75,7 @@ interface TransformedRecentActivity {
 interface TransformedDashboardData {
   stats: TransformedDashboardStats;
   recentActivities: TransformedRecentActivity[];
+  recentUsers: any[];
 }
 
 // Admin Users Hooks
@@ -237,6 +247,7 @@ export const useAdminDashboardStats = () => {
       // Safely access the nested data using optional chaining
       const overview = data?.data?.overview;
       const recentActivities = data?.data?.recent?.activity;
+      const recentUsers = data?.data?.recent?.users || [];
 
       if (!overview) {
         // Return a structure matching the component's expectations but with empty/default data
@@ -245,13 +256,23 @@ export const useAdminDashboardStats = () => {
           totalProducts: 0,
           totalOrders: 0,
           totalRevenue: 0,
+          monthlyRevenue: 0,
           pendingOrders: 0,
+          completedOrders: 0,
           lowStockItems: 0,
+          activeAffiliates: 0,
+          changes: {
+            totalOrders: 0,
+            totalRevenue: 0,
+            pendingOrders: 0,
+            activeAffiliates: 0,
+          },
         };
 
         return {
           stats: defaultStats,
           recentActivities: [],
+          recentUsers: [],
         };
       }
 
@@ -261,9 +282,13 @@ export const useAdminDashboardStats = () => {
         totalProducts: overview.totalProducts,
         totalOrders: overview.totalOrders,
         totalRevenue: overview.totalRevenue,
+        monthlyRevenue: overview.monthlyRevenue,
         pendingOrders: overview.pendingOrders,
+        completedOrders: overview.completedOrders,
         // Mapping lowStockProducts to lowStockItems
         lowStockItems: overview.lowStockProducts,
+        activeAffiliates: overview.activeAffiliates,
+        changes: overview.changes,
       };
 
       // Map the recent.activity array to the component's expected recentActivities structure
@@ -283,6 +308,7 @@ export const useAdminDashboardStats = () => {
       return {
         stats: transformedStats,
         recentActivities: mappedActivities,
+        recentUsers: recentUsers,
       };
     },
   });

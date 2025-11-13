@@ -179,14 +179,14 @@ export default function AdminProductsPage() {
       {/* Header */}
       <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-40">
         <div className="container mx-auto px-6 py-6">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent animate-bounceIn">
+              <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent animate-bounceIn">
                 Products Management
               </h1>
               <p className="text-gray-600 mt-1 animate-fadeIn animation-delay-300">Manage your product catalog and inventory</p>
             </div>
-            <Button asChild className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg shadow-md hover:shadow-lg transition-all hover-lift animate-fadeIn animation-delay-500">
+            <Button asChild className="bg-blue-600 hover:bg-blue-700 text-white px-4 sm:px-6 py-2 rounded-lg shadow-md hover:shadow-lg transition-all hover-lift animate-fadeIn animation-delay-500 w-full sm:w-auto">
               <Link href="/admin/products/new">
                 <Plus className="w-4 h-4 mr-2" />
                 Add Product
@@ -220,14 +220,14 @@ export default function AdminProductsPage() {
         </Card>
 
         {/* Products Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fadeIn animation-delay-900">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 animate-fadeIn animation-delay-900">
         {filteredProducts.map((product: any) => (
           // Using product.id || product._id for the key ensures a unique key is used.
           <Card key={product.id || product._id} className="overflow-hidden hover:shadow-lg transition-shadow">
             <div className="aspect-square bg-gray-100 relative">
               {product.images?.[0] ? (
                 <img
-                  src={product.images[0].url || product.images[0]}
+                  src={product.images[0].absoluteUrl || `http://your-server.com${product.images[0].url}` || product.images[0]}
                   alt={product.name}
                   className="w-full h-full object-cover"
                   onError={(e) => {
@@ -310,8 +310,8 @@ export default function AdminProductsPage() {
 
       {/* View Product Dialog */}
       {viewOpen && selectedProduct && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md" onClick={() => setViewOpen(false)}>
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4" onClick={() => setViewOpen(false)}>
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-auto max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-semibold mb-4">Product Details</h3>
             <div className="space-y-2">
               <p><strong>Name:</strong> {selectedProduct.name}</p>
@@ -330,8 +330,8 @@ export default function AdminProductsPage() {
 
       {/* Edit Product Dialog */}
       {editOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md" onClick={() => setEditOpen(false)}>
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4" onClick={() => setEditOpen(false)}>
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-auto max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-semibold mb-4">Edit Product</h3>
             <div className="space-y-4">
               <div>
@@ -396,8 +396,8 @@ export default function AdminProductsPage() {
 
       {/* Delete Confirmation Dialog */}
       {deleteOpen && selectedProduct && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md" onClick={() => setDeleteOpen(false)}>
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4" onClick={() => setDeleteOpen(false)}>
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-auto" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-semibold mb-4">Delete Product</h3>
             <p>Are you sure you want to delete "{selectedProduct.name}"? This action cannot be undone.</p>
             <div className="flex justify-end gap-2 mt-4">
