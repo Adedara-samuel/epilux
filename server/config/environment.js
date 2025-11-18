@@ -49,6 +49,11 @@ const config = {
     // File upload configuration
     MAX_FILE_SIZE: process.env.MAX_FILE_SIZE || 5 * 1024 * 1024, // 5MB
     UPLOAD_PATH: process.env.UPLOAD_PATH || 'uploads/',
+
+    // Cloudinary configuration
+    CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME || '',
+    CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY || '',
+    CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET || '',
     
     // Payment configuration (for future payment integration)
     PAYSTACK_PUBLIC_KEY: process.env.PAYSTACK_PUBLIC_KEY || '',

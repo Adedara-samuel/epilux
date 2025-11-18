@@ -13,21 +13,22 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useAuth } from '@/hooks/useAuth';
 import { adminCommissionRatesAPI } from '@/services/admin';
 import { toast } from 'sonner';
-import { useCommissions, useCommissionRates, useCreateCommissionRate, useUpdateCommissionRate, useDeleteCommissionRate, useUpdateCommissionStatus } from '@/hooks/useCommissions';
-import { Commission } from '@/services/commissions';
-
+import { useAllCommissions, useCommissionRates, useCreateCommissionRate, useUpdateCommissionRate, useDeleteCommissionRate, useUpdateCommissionStatus } from '@/hooks/useCommissions';
 import { CommissionRate } from '@/services/commissions';
+import CommissionSettingsDisplay from '@/Components/admin/CommissionSettingsDisplay';
+import { useAdminSettings } from '@/hooks/useAdmin';
 
 export default function CommissionRatesPage() {
-   const { user } = useAuth();
-    const currentUser = user;
-    const currentUserId = user?._id || user?.id;
-  const { data: commissionsData, isLoading: commissionsLoading } = useCommissions();
-  const { data: commissionRatesData, isLoading: ratesLoading } = useCommissionRates();
-  const createCommissionRate = useCreateCommissionRate();
-  const updateCommissionRate = useUpdateCommissionRate();
-  const deleteCommissionRate = useDeleteCommissionRate();
-  const updateCommissionStatus = useUpdateCommissionStatus();
+    const { user } = useAuth();
+     const currentUser = user;
+     const currentUserId = user?._id || user?.id;
+   const { data: commissionsData, isLoading: commissionsLoading } = useAllCommissions();
+   const { data: commissionRatesData, isLoading: ratesLoading } = useCommissionRates();
+   const { data: settingsData } = useAdminSettings();
+   const createCommissionRate = useCreateCommissionRate();
+   const updateCommissionRate = useUpdateCommissionRate();
+   const deleteCommissionRate = useDeleteCommissionRate();
+   const updateCommissionStatus = useUpdateCommissionStatus();
   const [commissionRates, setCommissionRates] = useState<CommissionRate[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -214,9 +215,9 @@ export default function CommissionRatesPage() {
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent animate-bounceIn">
-                Commission Rates Management
+                Commission Records Management
               </h1>
-              <p className="text-gray-600 mt-1 animate-fadeIn animation-delay-300">Manage affiliate commission rates and settings</p>
+              <p className="text-gray-600 mt-1 animate-fadeIn animation-delay-300">View and manage all affiliate commission records</p>
             </div>
             <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
               <DialogTrigger asChild>
@@ -312,30 +313,98 @@ export default function CommissionRatesPage() {
       </div>
 
       <div className="container mx-auto px-6 py-8">
-        {/* Live Commissions Section */}
-      {/* Live Commissions Section */}
+        {/* Commission Settings Display */}
+        {settingsData?.data && settingsData.data.commissionRate !== undefined && (
+          <CommissionSettingsDisplay settings={settingsData.data} />
+        )}
+
+        {/* Commission Statistics */}
+        {commissionsData?.statistics && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 animate-fadeIn animation-delay-700">
+            <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl hover-glow">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Total Commissions</p>
+                    <p className="text-2xl font-bold text-gray-900">{commissionsData.statistics.totalCommissions}</p>
+                  </div>
+                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center animate-pulse">
+                    <span className="text-blue-600 font-bold text-sm">📊</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl hover-glow">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Total Amount</p>
+                    <p className="text-2xl font-bold text-green-600">₦{commissionsData.statistics.totalAmount.toLocaleString()}</p>
+                  </div>
+                  <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center animate-pulse">
+                    <span className="text-green-600 font-bold text-sm">₦</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl hover-glow">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Average Amount</p>
+                    <p className="text-2xl font-bold text-purple-600">₦{commissionsData.statistics.averageAmount.toFixed(2)}</p>
+                  </div>
+                  <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center animate-pulse">
+                    <span className="text-purple-600 font-bold text-sm">∅</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl hover-glow">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Pending</p>
+                    <p className="text-2xl font-bold text-orange-600">{commissionsData.statistics.byStatus.pending}</p>
+                  </div>
+                  <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center animate-pulse">
+                    <span className="text-orange-600 font-bold text-sm">⏳</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Commission Records Section */}
       <Card className="bg-white/80 backdrop-blur-sm border border-gray-200 shadow-sm mb-8">
         <CardHeader>
-          <CardTitle>Live Commissions</CardTitle>
+          <CardTitle>All Commission Records</CardTitle>
         </CardHeader>
         <CardContent>
           {commissionsLoading ? (
             <div className="py-6 text-sm text-gray-600">Loading commissions...</div>
           ) : (commissionsData?.commissions?.length ? (
             <div className="space-y-3">
-              {commissionsData.commissions.slice(0, 10).map((c: Commission) => (
+              {commissionsData.commissions.slice(0, 10).map((c) => (
                 <div key={c._id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 border rounded-lg gap-3">
                   <div className="text-sm flex-1">
                     <div className="font-semibold">₦{(c.amount || 0).toLocaleString()}</div>
                     <div className="text-gray-600">{new Date(c.createdAt).toLocaleString()}</div>
-                    {c.user && (
-                      <div className="text-xs text-blue-600">{c.user.firstName} {c.user.lastName}</div>
+                    {c.affiliate && (
+                      <div className="text-xs text-blue-600">{c.affiliate.firstName} {c.affiliate.lastName}</div>
+                    )}
+                    {c.order && (
+                      <div className="text-xs text-green-600">Order: {c.order.orderNumber}</div>
                     )}
                   </div>
                   <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
                     <Badge variant="outline" className="capitalize self-start">{c.status}</Badge>
                     <Select
-                      onValueChange={(value) => updateCommissionStatus.mutate({ id: c._id, status: value as Commission['status'] })}
+                      onValueChange={(value) => updateCommissionStatus.mutate({ id: c._id, status: value as any })}
                       disabled={updateCommissionStatus.isPending}
                     >
                       <SelectTrigger className="w-full sm:w-36">
@@ -357,183 +426,6 @@ export default function CommissionRatesPage() {
           ))}
         </CardContent>
       </Card>
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 animate-fadeIn animation-delay-700">
-          <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl hover-glow">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Total Rates</p>
-                  <p className="text-2xl font-bold text-gray-900">{commissionRates.length}</p>
-                </div>
-                <Percent className="w-8 h-8 text-blue-600 animate-pulse" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl hover-glow">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Active Rates</p>
-                  <p className="text-2xl font-bold text-green-600">{commissionRates.filter(r => r.isActive).length}</p>
-                </div>
-                <ToggleRight className="w-8 h-8 text-green-600 animate-pulse" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl hover-glow">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Inactive Rates</p>
-                  <p className="text-2xl font-bold text-red-600">{commissionRates.filter(r => !r.isActive).length}</p>
-                </div>
-                <ToggleLeft className="w-8 h-8 text-red-600 animate-pulse" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl hover-glow">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Avg Rate</p>
-                  <p className="text-2xl font-bold text-purple-600">
-                    {commissionRates.length > 0
-                      ? (commissionRates.reduce((sum, r) => sum + r.rate, 0) / commissionRates.length).toFixed(1)
-                      : '0'
-                    }%
-                  </p>
-                </div>
-                <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center animate-pulse">
-                  <span className="text-purple-600 font-bold text-sm">%</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Filters */}
-        <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl mb-6 animate-fadeIn animation-delay-900">
-          <CardContent className="p-6">
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <Input
-                  placeholder="Search commission rates..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 bg-white/50 border-gray-200"
-                />
-              </div>
-              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                <SelectTrigger className="w-full sm:w-48 bg-white/50">
-                  <SelectValue placeholder="Filter by category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Categories</SelectItem>
-                  <SelectItem value="general">General</SelectItem>
-                  <SelectItem value="product">Product</SelectItem>
-                  <SelectItem value="service">Service</SelectItem>
-                  <SelectItem value="referral">Referral</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full sm:w-48 bg-white/50">
-                  <SelectValue placeholder="Filter by status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Commission Rates List */}
-        <div className="space-y-4">
-          {loading || ratesLoading ? (
-            <div className="flex justify-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-            </div>
-          ) : filteredRates.length === 0 ? (
-            <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl">
-              <CardContent className="p-12 text-center">
-                <Percent className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">No Commission Rates Found</h3>
-                <p className="text-gray-600 mb-6">Get started by creating your first commission rate.</p>
-                <Button onClick={() => setIsCreateModalOpen(true)} className="bg-blue-600 hover:bg-blue-700">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Create First Rate
-                </Button>
-              </CardContent>
-            </Card>
-          ) : (
-            filteredRates.map((rate, index) => (
-              <Card key={rate._id} className="bg-white/80 backdrop-blur-sm border-0 shadow-xl hover-glow animate-fadeIn" style={{ animationDelay: `${index * 100}ms` }}>
-                <CardContent className="p-6">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div className="flex-1">
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-2">
-                        <h3 className="text-lg font-semibold text-gray-900">{rate.name}</h3>
-                        <div className="flex flex-wrap gap-2">
-                          <Badge variant={rate.isActive ? "default" : "secondary"} className={rate.isActive ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}>
-                            {rate.isActive ? 'Active' : 'Inactive'}
-                          </Badge>
-                          <Badge variant="outline" className="capitalize">
-                            {rate.category}
-                          </Badge>
-                        </div>
-                      </div>
-                      {rate.description && (
-                        <p className="text-gray-600 mb-3">{rate.description}</p>
-                      )}
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-gray-500">
-                        <span>Rate: <strong className="text-gray-900">{rate.rate}{rate.type === 'percentage' ? '%' : '₦'}</strong></span>
-                        <span>Type: <strong className="text-gray-900 capitalize">{rate.type}</strong></span>
-                        <span>Created: <strong className="text-gray-900">{new Date(rate.createdAt).toLocaleDateString()}</strong></span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 self-start sm:self-center">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleToggleStatus(rate)}
-                        className={`hover-lift ${rate.isActive ? 'text-green-600 hover:text-green-700' : 'text-red-600 hover:text-red-700'}`}
-                      >
-                        {rate.isActive ? <ToggleRight className="w-4 h-4" /> : <ToggleLeft className="w-4 h-4" />}
-                      </Button>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm" className="hover-lift">
-                            <MoreHorizontal className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => openEditModal(rate)} className="cursor-pointer">
-                            <Edit className="w-4 h-4 mr-2" />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handleDelete(rate)}
-                            className="cursor-pointer text-red-600 hover:text-red-700"
-                          >
-                            <Trash2 className="w-4 h-4 mr-2" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))
-          )}
-        </div>
 
         {/* Edit Modal */}
         <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>

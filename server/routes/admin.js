@@ -39,6 +39,9 @@ router.get('/affiliates/:id/commissions', authenticate, authorize('admin'), admi
 router.post('/affiliates/:id/commission', authenticate, authorize('admin'), adminController.createCommission);
 router.put('/commissions/:id/status', authenticate, authorize('admin'), adminController.updateCommissionStatus);
 
+// Commission records management routes
+router.get('/commissions', authenticate, authorize('admin'), adminController.getAllCommissions);
+
 // Withdrawal management routes
 router.get('/withdrawals', authenticate, authorize('admin'), adminController.getWithdrawals);
 router.put('/withdrawals/:id/status', authenticate, authorize('admin'), adminController.updateWithdrawalStatus);

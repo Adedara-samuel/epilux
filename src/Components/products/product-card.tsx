@@ -17,6 +17,7 @@ import { Textarea } from '../ui/textarea';
 import { Label } from '../ui/label';
 import { useCartStore } from '@/stores/cart-store';
 import { useAddToCart } from '@/hooks/useCart';
+import { API_BASE_URL } from '@/services/base';
 
 // REMOVED: const API_BASE_URL = 'https://epilux-backend.vercel.app'; // No longer needed, as the service handles the base URL
 
@@ -25,7 +26,7 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ product }: ProductCardProps) {
-    const [quantity, setQuantity] = useState(1);
+    const [quantity, setQuantity] = useState(5);
     const [showDetails, setShowDetails] = useState(false);
     const [showReviews, setShowReviews] = useState(false);
     const [showReviewForm, setShowReviewForm] = useState(false);
@@ -34,7 +35,7 @@ export default function ProductCard({ product }: ProductCardProps) {
     const [reviewTitle, setReviewTitle] = useState('');
     // REMOVED: const [isSubmittingReview, setIsSubmittingReview] = useState(false); // Handled by mutation hook
 
-    const { user } = useAuth();
+    const { user, token } = useAuth();
     const productId = product.id || product._id || '';
     const { data: reviewsData, isLoading: reviewsLoading } = useProductReviews(productId);
     
@@ -58,7 +59,7 @@ export default function ProductCard({ product }: ProductCardProps) {
     const loginLinkHref = user ? `/products` : `/login?redirect=${encodeURIComponent('/products')}`;
 
     const handleQuantityChange = (change: number) => {
-        const newQuantity = Math.max(1, quantity + change);
+        const newQuantity = Math.max(5, quantity + change);
         setQuantity(newQuantity);
     };
 
@@ -129,7 +130,7 @@ export default function ProductCard({ product }: ProductCardProps) {
                 <Link href={loginLinkHref}>
                     <div className="aspect-square bg-gray-100 relative overflow-hidden">
                         <img
-                            src={product.images?.[0]?.absoluteUrl || `http://your-server.com${product.images?.[0]?.url}` || product.image}
+                            src={product.images?.[0]?.url ? `${API_BASE_URL}${product.images[0].url}` : (product.image ? `${API_BASE_URL}${product.image}` : '/images/placeholder.jpg')}
                             alt={product.images?.[0]?.altText || product.name}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                             onError={(e) => {
@@ -178,7 +179,7 @@ export default function ProductCard({ product }: ProductCardProps) {
                                         <div className="space-y-4">
                                             <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
                                                 <img
-                                                    src={product.images?.[0]?.absoluteUrl || `http://your-server.com${product.images?.[0]?.url}` || product.image}
+                                                    src={product.images?.[0]?.url ? `${API_BASE_URL}${product.images[0].url}` : (product.image ? `${API_BASE_URL}${product.image}` : '/images/placeholder.jpg')}
                                                     alt={product.images?.[0]?.altText || product.name}
                                                     className="w-full h-full object-cover"
                                                     onError={(e) => {
@@ -244,7 +245,7 @@ export default function ProductCard({ product }: ProductCardProps) {
                                                             variant="outline"
                                                             size="sm"
                                                             onClick={() => handleQuantityChange(-1)}
-                                                            disabled={quantity <= 1}
+                                                            disabled={quantity <= 5}
                                                             className="h-8 w-8 p-0"
                                                         >
                                                             <Minus className="h-3 w-3" />
@@ -263,6 +264,7 @@ export default function ProductCard({ product }: ProductCardProps) {
                                                         Total: ₦{((product.price || 0) * quantity).toLocaleString()}
                                                     </span>
                                                 </div>
+                                                <p className="text-xs text-blue-600">Minimum order: 5 units</p>
                                             </div>
 
 
@@ -358,7 +360,7 @@ export default function ProductCard({ product }: ProductCardProps) {
                                                                 await addToCartAPI.mutateAsync({
                                                                     productId: productId,
                                                                     quantity,
-                                                                    image: product.images?.[0]?.absoluteUrl || `http://your-server.com${product.images?.[0]?.url}` || product.image || '',
+                                                                    image: product.images?.[0]?.url || product.image || '',
                                                                     name: product.name,
                                                                     price: product.price
                                                                 });
@@ -527,14 +529,16 @@ export default function ProductCard({ product }: ProductCardProps) {
                                          // Add to local store for immediate UI feedback
                                          addToCartStore(product, quantity);
 
-                                         // Always attempt API add as well
-                                         await addToCartAPI.mutateAsync({
-                                             productId: productId,
-                                             quantity,
-                                             image: product.images?.[0]?.absoluteUrl || `http://your-server.com${product.images?.[0]?.url}` || product.image || '',
-                                             name: product.name,
-                                             price: product.price
-                                         });
+                                         // Also add to API if user is logged in
+                                         if (token) {
+                                             await addToCartAPI.mutateAsync({
+                                                 productId: productId,
+                                                 quantity,
+                                                 image: product.images?.[0]?.url || product.image || '',
+                                                 name: product.name,
+                                                 price: product.price
+                                             });
+                                         }
 
                                          toast.success(`${quantity} ${product.name} added to cart!`);
                                      } catch (error: any) {

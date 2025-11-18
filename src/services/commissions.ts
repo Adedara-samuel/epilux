@@ -51,14 +51,37 @@ export interface UpdateCommissionData extends Partial<CreateCommissionData> {
 
 // Commission API functions
 export const commissionsAPI = {
-  // Get all commissions
+  // Get commission settings
+  getCommissionSettings: async () => {
+    const response = await api.get('/api/admin/settings');
+    return response.data;
+  },
+
+  // Get all commission records with filtering and pagination
+  getAllCommissions: async (params?: {
+    status?: string;
+    type?: string;
+    limit?: number;
+    page?: number;
+    startDate?: string;
+    endDate?: string;
+    affiliateId?: string;
+    minAmount?: number;
+    maxAmount?: number;
+  }) => {
+    const response = await api.get('/api/commission/admin/commissions', { params });
+    console.log("Fetched commissions: ", response.data);
+    return response.data;
+  },
+
+  // Get all commissions (legacy - for backward compatibility)
   getCommissions: async (params?: {
     status?: string;
     type?: string;
     limit?: number;
     page?: number;
   }) => {
-    const response = await api.get('/api/admin/commissions', { params });
+    const response = await api.get('/api/commission/admin/settings', { params });
     return response.data;
   },
 
@@ -74,19 +97,19 @@ export const commissionsAPI = {
 
   // Update commission rate
   updateCommission: async (id: string, data: UpdateCommissionData) => {
-    const response = await api.put(`/api/admin/commissions/${id}`, data);
+    const response = await api.put(`/api/commission/admin/commissions/${id}`, data);
     return response.data;
   },
 
   // Delete commission rate
   deleteCommission: async (id: string) => {
-    const response = await api.delete(`/api/admin/commissions/${id}`);
+    const response = await api.delete(`/api/commission/admin/commissions/${id}`);
     return response.data;
   },
 
   // Get commission by ID
   getCommission: async (id: string) => {
-    const response = await api.get(`/api/admin/commissions/${id}`);
+    const response = await api.get(`/api/commission/admin/commissions/${id}`);
     return response.data;
   },
 };

@@ -332,12 +332,27 @@ interface TopProduct {
 interface AnalyticsBackendResponse {
   success: boolean;
   data: {
-    totalRevenue: number;
-    totalOrders: number;
-    totalUsers: number;
-    topProducts: TopProduct[];
-    monthlyData: MonthlyData[];
-    // ... potentially other analytics fields like conversionRate (raw data)
+    overview: {
+      totalOrders: number;
+      totalRevenue: number;
+      monthlyRevenue: number;
+      pendingOrders: number;
+      completedOrders: number;
+      totalUsers: number;
+      totalProducts: number;
+      lowStockProducts: number;
+      activeAffiliates: number;
+      changes: {
+        totalOrders: number;
+        totalRevenue: number;
+        pendingOrders: number;
+        activeAffiliates: number;
+      };
+    };
+    recent: {
+      users: any[];
+      activity: any[];
+    };
   }
 }
 
@@ -348,28 +363,77 @@ interface TransformedAnalyticsData {
   conversionRate: string | undefined; // Calculated on client
   topProducts: TopProduct[];
   monthlyData: MonthlyData[];
+  overview: {
+    totalOrders: number;
+    totalRevenue: number;
+    monthlyRevenue: number;
+    pendingOrders: number;
+    completedOrders: number;
+    totalUsers: number;
+    totalProducts: number;
+    lowStockProducts: number;
+    activeAffiliates: number;
+    changes: {
+      totalOrders: number;
+      totalRevenue: number;
+      pendingOrders: number;
+      activeAffiliates: number;
+    };
+  };
+  recentUsers: any[];
 }
 
 // Admin Analytics Hook
 export const useAdminAnalytics = () => {
   return useQuery<AnalyticsBackendResponse, Error, TransformedAnalyticsData>({
     queryKey: ['admin', 'analytics'],
-    queryFn: () => adminDashboardAPI.getStats(), // Use the new function
+    queryFn: () => adminDashboardAPI.getStats(),
     select: (data) => {
       const analyticsData = data?.data;
 
+      if (!analyticsData) {
+        return {
+          totalRevenue: 0,
+          totalOrders: 0,
+          totalUsers: 0,
+          conversionRate: '0',
+          topProducts: [],
+          monthlyData: [],
+          overview: {
+            totalOrders: 0,
+            totalRevenue: 0,
+            monthlyRevenue: 0,
+            pendingOrders: 0,
+            completedOrders: 0,
+            totalUsers: 0,
+            totalProducts: 0,
+            lowStockProducts: 0,
+            activeAffiliates: 0,
+            changes: {
+              totalOrders: 0,
+              totalRevenue: 0,
+              pendingOrders: 0,
+              activeAffiliates: 0,
+            },
+          },
+          recentUsers: [],
+        };
+      }
+
       // Calculate conversion rate if data is available
-      const conversionRate = (analyticsData.totalOrders && analyticsData.totalUsers)
-        ? ((analyticsData.totalOrders / analyticsData.totalUsers) * 100).toFixed(1)
-        : undefined;
+      const conversionRate = (analyticsData.overview.totalOrders && analyticsData.overview.totalUsers)
+        ? ((analyticsData.overview.totalOrders / analyticsData.overview.totalUsers) * 100).toFixed(1)
+        : '0';
 
       return {
-        totalRevenue: analyticsData.totalRevenue || 0,
-        totalOrders: analyticsData.totalOrders || 0,
-        totalUsers: analyticsData.totalUsers || 0,
+        totalRevenue: analyticsData.overview.totalRevenue || 0,
+        totalOrders: analyticsData.overview.totalOrders || 0,
+        totalUsers: analyticsData.overview.totalUsers || 0,
         conversionRate: conversionRate,
-        topProducts: analyticsData.topProducts || [],
-        monthlyData: analyticsData.monthlyData || [],
+        topProducts: [], // Backend doesn't provide this yet
+        monthlyData: [], // Backend doesn't provide this yet
+        overview: analyticsData.overview,
+        recentUsers: analyticsData.recent.users || [],
       };
     },
   });

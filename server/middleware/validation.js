@@ -196,7 +196,7 @@ const validateProductCreation = [
         .isLength({ min: 1, max: 50 })
         .withMessage('Category must be between 1 and 50 characters'),
     
-    body('stock')
+    body('inventory.quantity')
         .isInt({ min: 0 })
         .withMessage('Stock must be a non-negative integer'),
     
@@ -241,7 +241,7 @@ const validateProductUpdate = [
         .isLength({ min: 1, max: 50 })
         .withMessage('Category must be between 1 and 50 characters'),
     
-    body('stock')
+    body('inventory.quantity')
         .optional()
         .isInt({ min: 0 })
         .withMessage('Stock must be a non-negative integer'),

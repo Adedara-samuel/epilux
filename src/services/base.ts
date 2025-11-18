@@ -2,8 +2,8 @@
 // src/services/base.ts
 import axios from 'axios';
 
-// Use production backend URL
-const API_BASE_URL = 'https://epilux-backend.vercel.app';
+// Always use production backend URL
+export const API_BASE_URL = 'https://epilux-backend.vercel.app';
 
 // Create axios instance with default config
 export const api = axios.create({
@@ -11,7 +11,7 @@ export const api = axios.create({
     headers: {
         'Content-Type': 'application/json',
     },
-    timeout: 10000,
+    timeout: 30000,
 });
 
 // Request interceptor to add auth token

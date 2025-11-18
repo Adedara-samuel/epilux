@@ -9,8 +9,22 @@ import {
     handleValidationErrors
 } from '../middleware/validation.js';
 import { authenticate, authorize } from '../middleware/auth.js';
+import config from '../config/environment.js';
 
 const router = express.Router();
+
+// Helper function to ensure image URLs are properly formatted
+const transformImageUrls = (product) => {
+    if (product.images && Array.isArray(product.images)) {
+        // Cloudinary URLs are already full URLs, so no transformation needed
+        // Just ensure altText field exists for consistency
+        product.images = product.images.map(image => ({
+            ...image,
+            altText: image.altText || image.alt || 'Product image'
+        }));
+    }
+    return product;
+};
 
 // Get all products (public)
 router.get('/', validatePagination, handleValidationErrors, catchAsync(async (req, res) => {
@@ -54,12 +68,15 @@ router.get('/', validatePagination, handleValidationErrors, catchAsync(async (re
         .skip(skip)
         .limit(limit)
         .sort({ createdAt: -1 });
-    
+
     const total = await Product.countDocuments(filter);
-    
+
+    // Transform image URLs for all products
+    const transformedProducts = products.map(transformImageUrls);
+
     res.json({
         success: true,
-        products,
+        products: transformedProducts,
         pagination: {
             page,
             limit,
@@ -72,14 +89,17 @@ router.get('/', validatePagination, handleValidationErrors, catchAsync(async (re
 // Get single product by ID (public)
 router.get('/:id', validateMongoId, handleValidationErrors, catchAsync(async (req, res, next) => {
     const product = await Product.findById(req.params.id);
-    
+
     if (!product) {
         return next(new NotFoundError('Product not found'));
     }
-    
+
+    // Transform image URLs
+    const transformedProduct = transformImageUrls(product.toObject());
+
     res.json({
         success: true,
-        product
+        product: transformedProduct
     });
 }));
 
@@ -99,10 +119,13 @@ router.post('/', authenticate, authorize('admin'), validateProductCreation, hand
 
     await product.save();
 
+    // Transform image URLs
+    const transformedProduct = transformImageUrls(product.toObject());
+
     res.status(201).json({
         success: true,
         message: 'Product created successfully',
-        product
+        product: transformedProduct
     });
 }));
 
@@ -113,15 +136,18 @@ router.put('/:id', validateMongoId, authenticate, authorize('admin'), validatePr
         req.body,
         { new: true, runValidators: true }
     );
-    
+
     if (!product) {
         return next(new NotFoundError('Product not found'));
     }
-    
+
+    // Transform image URLs
+    const transformedProduct = transformImageUrls(product.toObject());
+
     res.json({
         success: true,
         message: 'Product updated successfully',
-        product
+        product: transformedProduct
     });
 }));
 

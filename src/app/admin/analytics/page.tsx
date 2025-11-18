@@ -58,6 +58,24 @@ export default function AdminAnalyticsPage() {
         conversionRate: '0',
         topProducts: [],
         monthlyData: [],
+        overview: {
+            totalOrders: 0,
+            totalRevenue: 0,
+            monthlyRevenue: 0,
+            pendingOrders: 0,
+            completedOrders: 0,
+            totalUsers: 0,
+            totalProducts: 0,
+            lowStockProducts: 0,
+            activeAffiliates: 0,
+            changes: {
+                totalOrders: 0,
+                totalRevenue: 0,
+                pendingOrders: 0,
+                activeAffiliates: 0,
+            },
+        },
+        recentUsers: [],
     };
 
     // Safely assign data with fallback
@@ -90,11 +108,10 @@ export default function AdminAnalyticsPage() {
                         <DollarSign className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        {/* Use data.totalRevenue */}
-                        <div className="text-2xl font-bold">₦{(data.totalRevenue ? (data.totalRevenue / 1000000).toFixed(1) : '0')}M</div>
+                        <div className="text-2xl font-bold">₦{data.overview.totalRevenue.toLocaleString()}</div>
                         <div className="flex items-center text-xs text-green-600">
                             <TrendingUp className="w-3 h-3 mr-1" />
-                            +12.5% from last month {/* Hardcoded - ideally this comes from backend data */}
+                            +{data.overview.changes.totalRevenue}% from last month
                         </div>
                     </CardContent>
                 </Card>
@@ -105,11 +122,10 @@ export default function AdminAnalyticsPage() {
                         <ShoppingCart className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        {/* Use data.totalOrders */}
-                        <div className="text-2xl font-bold">{data.totalOrders.toLocaleString() || 0}</div>
+                        <div className="text-2xl font-bold">{data.overview.totalOrders}</div>
                         <div className="flex items-center text-xs text-green-600">
                             <TrendingUp className="w-3 h-3 mr-1" />
-                            +8.2% from last month
+                            +{data.overview.changes.totalOrders} from last month
                         </div>
                     </CardContent>
                 </Card>
@@ -120,26 +136,24 @@ export default function AdminAnalyticsPage() {
                         <Users className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        {/* Use data.totalUsers */}
-                        <div className="text-2xl font-bold">{data.totalUsers.toLocaleString() || '0'}</div>
+                        <div className="text-2xl font-bold">{data.overview.totalUsers}</div>
                         <div className="flex items-center text-xs text-green-600">
                             <TrendingUp className="w-3 h-3 mr-1" />
-                            +15.3% from last month
+                            Active users
                         </div>
                     </CardContent>
                 </Card>
 
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Conversion Rate</CardTitle>
-                        <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                        <CardTitle className="text-sm font-medium">Active Affiliates</CardTitle>
+                        <Package className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        {/* Use data.conversionRate (already calculated in hook) */}
-                        <div className="text-2xl font-bold">{data.conversionRate || '0'}%</div>
-                        <div className="flex items-center text-xs text-red-600">
-                            <TrendingDown className="w-3 h-3 mr-1" />
-                            -2.1% from last month
+                        <div className="text-2xl font-bold">{data.overview.activeAffiliates}</div>
+                        <div className="flex items-center text-xs text-green-600">
+                            <TrendingUp className="w-3 h-3 mr-1" />
+                            +{data.overview.changes.activeAffiliates} from last month
                         </div>
                     </CardContent>
                 </Card>
@@ -147,64 +161,96 @@ export default function AdminAnalyticsPage() {
 
                 {/* Charts and Tables */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-fadeIn animation-delay-900">
-                {/* Monthly Performance */}
+                {/* Recent Users */}
                 <Card>
                     <CardHeader>
-                        <CardTitle>Monthly Performance</CardTitle>
+                        <CardTitle>Recent Users</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-4">
-                            {/* Use data.monthlyData */}
-                            {data.monthlyData.length > 0 ? data.monthlyData.map((item) => (
-                                <div key={item.month} className="flex items-center justify-between">
+                            {data.recentUsers.length > 0 ? data.recentUsers.slice(0, 5).map((user: any) => (
+                                <div key={user._id} className="flex items-center justify-between">
                                     <div className="flex items-center gap-3">
                                         <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-sm font-medium text-blue-600">
-                                            {item.month.slice(0, 1)}
+                                            {user.firstName?.charAt(0)?.toUpperCase() || 'U'}
                                         </div>
-                                        <span className="font-medium">{item.month}</span>
+                                        <div>
+                                            <div className="font-medium text-sm">{user.firstName} {user.lastName}</div>
+                                            <div className="text-xs text-gray-500">{user.email}</div>
+                                        </div>
                                     </div>
                                     <div className="text-right">
-                                        <div className="font-medium">₦{(item.revenue / 1000).toFixed(0)}K</div>
-                                        <div className="text-sm text-gray-500">{item.orders} orders</div>
+                                        <Badge variant="outline" className="text-xs capitalize">
+                                            {user.role}
+                                        </Badge>
+                                        <div className="text-xs text-gray-500 mt-1">
+                                            {new Date(user.createdAt).toLocaleDateString()}
+                                        </div>
                                     </div>
                                 </div>
                             )) : (
                                 <div className="text-center py-8 text-gray-500">
-                                    No monthly data available
+                                    No recent users available
                                 </div>
                             )}
                         </div>
                     </CardContent>
                 </Card>
 
-                {/* Top Products */}
+                {/* Business Overview */}
                 <Card>
                     <CardHeader>
-                        <CardTitle>Top Performing Products</CardTitle>
+                        <CardTitle>Business Overview</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-4">
-                            {/* Use data.topProducts */}
-                            {data.topProducts.length > 0 ? data.topProducts.map((product, index: number) => (
-                                <div key={product.name} className="flex items-center justify-between">
-                                    <div className="flex items-center gap-3">
-                                        <Badge variant="outline" className="w-6 h-6 rounded-full p-0 flex items-center justify-center text-xs">
-                                            {index + 1}
-                                        </Badge>
-                                        <div>
-                                            <div className="font-medium text-sm">{product.name}</div>
-                                            <div className="text-xs text-gray-500">{product.sales} units sold</div>
-                                        </div>
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center text-sm font-medium text-green-600">
+                                        📦
                                     </div>
-                                    <div className="font-medium text-green-600">
-                                        ₦{product.revenue.toLocaleString()}
+                                    <span className="font-medium">Total Products</span>
+                                </div>
+                                <div className="font-medium text-green-600">
+                                    {data.overview.totalProducts}
+                                </div>
+                            </div>
+
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center text-sm font-medium text-orange-600">
+                                        ⏳
                                     </div>
+                                    <span className="font-medium">Pending Orders</span>
                                 </div>
-                            )) : (
-                                <div className="text-center py-8 text-gray-500">
-                                    No top products data available
+                                <div className="font-medium text-orange-600">
+                                    {data.overview.pendingOrders}
                                 </div>
-                            )}
+                            </div>
+
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-sm font-medium text-blue-600">
+                                        ✅
+                                    </div>
+                                    <span className="font-medium">Completed Orders</span>
+                                </div>
+                                <div className="font-medium text-blue-600">
+                                    {data.overview.completedOrders}
+                                </div>
+                            </div>
+
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center text-sm font-medium text-red-600">
+                                        ⚠️
+                                    </div>
+                                    <span className="font-medium">Low Stock Items</span>
+                                </div>
+                                <div className="font-medium text-red-600">
+                                    {data.overview.lowStockProducts}
+                                </div>
+                            </div>
                         </div>
                     </CardContent>
                 </Card>

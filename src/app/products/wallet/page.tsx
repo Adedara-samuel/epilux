@@ -54,10 +54,10 @@ export default function WalletPage() {
   console.log('Transactions error:', transactionsError);
 
   // Use real data or defaults
-  const balance = walletData || {
-    availableBalance: 0,
-    totalEarned: 0,
-    totalWithdrawn: 0,
+  const balance = {
+    availableBalance: walletData?.availableBalance ?? 0,
+    totalEarned: walletData?.totalEarned ?? 0,
+    totalWithdrawn: walletData?.totalWithdrawn ?? 0,
   };
   const transactions = transactionsData?.transactions || [];
 
@@ -551,7 +551,7 @@ export default function WalletPage() {
                             <p className={`font-bold ${
                               transaction.type === 'credit' ? 'text-green-600' : 'text-red-600'
                             }`}>
-                              {transaction.type === 'credit' ? '+' : '-'}₦{transaction.amount.toLocaleString()}
+                              {transaction.type === 'credit' ? '+' : '-'}₦{(transaction.amount ?? 0).toLocaleString()}
                             </p>
                             <Badge variant={transaction.status === 'completed' ? 'default' : 'secondary'} className="text-xs">
                               {transaction.status}

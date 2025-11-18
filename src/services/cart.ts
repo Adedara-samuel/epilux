@@ -25,6 +25,9 @@ export interface Cart {
 export const cartAPI = {
     // Get user's cart
     getCart: async (token: string): Promise<{ data: Cart }> => {
+        if (!token) {
+            throw new Error('Authentication required');
+        }
         const response = await api.get('/api/cart', {
             headers: { Authorization: `Bearer ${token}` }
         });
@@ -33,6 +36,9 @@ export const cartAPI = {
 
     // Add item to cart
     addToCart: async (token: string, productId: string, quantity: number, image: string, name?: string, price?: number): Promise<{ data: Cart }> => {
+        if (!token) {
+            throw new Error('Authentication required');
+        }
         const response = await api.post('/api/cart/items', { productId, quantity, image, name, price }, {
             headers: { Authorization: `Bearer ${token}` }
         });
@@ -41,6 +47,9 @@ export const cartAPI = {
 
     // Update cart item quantity
     updateCartItem: async (token: string, itemId: string, quantity: number): Promise<{ data: Cart }> => {
+        if (!token) {
+            throw new Error('Authentication required');
+        }
         const response = await api.put(`/api/cart/items/${itemId}`, { quantity }, {
             headers: { Authorization: `Bearer ${token}` }
         });
@@ -49,6 +58,9 @@ export const cartAPI = {
 
     // Remove item from cart
     removeFromCart: async (token: string, itemId: string): Promise<{ data: Cart }> => {
+        if (!token) {
+            throw new Error('Authentication required');
+        }
         const response = await api.delete(`/api/cart/items/${itemId}`, {
             headers: { Authorization: `Bearer ${token}` }
         });
@@ -57,6 +69,9 @@ export const cartAPI = {
 
     // Clear cart
     clearCart: async (token: string): Promise<{ message: string }> => {
+        if (!token) {
+            throw new Error('Authentication required');
+        }
         const response = await api.delete('/api/cart', {
             headers: { Authorization: `Bearer ${token}` }
         });

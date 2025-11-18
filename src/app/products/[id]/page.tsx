@@ -10,26 +10,50 @@ import { Button } from '@/Components/ui/button';
 import { useProduct, useProductReviews, useAddProductReview, useProductRatings, useProductRatingSummary, useUserRatings } from '@/hooks/useProducts';
 import { useAuth } from '@/hooks/useAuth';
 import { useAddToCart } from '@/hooks/useCart';
-import { Star, MessageSquare, ThumbsUp, ShoppingCart, Plus, Minus } from 'lucide-react';
+import { Star, MessageSquare, ThumbsUp, ShoppingCart, Plus, Minus, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/Components/ui/card';
 import { Badge } from '@/Components/ui/badge';
 import { Textarea } from '@/Components/ui/textarea';
 import { Label } from '@/Components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/Components/ui/dialog';
+import { API_BASE_URL } from '@/services/base';
 
 export default function ProductDetailPage() {
     const params = useParams();
     const id = params.id as string;
-    const [quantity, setQuantity] = useState<number>(1);
+    const [quantity, setQuantity] = useState<number>(5);
     const [showReviewForm, setShowReviewForm] = useState(false);
     const [reviewRating, setReviewRating] = useState(5);
     const [reviewComment, setReviewComment] = useState('');
     const [reviewTitle, setReviewTitle] = useState('');
     const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+    const [imageViewerOpen, setImageViewerOpen] = useState(false);
+    const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
     const addToCart = useCartStore((s) => s.addToCart);
-    const { user } = useAuth();
+    const { user, token } = useAuth();
     const addToCartAPI = useAddToCart();
+
+    const handleViewImages = (startIndex: number = 0) => {
+      setSelectedImageIndex(startIndex);
+      setImageViewerOpen(true);
+    };
+
+    const handlePrevImage = () => {
+      if (product?.images?.length > 0) {
+        setSelectedImageIndex((prev) =>
+          prev > 0 ? prev - 1 : product.images.length - 1
+        );
+      }
+    };
+
+    const handleNextImage = () => {
+      if (product?.images?.length > 0) {
+        setSelectedImageIndex((prev) =>
+          prev < product.images.length - 1 ? prev + 1 : 0
+        );
+      }
+    };
 
     // Use API to fetch product
     const { data: productData, isLoading, error } = useProduct(id);
@@ -63,15 +87,15 @@ export default function ProductDetailPage() {
                 id: product.id || product._id,
                 name: product.name,
                 price: product.price,
-                image: product.images?.[0]?.absoluteUrl || `http://your-server.com${product.images?.[0]?.url}` || product.image || '/images/placeholder.jpg'
+                image: product.images?.[0]?.absoluteUrl || `${API_BASE_URL}${product.images?.[0]?.url}` || product.image || '/images/placeholder.jpg'
             }, quantity);
 
             // Also add to API if user is logged in
-            if (user?.token) {
+            if (token) {
                 await addToCartAPI.mutateAsync({
                     productId: product.id || product._id,
                     quantity,
-                    image: product.images?.[0]?.absoluteUrl || `http://your-server.com${product.images?.[0]?.url}` || product.image || '/images/placeholder.jpg',
+                    image: product.images?.[0]?.absoluteUrl || `${API_BASE_URL}${product.images?.[0]?.url}` || product.image || '/images/placeholder.jpg',
                     name: product.name,
                     price: product.price
                 });
@@ -120,9 +144,9 @@ export default function ProductDetailPage() {
                     {product.images && product.images.length > 0 ? (
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                             {product.images.map((image: any, index: number) => (
-                                <div key={index} className="relative aspect-square rounded-lg overflow-hidden bg-gray-100">
+                                <div key={index} className="relative aspect-square rounded-lg overflow-hidden bg-gray-100 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => handleViewImages(index)}>
                                     <img
-                                        src={image.url}
+                                        src={image.absoluteUrl || `${API_BASE_URL}${image.url}`}
                                         alt={image.alt || product.name}
                                         className="w-full h-full object-cover"
                                         sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
@@ -134,9 +158,9 @@ export default function ProductDetailPage() {
                             ))}
                         </div>
                     ) : (
-                        <div className="relative h-96 lg:h-[500px] rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center">
+                        <div className="relative h-96 lg:h-[500px] rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity" onClick={() => handleViewImages(0)}>
                             <img
-                                src={product.image || '/images/placeholder.jpg'}
+                                src={product.image ? `${API_BASE_URL}${product.image}` : '/images/placeholder.jpg'}
                                 alt={product.name}
                                 className="object-contain"
                                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 50vw"
@@ -195,12 +219,23 @@ export default function ProductDetailPage() {
                                 onChange={(e) => setQuantity(parseInt(e.target.value))}
                                 className="block w-full rounded-md border-gray-300 py-2 pl-3 pr-10 text-base focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
                             >
-                                {[...Array(product.stock > 10 ? 10 : product.stock)].map((_, i) => ( // Limit to 10 or stock if less
-                                    <option key={i + 1} value={i + 1}>
-                                        {i + 1}
-                                    </option>
-                                ))}
+                                {(() => {
+                                    const minQuantity = 5;
+                                    const maxQuantity = Math.min(product.stock, 10); // Limit to 10 or stock if less
+                                    const options = [];
+
+                                    for (let i = minQuantity; i <= maxQuantity; i++) {
+                                        options.push(
+                                            <option key={i} value={i}>
+                                                {i}
+                                            </option>
+                                        );
+                                    }
+
+                                    return options;
+                                })()}
                             </select>
+                            <p className="text-sm text-blue-600 mt-1">Minimum order: 5 units</p>
                             {product.stock <= 10 && product.stock > 0 && (
                                 <p className="text-sm text-yellow-600 mt-1">Only {product.stock} left in stock!</p>
                             )}
@@ -381,6 +416,103 @@ export default function ProductDetailPage() {
                     </div>
                 </div>
             </div>
+
+            {/* Image Viewer Modal */}
+            {imageViewerOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-4" onClick={() => setImageViewerOpen(false)}>
+                    <div className="relative max-w-4xl max-h-full" onClick={(e) => e.stopPropagation()}>
+                        {/* Close button */}
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setImageViewerOpen(false)}
+                            className="absolute top-4 right-4 z-10 text-white hover:bg-white/20"
+                        >
+                            <X className="w-6 h-6" />
+                        </Button>
+
+                        {/* Main image */}
+                        <div className="relative">
+                            {(() => {
+                                const images = product?.images?.length > 0 ? product.images : [{ url: product?.image || '/images/placeholder.jpg', alt: product?.name }];
+                                const currentImage = images[selectedImageIndex];
+
+                                return currentImage ? (
+                                    <img
+                                        src={currentImage.url}
+                                        alt={currentImage.alt || product?.name}
+                                        className="max-w-full max-h-[80vh] object-contain"
+                                        onError={(e) => {
+                                            if ((e.target as HTMLImageElement).src !== '/images/placeholder.jpg') {
+                                                (e.target as HTMLImageElement).src = '/images/placeholder.jpg';
+                                            }
+                                        }}
+                                    />
+                                ) : null;
+                            })()}
+
+                            {/* Navigation buttons */}
+                            {(() => {
+                                const images = product?.images?.length > 0 ? product.images : [{ url: product?.image || '/images/placeholder.jpg' }];
+                                return images.length > 1 ? (
+                                    <>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={handlePrevImage}
+                                            className="absolute left-4 top-1/2 transform -translate-y-1/2 text-white hover:bg-white/20"
+                                        >
+                                            <ChevronLeft className="w-8 h-8" />
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={handleNextImage}
+                                            className="absolute right-4 top-1/2 transform -translate-y-1/2 text-white hover:bg-white/20"
+                                        >
+                                            <ChevronRight className="w-8 h-8" />
+                                        </Button>
+                                    </>
+                                ) : null;
+                            })()}
+                        </div>
+
+                        {/* Image counter and thumbnails */}
+                        {(() => {
+                            const images = product?.images?.length > 0 ? product.images : [{ url: product?.image || '/images/placeholder.jpg', alt: product?.name }];
+                            return images.length > 1 ? (
+                                <div className="mt-4 flex flex-col items-center">
+                                    <div className="text-white text-sm mb-2">
+                                        {selectedImageIndex + 1} of {images.length}
+                                    </div>
+                                    <div className="flex gap-2 overflow-x-auto max-w-full">
+                                        {images.map((image: any, index: number) => (
+                                            <button
+                                                key={index}
+                                                onClick={() => setSelectedImageIndex(index)}
+                                                className={`flex-shrink-0 w-16 h-16 rounded border-2 overflow-hidden ${
+                                                    index === selectedImageIndex ? 'border-blue-500' : 'border-gray-400'
+                                                }`}
+                                            >
+                                                <img
+                                                    src={image.absoluteUrl || `${API_BASE_URL}${image.url}`}
+                                                    alt={`Thumbnail ${index + 1}`}
+                                                    className="w-full h-full object-cover"
+                                                    onError={(e) => {
+                                                        if ((e.target as HTMLImageElement).src !== '/images/placeholder.jpg') {
+                                                            (e.target as HTMLImageElement).src = '/images/placeholder.jpg';
+                                                        }
+                                                    }}
+                                                />
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            ) : null;
+                        })()}
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

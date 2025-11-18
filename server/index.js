@@ -70,7 +70,7 @@ app.use((req, res, next) => {
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-app.use(requestLogger);
+// app.use(requestLogger);
 // Validate configuration
 const configErrors = validateConfig();
 if (configErrors.length > 0) {
@@ -110,6 +110,7 @@ import marketerRoutes from './routes/marketers.js';
 import uploadRoutes from './routes/uploads.js';
 import walletRoutes from './routes/wallet.js';
 import cartRoutes from './routes/cart.js';
+import * as adminController from './controllers/adminController.js';
 
 // Use routes
 app.use('/api/auth', authRoutes);
@@ -119,12 +120,88 @@ app.use('/api/affiliate', affiliateRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/support', supportRoutes);
 app.use('/api/user', userRoutes);
-app.use('/api/admin/commissions', commissionRoutes);
+app.use('/api/commission/admin/commissions', commissionRoutes);
 app.use('/api/delivery', deliveryRoutes);
 app.use('/api/marketers', marketerRoutes);
 app.use('/api/uploads', uploadRoutes);
 app.use('/api/wallet', walletRoutes);
 app.use('/api/cart', cartRoutes);
+
+// Commission settings routes
+app.get('/api/commission/admin/settings', async (req, res) => {
+    try {
+        const settings = {
+            commissionRate: 12,
+            excludedRoles: ['admin', 'marketer'],
+            withdrawalWindow: {
+                endDay: 30,
+                startDay: 26
+            },
+            updatedAt: '2025-11-17T09:41:00.770Z'
+        };
+
+        res.json({
+            success: true,
+            data: settings
+        });
+    } catch (error) {
+        console.error('Error fetching settings:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching settings'
+        });
+    }
+});
+
+app.put('/api/commission/admin/settings', async (req, res) => {
+    try {
+        const { rate, excludedRoles, withdrawalWindow } = req.body;
+
+        // Validate input
+        if (rate !== undefined && (typeof rate !== 'number' || rate < 0 || rate > 100)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Commission rate must be a number between 0 and 100'
+            });
+        }
+
+        if (excludedRoles !== undefined && !Array.isArray(excludedRoles)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Excluded roles must be an array'
+            });
+        }
+
+        if (withdrawalWindow !== undefined) {
+            if (typeof withdrawalWindow !== 'object' || !withdrawalWindow.startDay || !withdrawalWindow.endDay) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Withdrawal window must be an object with startDay and endDay'
+                });
+            }
+        }
+
+        // Update settings (in a real app, save to database)
+        const updatedSettings = {
+            commissionRate: rate !== undefined ? rate : 12,
+            excludedRoles: excludedRoles !== undefined ? excludedRoles : ['admin', 'marketer'],
+            withdrawalWindow: withdrawalWindow !== undefined ? withdrawalWindow : { endDay: 30, startDay: 26 },
+            updatedAt: new Date().toISOString()
+        };
+
+        res.json({
+            success: true,
+            data: updatedSettings,
+            message: 'Settings updated successfully'
+        });
+    } catch (error) {
+        console.error('Error updating settings:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error updating settings'
+        });
+    }
+});
 
 // Temporary admin route to list all users (remove in production)
 app.get('/api/admin/users', async (req, res) => {

@@ -2,8 +2,22 @@ import express from 'express';
 import { verifyToken } from '../middleware/auth.js';
 import Cart from '../models/Cart.js';
 import Product from '../models/Product.js';
+import config from '../config/environment.js';
 
 const router = express.Router();
+
+// Helper function to ensure image URLs are properly formatted
+const transformImageUrls = (product) => {
+    if (product.images && Array.isArray(product.images)) {
+        // Cloudinary URLs are already full URLs, so no transformation needed
+        // Just ensure altText field exists for consistency
+        product.images = product.images.map(image => ({
+            ...image,
+            altText: image.altText || image.alt || 'Product image'
+        }));
+    }
+    return product;
+};
 
 // Get user's cart
 router.get('/', verifyToken, async (req, res) => {
@@ -50,10 +64,18 @@ router.post('/items', verifyToken, async (req, res) => {
             });
         }
 
-        if (product.stock < quantity) {
+        // Check if product has at least one image
+        if (!product.images || product.images.length === 0) {
             return res.status(400).json({
                 success: false,
-                message: `Only ${product.stock} units available`
+                message: 'Product must have at least one image'
+            });
+        }
+
+        if (product.inventory.quantity < quantity) {
+            return res.status(400).json({
+                success: false,
+                message: `Only ${product.inventory.quantity} units available`
             });
         }
 
@@ -69,10 +91,10 @@ router.post('/items', verifyToken, async (req, res) => {
             const existingItem = cart.items.find(item => item.productId.toString() === productId);
 
             if (existingItem) {
-                if (existingItem.quantity + quantity > product.stock) {
+                if (existingItem.quantity + quantity > product.inventory.quantity) {
                     return res.status(400).json({
                         success: false,
-                        message: `Cannot add ${quantity} more units. Only ${product.stock - existingItem.quantity} available`
+                        message: `Cannot add ${quantity} more units. Only ${product.inventory.quantity - existingItem.quantity} available`
                     });
                 }
                 existingItem.quantity += quantity;
@@ -90,6 +112,16 @@ router.post('/items', verifyToken, async (req, res) => {
 
         await cart.save();
         await cart.populate('items.productId');
+
+        // Transform image URLs for all products in cart items
+        if (cart.items && Array.isArray(cart.items)) {
+            cart.items = cart.items.map(item => {
+                if (item.productId) {
+                    item.productId = transformImageUrls(item.productId);
+                }
+                return item;
+            });
+        }
 
         res.json({
             success: true,
@@ -135,10 +167,10 @@ router.put('/items/:itemId', verifyToken, async (req, res) => {
 
         // Check stock
         const product = await Product.findById(item.productId);
-        if (product.stock < quantity) {
+        if (product.inventory.quantity < quantity) {
             return res.status(400).json({
                 success: false,
-                message: `Only ${product.stock} units available`
+                message: `Only ${product.inventory.quantity} units available`
             });
         }
 
@@ -153,6 +185,16 @@ router.put('/items/:itemId', verifyToken, async (req, res) => {
 
         await cart.save();
         await cart.populate('items.productId');
+
+        // Transform image URLs for all products in cart items
+        if (cart.items && Array.isArray(cart.items)) {
+            cart.items = cart.items.map(item => {
+                if (item.productId) {
+                    item.productId = transformImageUrls(item.productId);
+                }
+                return item;
+            });
+        }
 
         res.json({
             success: true,
@@ -195,6 +237,16 @@ router.delete('/items/:itemId', verifyToken, async (req, res) => {
 
         await cart.save();
         await cart.populate('items.productId');
+
+        // Transform image URLs for all products in cart items
+        if (cart.items && Array.isArray(cart.items)) {
+            cart.items = cart.items.map(item => {
+                if (item.productId) {
+                    item.productId = transformImageUrls(item.productId);
+                }
+                return item;
+            });
+        }
 
         res.json({
             success: true,

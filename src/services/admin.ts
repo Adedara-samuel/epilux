@@ -84,7 +84,7 @@ export const adminAffiliatesAPI = {
 export const adminCommissionsAPI = {
   // Update commission status
   updateCommissionStatus: async (id: string, status: string) => {
-    const response = await api.put(`/api/admin/commissions/${id}/status`, { status });
+    const response = await api.put(`/api/commission/admin/commissions/${id}/status`, { status });
     return response.data;
   },
 };
@@ -108,13 +108,13 @@ export const adminWithdrawalsAPI = {
 export const adminSettingsAPI = {
   // Get system settings
   getSettings: async () => {
-    const response = await api.get('/api/admin/settings');
+    const response = await api.get('/api/commission/admin/settings');
     return response.data;
   },
 
   // Update system settings
   updateSettings: async (settingsData: any) => {
-    const response = await api.put('/api/admin/settings', settingsData);
+    const response = await api.put('/api/commission/admin/settings', settingsData);
     return response.data;
   },
 };
@@ -140,13 +140,13 @@ export const adminDashboardAPI = {
 export const adminCommissionRatesAPI = {
   // Get all commission rates
   getCommissionRates: async (params?: { page?: number; limit?: number; category?: string; isActive?: boolean }) => {
-    const response = await api.get('/api/admin/commissions', { params });
+    const response = await api.get('/api/commission/admin/commissions', { params });
     return response.data;
   },
 
   // Get single commission rate
   getCommissionRate: async (id: string) => {
-    const response = await api.get(`/api/admin/commissions/${id}`);
+    const response = await api.get(`/api/commission/admin/commissions/${id}`);
     return response.data;
   },
 
@@ -158,7 +158,7 @@ export const adminCommissionRatesAPI = {
     type: 'percentage' | 'fixed';
     category: 'product' | 'service' | 'referral' | 'general';
   }) => {
-    const response = await api.post('/api/admin/commissions', data);
+    const response = await api.post('/api/commission/admin/commissions', data);
     return response.data;
   },
 
@@ -171,19 +171,19 @@ export const adminCommissionRatesAPI = {
     category: 'product' | 'service' | 'referral' | 'general';
     isActive: boolean;
   }>) => {
-    const response = await api.put(`/api/admin/commissions/${id}`, data);
+    const response = await api.put(`/api/commission/admin/commissions/${id}`, data);
     return response.data;
   },
 
   // Toggle commission rate status
   toggleCommissionRateStatus: async (id: string) => {
-    const response = await api.patch(`/api/admin/commissions/${id}/toggle-status`);
+    const response = await api.patch(`/api/commission/admin/commissions/${id}/toggle-status`);
     return response.data;
   },
 
   // Delete commission rate
   deleteCommissionRate: async (id: string) => {
-    const response = await api.delete(`/api/admin/commissions/${id}`);
+    const response = await api.delete(`/api/commission/admin/commissions/${id}`);
     return response.data;
   },
 };

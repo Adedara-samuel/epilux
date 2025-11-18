@@ -2,7 +2,76 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { commissionsAPI, Commission, CommissionRate, CreateCommissionData, UpdateCommissionData } from '@/services/commissions';
 
-// Hook for getting all commissions
+interface CommissionRecord {
+  _id: string;
+  affiliate: {
+    _id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+  referredUser?: {
+    _id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+  order?: {
+    _id: string;
+    orderNumber: string;
+    totalAmount: number;
+  };
+  amount: number;
+  status: 'pending' | 'available' | 'withdrawn' | 'rejected';
+  type: 'product' | 'service' | 'referral' | 'general';
+  description?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface CommissionStatistics {
+  totalCommissions: number;
+  totalAmount: number;
+  averageAmount: number;
+  byStatus: {
+    pending: number;
+    available: number;
+    withdrawn: number;
+    rejected: number;
+  };
+}
+
+interface CommissionResponse {
+  success: boolean;
+  commissions: CommissionRecord[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    pages: number;
+  };
+  statistics: CommissionStatistics;
+}
+
+// Hook for getting all commission records (admin)
+export const useAllCommissions = (params?: {
+  status?: string;
+  type?: string;
+  limit?: number;
+  page?: number;
+  startDate?: string;
+  endDate?: string;
+  affiliateId?: string;
+  minAmount?: number;
+  maxAmount?: number;
+}) => {
+  return useQuery<CommissionResponse>({
+    queryKey: ['all-commissions', params],
+    queryFn: () => commissionsAPI.getAllCommissions(params),
+  });
+};
+
+// Hook for getting all commissions (legacy - for backward compatibility)
 export const useCommissions = (params?: {
   status?: string;
   type?: string;

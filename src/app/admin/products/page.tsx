@@ -5,7 +5,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, Plus, MoreHorizontal, Edit, Trash2, Book } from 'lucide-react';
+import { Search, Filter, Plus, MoreHorizontal, Edit, Trash2, Book, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/Components/ui/card';
@@ -22,13 +22,16 @@ import Link from 'next/link';
 import { useAdminProducts, useAdminProduct, useUpdateProduct, useDeleteProduct, useUploadProductImages } from '@/hooks/useProducts';
 import { useQueryClient } from '@tanstack/react-query';
 import { ImageUploadField } from '@/Components/ui/image-upload-field';
+import { API_BASE_URL } from '@/services/base';
 
 export default function AdminProductsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [viewOpen, setViewOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [imageViewerOpen, setImageViewerOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [editForm, setEditForm] = useState({
     name: '',
     description: '',
@@ -111,6 +114,28 @@ export default function AdminProductsPage() {
   const handleDeleteProduct = (product: any) => {
     setSelectedProduct(product);
     setDeleteOpen(true);
+  };
+
+  const handleViewImages = (product: any, startIndex: number = 0) => {
+    setSelectedProduct(product);
+    setSelectedImageIndex(startIndex);
+    setImageViewerOpen(true);
+  };
+
+  const handlePrevImage = () => {
+    if (selectedProduct?.images?.length > 0) {
+      setSelectedImageIndex((prev) =>
+        prev > 0 ? prev - 1 : selectedProduct.images.length - 1
+      );
+    }
+  };
+
+  const handleNextImage = () => {
+    if (selectedProduct?.images?.length > 0) {
+      setSelectedImageIndex((prev) =>
+        prev < selectedProduct.images.length - 1 ? prev + 1 : 0
+      );
+    }
   };
 
   const handleUpdateProduct = async () => {
@@ -224,10 +249,10 @@ export default function AdminProductsPage() {
         {filteredProducts.map((product: any) => (
           // Using product.id || product._id for the key ensures a unique key is used.
           <Card key={product.id || product._id} className="overflow-hidden hover:shadow-lg transition-shadow">
-            <div className="aspect-square bg-gray-100 relative">
+            <div className="aspect-square bg-gray-100 relative cursor-pointer hover:opacity-80 transition-opacity" onClick={() => handleViewImages(product, 0)}>
               {product.images?.[0] ? (
                 <img
-                  src={product.images[0].absoluteUrl || `http://your-server.com${product.images[0].url}` || product.images[0]}
+                  src={product.images[0].absoluteUrl || `${API_BASE_URL}${product.images[0].url}` || product.images[0]}
                   alt={product.name}
                   className="w-full h-full object-cover"
                   onError={(e) => {
@@ -406,6 +431,92 @@ export default function AdminProductsPage() {
                 {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
               </Button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Image Viewer Modal */}
+      {imageViewerOpen && selectedProduct && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-4" onClick={() => setImageViewerOpen(false)}>
+          <div className="relative max-w-4xl max-h-full" onClick={(e) => e.stopPropagation()}>
+            {/* Close button */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setImageViewerOpen(false)}
+              className="absolute top-4 right-4 z-10 text-white hover:bg-white/20"
+            >
+              <X className="w-6 h-6" />
+            </Button>
+
+            {/* Main image */}
+            <div className="relative">
+              {selectedProduct.images?.[selectedImageIndex] && (
+                <img
+                  src={selectedProduct.images[selectedImageIndex].absoluteUrl || `${API_BASE_URL}${selectedProduct.images[selectedImageIndex].url}` || selectedProduct.images[selectedImageIndex]}
+                  alt={selectedProduct.images[selectedImageIndex].alt || selectedProduct.name}
+                  className="max-w-full max-h-[80vh] object-contain"
+                  onError={(e) => {
+                    if (e.currentTarget.src !== '/images/placeholder.jpg') {
+                      e.currentTarget.src = '/images/placeholder.jpg';
+                    }
+                  }}
+                />
+              )}
+
+              {/* Navigation buttons */}
+              {selectedProduct.images?.length > 1 && (
+                <>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handlePrevImage}
+                    className="absolute left-4 top-1/2 transform -translate-y-1/2 text-white hover:bg-white/20"
+                  >
+                    <ChevronLeft className="w-8 h-8" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleNextImage}
+                    className="absolute right-4 top-1/2 transform -translate-y-1/2 text-white hover:bg-white/20"
+                  >
+                    <ChevronRight className="w-8 h-8" />
+                  </Button>
+                </>
+              )}
+            </div>
+
+            {/* Image counter and thumbnails */}
+            {selectedProduct.images?.length > 1 && (
+              <div className="mt-4 flex flex-col items-center">
+                <div className="text-white text-sm mb-2">
+                  {selectedImageIndex + 1} of {selectedProduct.images.length}
+                </div>
+                <div className="flex gap-2 overflow-x-auto max-w-full">
+                  {selectedProduct.images.map((image: any, index: number) => (
+                    <button
+                      key={index}
+                      onClick={() => setSelectedImageIndex(index)}
+                      className={`flex-shrink-0 w-16 h-16 rounded border-2 overflow-hidden ${
+                        index === selectedImageIndex ? 'border-blue-500' : 'border-gray-400'
+                      }`}
+                    >
+                      <img
+                        src={image.absoluteUrl || `${API_BASE_URL}${image.url}` || image}
+                        alt={`Thumbnail ${index + 1}`}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          if ((e.target as HTMLImageElement).src !== '/images/placeholder.jpg') {
+                            (e.target as HTMLImageElement).src = '/images/placeholder.jpg';
+                          }
+                        }}
+                      />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

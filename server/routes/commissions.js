@@ -23,8 +23,135 @@ const router = express.Router();
 // All routes require admin authentication
 router.use(authenticate, authorize('admin'));
 
-// Get all commission rates
-router.get('/', validatePagination, handleValidationErrors, getCommissionRates);
+// Get all commission records with filtering and pagination
+const getAllCommissions = async (req, res) => {
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const skip = (page - 1) * limit;
+
+        // Build filter object
+        const filter = {};
+
+        // Status filter
+        if (req.query.status && req.query.status !== 'all') {
+            filter.status = req.query.status;
+        }
+
+        // Type filter
+        if (req.query.type && req.query.type !== 'all') {
+            filter.type = req.query.type;
+        }
+
+        // Date range filter
+        if (req.query.startDate || req.query.endDate) {
+            filter.createdAt = {};
+            if (req.query.startDate) {
+                filter.createdAt.$gte = new Date(req.query.startDate);
+            }
+            if (req.query.endDate) {
+                filter.createdAt.$lte = new Date(req.query.endDate);
+            }
+        }
+
+        // Affiliate filter
+        if (req.query.affiliateId) {
+            filter.affiliate = req.query.affiliateId;
+        }
+
+        // Amount range filter
+        if (req.query.minAmount || req.query.maxAmount) {
+            filter.amount = {};
+            if (req.query.minAmount) {
+                filter.amount.$gte = parseFloat(req.query.minAmount);
+            }
+            if (req.query.maxAmount) {
+                filter.amount.$lte = parseFloat(req.query.maxAmount);
+            }
+        }
+
+        // Get commissions with pagination
+        const [commissions, total] = await Promise.all([
+            AffiliateCommission.find(filter)
+                .populate('affiliate', 'firstName lastName email')
+                .populate('referredUser', 'firstName lastName email')
+                .populate('order', 'orderNumber totalAmount')
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(limit),
+            AffiliateCommission.countDocuments(filter)
+        ]);
+
+        // Calculate summary statistics
+        const stats = await AffiliateCommission.aggregate([
+            { $match: filter },
+            {
+                $group: {
+                    _id: null,
+                    totalCommissions: { $sum: 1 },
+                    totalAmount: { $sum: '$amount' },
+                    averageAmount: { $avg: '$amount' },
+                    pendingCount: {
+                        $sum: { $cond: [{ $eq: ['$status', 'pending'] }, 1, 0] }
+                    },
+                    availableCount: {
+                        $sum: { $cond: [{ $eq: ['$status', 'available'] }, 1, 0] }
+                    },
+                    withdrawnCount: {
+                        $sum: { $cond: [{ $eq: ['$status', 'withdrawn'] }, 1, 0] }
+                    },
+                    rejectedCount: {
+                        $sum: { $cond: [{ $eq: ['$status', 'rejected'] }, 1, 0] }
+                    }
+                }
+            }
+        ]);
+
+        const summaryStats = stats[0] || {
+            totalCommissions: 0,
+            totalAmount: 0,
+            averageAmount: 0,
+            pendingCount: 0,
+            availableCount: 0,
+            withdrawnCount: 0,
+            rejectedCount: 0
+        };
+
+        res.json({
+            success: true,
+            commissions,
+            pagination: {
+                page,
+                limit,
+                total,
+                pages: Math.ceil(total / limit)
+            },
+            statistics: {
+                totalCommissions: summaryStats.totalCommissions,
+                totalAmount: summaryStats.totalAmount,
+                averageAmount: summaryStats.averageAmount || 0,
+                byStatus: {
+                    pending: summaryStats.pendingCount,
+                    available: summaryStats.availableCount,
+                    withdrawn: summaryStats.withdrawnCount,
+                    rejected: summaryStats.rejectedCount
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching all commissions:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching commission records'
+        });
+    }
+};
+
+// Get all commission records
+router.get('/', getAllCommissions);
+
+// Get all commission rates (legacy - moved to /rates endpoint)
+router.get('/rates', validatePagination, handleValidationErrors, getCommissionRates);
 
 // Get active commission rates (for public use)
 router.get('/active', getActiveCommissionRates);

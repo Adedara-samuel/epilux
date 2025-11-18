@@ -12,6 +12,7 @@ import { Minus, Plus, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { shallow } from 'zustand/shallow';
+import { API_BASE_URL } from '@/services/base';
 
 // You might need to create this EmptyState component if you don't have it:
 // components/empty-state.tsx
@@ -40,8 +41,9 @@ import { shallow } from 'zustand/shallow';
 
 
 export default function CartPage() {
-    const { user } = useAuth();
+    const { user, token } = useAuth();
     const { data: cartData, isLoading, isError, error } = useCart();
+    const cartQueryEnabled = !!token;
     const updateCartItemAPI = useUpdateCartItem();
     const removeFromCartAPI = useRemoveFromCart();
     const clearCartAPI = useClearCart();
@@ -74,7 +76,7 @@ export default function CartPage() {
 
         // 2. Call API if user is logged in
         try {
-            if (user?.token) {
+            if (token) {
                 await updateCartItemAPI.mutateAsync({ itemId, quantity: newQuantity });
             }
         } catch (error: any) {
@@ -88,7 +90,7 @@ export default function CartPage() {
 
         // 2. Call API if user is logged in
         try {
-            if (user?.token) {
+            if (token) {
                 await removeFromCartAPI.mutateAsync(itemId);
                 toast.success('Item removed from cart!');
             }
@@ -103,7 +105,7 @@ export default function CartPage() {
 
         // 2. Call API if user is logged in
         try {
-            if (user?.token) {
+            if (token) {
                 await clearCartAPI.mutateAsync();
                 toast.success('Your cart has been cleared!');
             }
@@ -112,7 +114,7 @@ export default function CartPage() {
         }
     };
 
-    if (isLoading) {
+    if (isLoading && cartQueryEnabled) {
         return (
             <div className="container mx-auto px-4 py-12 text-center">
                 <p className="text-xl font-medium text-gray-700">Loading your cart...</p>
@@ -120,7 +122,7 @@ export default function CartPage() {
         );
     }
 
-    if (isError) {
+    if (isError && cartQueryEnabled) {
         // If API fails (e.g., 401 unauthorized), we still render with local data
         console.error("Cart API Error:", error);
     }
@@ -151,7 +153,7 @@ export default function CartPage() {
                                 {/* Product Image */}
                                 <Link href={`/products/${item.id || item._id}`} className="flex-shrink-0">
                                     <img
-                                        src={item.images?.[0]?.url || item.image}
+                                        src={item.images?.[0]?.url ? `${API_BASE_URL}${item.images[0].url}` : (item.image ? `${API_BASE_URL}${item.image}` : '/images/placeholder.jpg')}
                                         alt={item.name}
                                         className="w-20 h-20 object-cover rounded-lg"
                                         onError={(e) => {
