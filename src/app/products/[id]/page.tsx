@@ -3,7 +3,7 @@
 'use client'; // Convert to client component
 
 import { notFound, useParams } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { useCartStore } from '@/app/context/cart-context';
 import { Button } from '@/Components/ui/button';
@@ -29,12 +29,16 @@ export default function ProductDetailPage() {
     const [isSubmittingReview, setIsSubmittingReview] = useState(false);
     const [imageViewerOpen, setImageViewerOpen] = useState(false);
     const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+    const [mainImageIndex, setMainImageIndex] = useState(0);
+    const [touchStart, setTouchStart] = useState<number | null>(null);
+    const [touchEnd, setTouchEnd] = useState<number | null>(null);
 
     const addToCart = useCartStore((s) => s.addToCart);
     const { user, token } = useAuth();
     const addToCartAPI = useAddToCart();
 
     const handleViewImages = (startIndex: number = 0) => {
+      console.log('Opening image viewer with index:', startIndex);
       setSelectedImageIndex(startIndex);
       setImageViewerOpen(true);
     };
@@ -48,11 +52,53 @@ export default function ProductDetailPage() {
     };
 
     const handleNextImage = () => {
-      if (product?.images?.length > 0) {
-        setSelectedImageIndex((prev) =>
-          prev < product.images.length - 1 ? prev + 1 : 0
-        );
-      }
+        if (product?.images?.length > 0) {
+            setSelectedImageIndex((prev) =>
+                prev < product.images.length - 1 ? prev + 1 : 0
+            );
+        }
+    };
+
+    // Touch handlers for swipe functionality
+    const handleTouchStart = (e: React.TouchEvent) => {
+        setTouchEnd(null);
+        setTouchStart(e.targetTouches[0].clientX);
+    };
+
+    const handleTouchMove = (e: React.TouchEvent) => {
+        setTouchEnd(e.targetTouches[0].clientX);
+    };
+
+    const handleTouchEnd = () => {
+        if (!touchStart || !touchEnd) return;
+
+        const distance = touchStart - touchEnd;
+        const isLeftSwipe = distance > 50;
+        const isRightSwipe = distance < -50;
+
+        if (isLeftSwipe) {
+            handleNextImage();
+        } else if (isRightSwipe) {
+            handlePrevImage();
+        }
+    };
+
+    const handleMainTouchEnd = () => {
+        if (!touchStart || !touchEnd) return;
+
+        const distance = Math.abs(touchStart - touchEnd);
+        const isLeftSwipe = (touchStart - touchEnd) > 50;
+        const isRightSwipe = (touchStart - touchEnd) < -50;
+        const images = product?.images?.length > 0 ? product.images : [{ url: product?.image ? `${API_BASE_URL}${product.image}` : '/images/placeholder.jpg' }];
+
+        if (isLeftSwipe && images.length > 1) {
+            setMainImageIndex(prev => prev < images.length - 1 ? prev + 1 : 0);
+        } else if (isRightSwipe && images.length > 1) {
+            setMainImageIndex(prev => prev > 0 ? prev - 1 : images.length - 1);
+        } else if (distance < 10) {
+            // If minimal movement, treat as tap/click and open modal
+            handleViewImages(mainImageIndex);
+        }
     };
 
     // Use API to fetch product
@@ -64,6 +110,11 @@ export default function ProductDetailPage() {
     const addReviewMutation = useAddProductReview();
 
     const product = productData?.data || productData?.product;
+
+    // Debug logging
+    useEffect(() => {
+        console.log('imageViewerOpen changed:', imageViewerOpen);
+    }, [imageViewerOpen]);
     const reviews = reviewsData?.reviews || [];
     const averageRating = reviewsData?.averageRating || 0;
 
@@ -141,32 +192,81 @@ export default function ProductDetailPage() {
         <div className="container mx-auto px-4 py-12">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 bg-white p-8 rounded-lg shadow-xl">
                 <div className="space-y-4">
-                    {product.images && product.images.length > 0 ? (
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                            {product.images.map((image: any, index: number) => (
-                                <div key={index} className="relative aspect-square rounded-lg overflow-hidden bg-gray-100 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => handleViewImages(index)}>
-                                    <img
-                                        src={image.absoluteUrl || `${API_BASE_URL}${image.url}`}
-                                        alt={image.alt || product.name}
-                                        className="w-full h-full object-cover"
-                                        sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
-                                    />
-                                    {image.isPrimary && (
-                                        <Badge className="absolute top-2 left-2 bg-blue-600">Primary</Badge>
+                    {(() => {
+                        const images = product.images && product.images.length > 0 ? product.images : [{ url: product.image || '/images/placeholder.jpg', alt: product.name }];
+                        const currentImage = images[mainImageIndex];
+
+                        return (
+                            <div className="space-y-4">
+                                {/* Main Image Carousel */}
+                                <div className="relative h-96 lg:h-[500px] rounded-lg overflow-hidden bg-gray-100 group">
+                                    <div
+                                        className="w-full h-full cursor-pointer"
+                                        onClick={() => {
+                                            console.log('Image clicked, opening viewer');
+                                            handleViewImages(mainImageIndex);
+                                        }}
+                                        onTouchStart={handleTouchStart}
+                                        onTouchMove={handleTouchMove}
+                                        onTouchEnd={handleMainTouchEnd}
+                                    >
+                                        <img
+                                            src={currentImage.absoluteUrl || `${API_BASE_URL}${currentImage.url}`}
+                                            alt={currentImage.alt || product.name}
+                                            className="w-full h-full object-contain"
+                                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 50vw"
+                                        />
+                                    </div>
+
+                                    {/* Navigation Arrows - Hidden on mobile, visible on desktop */}
+                                    {images.length > 1 && (
+                                        <>
+                                            <button
+                                                onClick={() => setMainImageIndex(prev => prev > 0 ? prev - 1 : images.length - 1)}
+                                                className="hidden md:flex absolute left-4 top-1/2 transform -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-colors"
+                                            >
+                                                <ChevronLeft className="w-6 h-6" />
+                                            </button>
+                                            <button
+                                                onClick={() => setMainImageIndex(prev => prev < images.length - 1 ? prev + 1 : 0)}
+                                                className="hidden md:flex absolute right-4 top-1/2 transform -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-colors"
+                                            >
+                                                <ChevronRight className="w-6 h-6" />
+                                            </button>
+                                        </>
+                                    )}
+
+                                    {/* Image Counter */}
+                                    {images.length > 1 && (
+                                        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black/50 text-white px-3 py-1 rounded-full text-sm">
+                                            {mainImageIndex + 1} / {images.length}
+                                        </div>
                                     )}
                                 </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="relative h-96 lg:h-[500px] rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity" onClick={() => handleViewImages(0)}>
-                            <img
-                                src={product.image ? `${API_BASE_URL}${product.image}` : '/images/placeholder.jpg'}
-                                alt={product.name}
-                                className="object-contain"
-                                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 50vw"
-                            />
-                        </div>
-                    )}
+
+                                {/* Thumbnails */}
+                                {images.length > 1 && (
+                                    <div className="flex gap-2 overflow-x-auto pb-2">
+                                        {images.map((image: any, index: number) => (
+                                            <button
+                                                key={index}
+                                                onClick={() => setMainImageIndex(index)}
+                                                className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-colors ${
+                                                    index === mainImageIndex ? 'border-blue-500' : 'border-gray-300 hover:border-gray-400'
+                                                }`}
+                                            >
+                                                <img
+                                                    src={image.absoluteUrl || `${API_BASE_URL}${image.url}`}
+                                                    alt={`Thumbnail ${index + 1}`}
+                                                    className="w-full h-full object-cover"
+                                                />
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })()}
                 </div>
 
                 <div>
@@ -419,7 +519,7 @@ export default function ProductDetailPage() {
 
             {/* Image Viewer Modal */}
             {imageViewerOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-4" onClick={() => setImageViewerOpen(false)}>
+                <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/90 p-4" onClick={() => setImageViewerOpen(false)}>
                     <div className="relative max-w-4xl max-h-full" onClick={(e) => e.stopPropagation()}>
                         {/* Close button */}
                         <Button
@@ -434,14 +534,17 @@ export default function ProductDetailPage() {
                         {/* Main image */}
                         <div className="relative">
                             {(() => {
-                                const images = product?.images?.length > 0 ? product.images : [{ url: product?.image || '/images/placeholder.jpg', alt: product?.name }];
+                                const images = product?.images?.length > 0 ? product.images : [{ url: product?.image ? `${API_BASE_URL}${product.image}` : '/images/placeholder.jpg', alt: product?.name }];
                                 const currentImage = images[selectedImageIndex];
 
                                 return currentImage ? (
                                     <img
-                                        src={currentImage.url}
+                                        src={currentImage.absoluteUrl || `${API_BASE_URL}${currentImage.url}`}
                                         alt={currentImage.alt || product?.name}
                                         className="max-w-full max-h-[80vh] object-contain"
+                                        onTouchStart={handleTouchStart}
+                                        onTouchMove={handleTouchMove}
+                                        onTouchEnd={handleTouchEnd}
                                         onError={(e) => {
                                             if ((e.target as HTMLImageElement).src !== '/images/placeholder.jpg') {
                                                 (e.target as HTMLImageElement).src = '/images/placeholder.jpg';
@@ -453,7 +556,7 @@ export default function ProductDetailPage() {
 
                             {/* Navigation buttons */}
                             {(() => {
-                                const images = product?.images?.length > 0 ? product.images : [{ url: product?.image || '/images/placeholder.jpg' }];
+                                const images = product?.images?.length > 0 ? product.images : [{ url: product?.image ? `${API_BASE_URL}${product.image}` : '/images/placeholder.jpg' }];
                                 return images.length > 1 ? (
                                     <>
                                         <Button
@@ -479,7 +582,7 @@ export default function ProductDetailPage() {
 
                         {/* Image counter and thumbnails */}
                         {(() => {
-                            const images = product?.images?.length > 0 ? product.images : [{ url: product?.image || '/images/placeholder.jpg', alt: product?.name }];
+                            const images = product?.images?.length > 0 ? product.images : [{ url: product?.image ? `${API_BASE_URL}${product.image}` : '/images/placeholder.jpg', alt: product?.name }];
                             return images.length > 1 ? (
                                 <div className="mt-4 flex flex-col items-center">
                                     <div className="text-white text-sm mb-2">

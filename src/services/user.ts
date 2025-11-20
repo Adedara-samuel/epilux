@@ -36,7 +36,7 @@ export const userAPI = {
 
     // Get user's addresses
     getAddresses: async () => {
-        const response = await api.get('/api/user/address');
+        const response = await api.get('/api/users/me/address');
         return response.data;
     },
 

@@ -2,9 +2,6 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-// Forces the page to be rendered dynamically on every request, 
-// preventing static prerendering which triggers the 'window is not defined' error 
-// in certain client-side dependencies.
 export const dynamic = 'force-dynamic';
 
 import { useForm } from 'react-hook-form';
@@ -23,6 +20,8 @@ import { Loader2 } from 'lucide-react';
 import ClientPaystackButton from '@/Components/payment/ClientPaystackButton';
 import { useCreateOrder, useCancelOrder } from '@/hooks/useOrders';
 import { orderActionsAPI } from '@/services/orders';
+import { useUserAddresses } from '@/hooks/useUser';
+import { useCart } from '@/hooks/useCart';
 
 interface CartItem {
     id: string;
@@ -42,13 +41,29 @@ const formSchema = z.object({
 
 export default function CheckoutPage() {
     const router = useRouter();
-    const { user, loading: authLoading } = useAuth();
+    const { user, loading: authLoading, token } = useAuth();
     const cart = useCartStore((s) => s.cart);
     const clearCart = useCartStore((s) => s.clearCart);
     const createOrderMutation = useCreateOrder();
     const cancelOrderMutation = useCancelOrder();
+    const { data: cartData, isLoading: cartLoading } = useCart();
+    const { data: addresses, isLoading: addressesLoading } = useUserAddresses();
+    const cartQueryEnabled = !!token;
 
-    const subtotal = cart.reduce((total: number, item: CartItem) => total + item.price * item.quantity, 0);
+    // Normalize cart items to handle both API and local store data consistently
+    const normalizedCartItems = cartData ? (cartData.data.items as any[])
+        .filter(item => item.product)
+        .map(item => ({
+            id: item.product,
+            name: item.name,
+            price: item.price,
+            images: item.images,
+            image: item.image,
+            quantity: item.quantity,
+            _id: item._id,
+        })) : cart;
+
+    const subtotal = normalizedCartItems.reduce((total: number, item: CartItem) => total + item.price * item.quantity, 0);
     const deliveryFee = subtotal >= 10000 ? 0 : 1500;
     const totalAmount = subtotal + deliveryFee;
 
@@ -67,7 +82,7 @@ export default function CheckoutPage() {
     });
 
     useEffect(() => {
-        if (authLoading) {
+        if (authLoading || addressesLoading || (cartQueryEnabled && cartLoading)) {
             return;
         }
 
@@ -76,19 +91,29 @@ export default function CheckoutPage() {
             return;
         }
 
-        if (cart.length === 0) {
+        if (normalizedCartItems.length === 0) {
+            console.log('No items in cart, redirecting to cart page');
             router.push('/cart');
             return;
         }
 
         // Only reset form with user data if the user is available and form hasn't been touched
         if (user && !form.formState.isDirty) {
+            // Handle different response formats: { addresses: [...] } or direct array
+            const addressList = addresses?.addresses || addresses?.data || addresses || [];
+            const defaultAddress = Array.isArray(addressList)
+                ? addressList.find((addr: any) => addr.isDefault) || addressList[0]
+                : addressList;
+
             form.reset({
                 ...form.getValues(),
                 fullName: `${user.firstName} ${user.lastName}`,
+                address: defaultAddress?.street || '',
+                city: defaultAddress?.city || '',
+                state: defaultAddress?.state || '',
             });
         }
-    }, [user, authLoading, cart.length, router, form]);
+    }, [user, authLoading, normalizedCartItems.length, router, form, addresses, addressesLoading, cartQueryEnabled, cartLoading]);
 
 
     const handlePaymentSuccess = async (reference: any) => {
@@ -96,7 +121,7 @@ export default function CheckoutPage() {
 
         const deliveryInfo = form.getValues();
         const orderData = {
-            items: cart.map(item => ({
+            items: normalizedCartItems.map(item => ({
                 productId: item.id,
                 quantity: item.quantity,
             })),
@@ -138,61 +163,18 @@ export default function CheckoutPage() {
         }
     };
 
-    const handleCashOnDelivery = async () => {
-        // Trigger form validation first
-        const isValid = await form.trigger();
-        if (isValid) {
-            const deliveryInfo = form.getValues();
-            const orderData = {
-                items: cart.map(item => ({
-                    productId: item.id,
-                    quantity: item.quantity,
-                })),
-                shippingAddress: {
-                    street: deliveryInfo.address,
-                    city: deliveryInfo.city,
-                    state: deliveryInfo.state,
-                    zipCode: '000000', // Default
-                    country: 'Nigeria',
-                },
-                billingAddress: {
-                    street: deliveryInfo.address,
-                    city: deliveryInfo.city,
-                    state: deliveryInfo.state,
-                    zipCode: '000000',
-                    country: 'Nigeria',
-                },
-                paymentMethod: 'cod',
-                notes: deliveryInfo.additionalInfo,
-            };
 
-            try {
-                await createOrderMutation.mutateAsync(orderData);
-                toast.success("Order placed successfully!");
-                clearCart();
-                router.push(`/order/success?reference=cod`);
-            } catch (error) {
-                console.error('Error creating order:', error);
-                toast.error("Failed to place order. Please try again.");
-            }
-        } else {
-            // If validation fails, show an error toast
-            toast.error("Please fill in all required delivery details.");
-            console.log('Form validation failed for COD.');
-        }
-    };
-
-    if (authLoading) {
+    if (authLoading || (cartQueryEnabled && cartLoading)) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-100">
                 <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
-                <p className="ml-3 text-lg text-gray-700">Loading user data...</p>
+                <p className="ml-3 text-lg text-gray-700">Loading checkout data...</p>
             </div>
         );
     }
 
     // Redirect or return null only when authentication is complete and conditions met
-    if (!user || cart.length === 0) {
+    if (!user || normalizedCartItems.length === 0) {
         return null;
     }
 
@@ -255,6 +237,7 @@ export default function CheckoutPage() {
                                                         placeholder="Street address, building name"
                                                         className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                                                         {...field}
+                                                        disabled
                                                     />
                                                 </FormControl>
                                                 <FormMessage className="text-red-500 text-sm" />
@@ -274,6 +257,7 @@ export default function CheckoutPage() {
                                                             placeholder="e.g., Lagos"
                                                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                                                             {...field}
+                                                            disabled
                                                         />
                                                     </FormControl>
                                                     <FormMessage className="text-red-500 text-sm" />
@@ -292,6 +276,7 @@ export default function CheckoutPage() {
                                                             placeholder="e.g., Lagos State"
                                                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                                                             {...field}
+                                                            disabled
                                                         />
                                                     </FormControl>
                                                     <FormMessage className="text-red-500 text-sm" />
@@ -326,16 +311,16 @@ export default function CheckoutPage() {
 
                             <div className="space-y-6">
                                 <div className="p-6 border border-blue-200 rounded-lg bg-blue-50 flex flex-col items-center text-center">
-                                    <h3 className="font-semibold text-xl text-blue-700 mb-3">Pay Online (Card/Bank Transfer)</h3>
+                                    <h3 className="font-semibold text-xl text-blue-700 mb-3">Pay Online</h3>
                                     <p className="text-gray-600 mb-5">
-                                        Securely pay for your order using your debit/credit card or through bank transfer via Paystack.
+                                        Securely pay for your order using your debit/credit card, USSD, bank transfer, or other online methods via Paystack.
                                     </p>
                                     {user?.email ? (
                                         <ClientPaystackButton
                                             email={user.email}
                                             amount={totalAmount}
                                             metadata={{
-                                                cart: JSON.stringify(cart),
+                                                cart: JSON.stringify(normalizedCartItems),
                                                 userId: user.id,
                                                 // Ensure you only pass data that is safe for JSON serialization
                                                 deliveryInfo: JSON.stringify(form.getValues()),
@@ -353,20 +338,6 @@ export default function CheckoutPage() {
                                         </Button>
                                     )}
                                 </div>
-
-                                <div className="p-6 border border-green-200 rounded-lg bg-green-50 flex flex-col items-center text-center">
-                                    <h3 className="font-semibold text-xl text-green-700 mb-3">Cash on Delivery (COD)</h3>
-                                    <p className="text-gray-600 mb-5">
-                                        Choose to pay conveniently in cash when your order is delivered to your doorstep.
-                                    </p>
-                                    <Button
-                                        variant="outline"
-                                        className="w-full border-green-600 text-green-600 hover:bg-green-100 font-semibold py-3 px-6 rounded-full transition-colors shadow-md"
-                                        onClick={handleCashOnDelivery}
-                                    >
-                                        Place Order (Cash on Delivery)
-                                    </Button>
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -376,7 +347,7 @@ export default function CheckoutPage() {
                             <h2 className="text-2xl font-bold text-gray-800 mb-6 border-b pb-4">Order Summary</h2>
 
                             <div className="space-y-4 mb-6">
-                                {cart.map((item: CartItem) => (
+                                {normalizedCartItems.map((item: CartItem) => (
                                     <div key={item.id} className="flex justify-between items-center py-2 border-b border-gray-100 last:border-b-0">
                                         <div>
                                             <h3 className="font-medium text-gray-800">{item.name}</h3>

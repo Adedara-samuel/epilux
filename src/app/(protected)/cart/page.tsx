@@ -10,37 +10,15 @@ import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
 import { Minus, Plus, Trash2 } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { shallow } from 'zustand/shallow';
 import { API_BASE_URL } from '@/services/base';
 
-// You might need to create this EmptyState component if you don't have it:
-// components/empty-state.tsx
-// 'use client';
-// import Link from 'next/link';
-// import { Button } from './ui/button';
-//
-// interface EmptyStateProps {
-//   title: string;
-//   description: string;
-//   actionText: string;
-//   actionLink: string;
-// }
-//
-// export default function EmptyState({ title, description, actionText, actionLink }: EmptyStateProps) {
-//   return (
-//     <div className="container mx-auto px-4 py-12 text-center bg-white rounded-lg shadow-md mt-8">
-//       <h2 className="text-3xl font-bold mb-4 text-blue-800">{title}</h2>
-//       <p className="text-lg text-gray-600 mb-6">{description}</p>
-//       <Link href={actionLink}>
-//         <Button>{actionText}</Button>
-//       </Link>
-//     </div>
-//   );
-// }
-
+// The EmptyState component definition is omitted for brevity but assumed to exist.
 
 export default function CartPage() {
+    const router = useRouter();
     const { user, token } = useAuth();
     const { data: cartData, isLoading, isError, error } = useCart();
     const cartQueryEnabled = !!token;
@@ -56,27 +34,35 @@ export default function CartPage() {
     const getTotalPrice = useCartStore((s) => s.getTotalPrice);
 
     // Normalize cart items to handle both API and local store data consistently
-    const normalizedCartItems = cartData ? cartData.data.items.map(item => ({
-        id: item.productId._id,
-        name: item.productId.name,
-        price: item.productId.price,
-        images: item.productId.images,
-        image: item.productId.image,
-        quantity: item.quantity,
-        _id: item._id, // For API operations
-    })) : cart;
+    const normalizedCartItems = cartData ? (cartData.data.items as any[])
+        .filter(item => {
+            if (!item.product) {
+                console.warn('Filtering out cart item with missing product:', item);
+                return false;
+            }
+            return true;
+        })
+        .map(item => ({
+            id: item.product, // Product ID
+            name: item.name,
+            price: item.price,
+            images: item.images,
+            image: item.image,
+            quantity: item.quantity,
+            _id: item._id, // Cart item ID (if exists)
+        })) : cart;
 
-    const cartTotal = cartData?.data?.total || normalizedCartItems.reduce((sum, item) => sum + (item.price || 0) * item.quantity, 0);
+    const cartTotal = (cartData?.data as any)?.subtotal || normalizedCartItems.reduce((sum, item) => sum + (item.price || 0) * item.quantity, 0);
 
-    const handleUpdateQuantity = async (itemId: string, newQuantity: number, productId: string) => {
+    const handleUpdateQuantity = async (itemId: string | undefined, newQuantity: number, productId: string) => {
         if (newQuantity < 1) return;
 
         // 1. Update local store first for instant UI feedback
         updateQuantity(productId, newQuantity);
 
-        // 2. Call API if user is logged in
+        // 2. Call API if user is logged in AND we have the API item ID
         try {
-            if (token) {
+            if (token && itemId) { // Added check for itemId
                 await updateCartItemAPI.mutateAsync({ itemId, quantity: newQuantity });
             }
         } catch (error: any) {
@@ -84,13 +70,13 @@ export default function CartPage() {
         }
     };
 
-    const handleRemoveItem = async (itemId: string, productId: string) => {
+    const handleRemoveItem = async (itemId: string | undefined, productId: string) => {
         // 1. Update local store first
         removeFromCart(productId);
 
-        // 2. Call API if user is logged in
+        // 2. Call API if user is logged in AND we have the API item ID
         try {
-            if (token) {
+            if (token && itemId) { // Added check for itemId
                 await removeFromCartAPI.mutateAsync(itemId);
                 toast.success('Item removed from cart!');
             }
@@ -149,6 +135,7 @@ export default function CartPage() {
                     {/* Cart Items List */}
                     <div className="lg:col-span-2 space-y-4">
                         {normalizedCartItems.map((item) => (
+                            // Use the more reliable item.id for local items, or item._id for API items
                             <div key={item._id || item.id} className="bg-white p-4 sm:p-6 rounded-xl shadow-md flex items-center space-x-4">
                                 {/* Product Image */}
                                 <Link href={`/products/${item.id || item._id}`} className="flex-shrink-0">
@@ -184,7 +171,8 @@ export default function CartPage() {
                                             variant="ghost"
                                             size="icon"
                                             className="h-8 w-8 text-gray-600 hover:bg-gray-100"
-                                            onClick={() => handleUpdateQuantity(item._id!, item.quantity - 1, item.id || item._id!)}
+                                            // 👇 CORRECTED: Pass item._id for API call, and item.id || item._id for local store product ID
+                                            onClick={() => handleUpdateQuantity(item._id, item.quantity - 1, item.id || item._id!)}
                                             disabled={item.quantity <= 1}
                                         >
                                             <Minus className="h-4 w-4" />
@@ -195,7 +183,8 @@ export default function CartPage() {
                                             onChange={(e) => {
                                                 const newQuantity = parseInt(e.target.value);
                                                 if (!isNaN(newQuantity) && newQuantity >= 1) {
-                                                    handleUpdateQuantity(item._id!, newQuantity, item.id || item._id!);
+                                                    // 👇 CORRECTED: Pass item._id for API call, and item.id || item._id for local store product ID
+                                                    handleUpdateQuantity(item._id, newQuantity, item.id || item._id!);
                                                 }
                                             }}
                                             className="w-12 text-center border-y-0 text-base h-8 focus-visible:ring-0 focus-visible:ring-offset-0"
@@ -204,7 +193,8 @@ export default function CartPage() {
                                             variant="ghost"
                                             size="icon"
                                             className="h-8 w-8 text-gray-600 hover:bg-gray-100"
-                                            onClick={() => handleUpdateQuantity(item._id!, item.quantity + 1, item.id || item._id!)}
+                                            // 👇 CORRECTED: Pass item._id for API call, and item.id || item._id for local store product ID
+                                            onClick={() => handleUpdateQuantity(item._id, item.quantity + 1, item.id || item._id!)}
                                         >
                                             <Plus className="h-4 w-4" />
                                         </Button>
@@ -219,7 +209,8 @@ export default function CartPage() {
                                         variant="ghost"
                                         size="icon"
                                         className="h-8 w-8 text-red-500 hover:bg-red-50"
-                                        onClick={() => handleRemoveItem(item._id!, item.id || item._id!)}
+                                        // 👇 CORRECTED: Pass item._id for API call, and item.id || item._id for local store product ID
+                                        onClick={() => handleRemoveItem(item._id, item.id || item._id!)}
                                     >
                                         <Trash2 className="h-4 w-4" />
                                     </Button>
@@ -262,10 +253,14 @@ export default function CartPage() {
                             </div>
 
                             <div className="mt-8">
-                                <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 text-lg transition-colors">
-                                    <Link href="/checkout">
-                                        Proceed to Checkout
-                                    </Link>
+                                <Button
+                                    onClick={() => {
+                                        console.log('Checkout button clicked, navigating to /checkout');
+                                        router.push('/checkout');
+                                    }}
+                                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 text-lg transition-colors"
+                                >
+                                    Proceed to Checkout
                                 </Button>
 
                                 <div className="mt-6 text-center">

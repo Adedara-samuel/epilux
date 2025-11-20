@@ -213,6 +213,24 @@ export default function AccountPage() {
                                     </div>
                                 </Link>
 
+                                <Link
+                                    href="/settings"
+                                    className="group bg-gradient-to-br from-pink-500 to-pink-600 rounded-2xl p-6 text-white hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 hover:scale-105"
+                                >
+                                    <div className="flex items-center gap-4 mb-4">
+                                        <div className="p-3 bg-white/20 rounded-xl group-hover:bg-white/30 transition-colors">
+                                            <Settings className="w-8 h-8" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-xl font-bold">Account Settings</h3>
+                                            <p className="text-pink-100">Manage profile & preferences</p>
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <span className="text-2xl">→</span>
+                                    </div>
+                                </Link>
+
                                 {/* Placeholder for future features */}
                                 <div className="bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl p-6 border-2 border-dashed border-gray-300 flex items-center justify-center">
                                     <div className="text-center text-gray-500">

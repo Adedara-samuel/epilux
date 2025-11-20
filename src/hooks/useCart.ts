@@ -14,11 +14,11 @@ export const useCart = () => {
 
 export const useAddToCart = () => {
     const queryClient = useQueryClient();
-    const { token } = useAuth();
+    const { token, user } = useAuth();
 
     return useMutation({
         mutationFn: ({ productId, quantity, image, name, price }: { productId: string; quantity: number; image: string; name?: string; price?: number }) =>
-            cartAPI.addToCart(token || '', productId, quantity, image || '', name, price),
+            cartAPI.addToCart(token || '', productId, quantity, image || '', name, price, user?.id || user?._id),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['cart'] });
         },

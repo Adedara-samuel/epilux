@@ -35,11 +35,11 @@ export const cartAPI = {
     },
 
     // Add item to cart
-    addToCart: async (token: string, productId: string, quantity: number, image: string, name?: string, price?: number): Promise<{ data: Cart }> => {
+    addToCart: async (token: string, productId: string, quantity: number, image: string, name?: string, price?: number, userId?: string): Promise<{ data: Cart }> => {
         if (!token) {
             throw new Error('Authentication required');
         }
-        const response = await api.post('/api/cart/items', { productId, quantity, image, name, price }, {
+        const response = await api.post('/api/cart/items', { productId, quantity, image, name, price, userId }, {
             headers: { Authorization: `Bearer ${token}` }
         });
         return response.data;
