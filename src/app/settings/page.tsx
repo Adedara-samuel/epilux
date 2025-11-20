@@ -5,6 +5,10 @@
 // app/settings/page.tsx
 'use client';
 
+// Forces the page to be rendered dynamically on every request,
+// preventing static prerendering which triggers errors in client-side components
+export const dynamic = 'force-dynamic';
+
 import { Button } from '@/Components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/Components/ui/form';
 import { Input } from '@/Components/ui/input';

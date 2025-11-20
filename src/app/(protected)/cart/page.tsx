@@ -2,6 +2,10 @@
 /* eslint-disable @next/next/no-img-element */
 // app/cart/page.tsx
 'use client';
+
+// Forces the page to be rendered dynamically on every request,
+// preventing static prerendering which triggers errors in client-side components
+export const dynamic = 'force-dynamic';
 import { useCartStore } from '@/stores/cart-store';
 import { useCart, useUpdateCartItem, useRemoveFromCart, useClearCart } from '@/hooks/useCart';
 import { useAuth } from '@/hooks/useAuth';
@@ -34,16 +38,16 @@ export default function CartPage() {
     const getTotalPrice = useCartStore((s) => s.getTotalPrice);
 
     // Normalize cart items to handle both API and local store data consistently
-    const normalizedCartItems = cartData ? (cartData.data.items as any[])
+    const normalizedCartItems = cartData && cartData.data && cartData.data.items ? (cartData.data.items as any[])
         .filter(item => {
-            if (!item.product) {
+            if (!item || !item.product) {
                 console.warn('Filtering out cart item with missing product:', item);
                 return false;
             }
             return true;
         })
         .map(item => ({
-            id: item.product, // Product ID
+            id: item.product,
             name: item.name,
             price: item.price,
             images: item.images,

@@ -1,6 +1,10 @@
 // app/account/page.tsx
 'use client';
 
+// Forces the page to be rendered dynamically on every request,
+// preventing static prerendering which triggers errors in client-side components
+export const dynamic = 'force-dynamic';
+
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
@@ -88,7 +92,7 @@ export default function AccountPage() {
                             <Button
                                 onClick={async () => {
                                     await logout();
-                                    window.location.href = '/';
+                                    router.push('/');
                                 }}
                                 className="w-full bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5 cursor-pointer"
                             >

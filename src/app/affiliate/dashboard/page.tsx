@@ -2,6 +2,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
+// Forces the page to be rendered dynamically on every request,
+// preventing static prerendering which triggers errors in client-side components
+export const dynamic = 'force-dynamic';
+
 import React from 'react';
 import { Award } from 'lucide-react';
 import { Header } from '@/Components/affiliate/header';
