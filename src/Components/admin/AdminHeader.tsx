@@ -74,7 +74,7 @@ export function AdminHeader({ setSidebarOpen }: AdminHeaderProps) {
             localStorage.removeItem('user');
             localStorage.removeItem('tokenTimestamp');
             document.cookie = 'authToken=; path=/; max-age=0; samesite=strict';
-            window.location.href = '/login';
+            router.push('/login');
         }
     };
 
@@ -268,8 +268,11 @@ export function AdminHeader({ setSidebarOpen }: AdminHeaderProps) {
                                                 <h4 className="font-semibold text-gray-900 truncate max-w-[80%]">{ticket.subject}</h4>
                                                 <MessageSquare className="w-4 h-4 text-blue-600 flex-shrink-0" />
                                             </div>
-                                            <p className="text-sm text-gray-600 mt-1 truncate max-w-[90%]">
+                                            <p className="text-sm text-gray-600 mt-1">
                                                 From: {ticket.name} ({ticket.email})
+                                            </p>
+                                            <p className="text-sm text-gray-700 mt-2 line-clamp-2">
+                                                {ticket.message}
                                             </p>
                                             <span className="text-xs text-gray-500 mt-2 block">
                                                 {formatTimestamp(ticket.createdAt)}

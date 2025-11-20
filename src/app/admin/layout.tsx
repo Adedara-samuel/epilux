@@ -1,5 +1,9 @@
 'use client';
 
+// Forces the page to be rendered dynamically on every request,
+// preventing static prerendering which triggers errors in client-side components
+export const dynamic = 'force-dynamic';
+
 import React, { useState, useEffect } from 'react';
 import { AdminSidebar, AdminHeader } from '@/Components/admin';
 

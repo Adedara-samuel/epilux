@@ -10,10 +10,23 @@ import { Input } from '../ui/input';
 import { useAuth } from '@/hooks/useAuth';
 import React from 'react';
 import { useWalletBalance } from '@/hooks/useWallet';
+import { useCart } from '@/hooks/useCart';
 
 export default function Header() {
-    const totalItems = useCartStore((s) => s.getTotalItems());
-    const { user } = useAuth();
+    const { user, token } = useAuth();
+    const { data: cartData } = useCart();
+    const cartQueryEnabled = !!token;
+
+    // Calculate number of distinct items in cart (same as cart page)
+    const cartItems = cartData ? (cartData.data.items as any[])
+        .filter(item => item.product)
+        .map(item => ({
+            id: item.product,
+            quantity: item.quantity,
+        })) : useCartStore.getState().cart;
+
+    const distinctItemsCount = cartItems.length;
+
     const { data: walletData, error: walletError } = useWalletBalance();
     const balance = walletData?.availableBalance || 0;
 
@@ -155,9 +168,9 @@ export default function Header() {
                             className="relative p-2 rounded-xl hover:bg-blue-50 transition-colors hover-lift"
                         >
                             <ShoppingCart className="h-6 w-6 text-gray-600 hover:text-blue-600 transition-colors duration-200" />
-                            {totalItems > 0 && (
+                            {distinctItemsCount > 0 && (
                                 <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center shadow-md animate-bounce-in">
-                                    {totalItems}
+                                    {distinctItemsCount}
                                 </span>
                             )}
                         </Link>
