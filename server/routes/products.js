@@ -103,6 +103,15 @@ router.get('/:id', validateMongoId, handleValidationErrors, catchAsync(async (re
     });
 }));
 
+// Get product reviews (public)
+router.get('/:id/reviews', catchAsync(async (req, res, next) => {
+    // For now, return empty reviews
+    res.json({
+        success: true,
+        reviews: []
+    });
+}));
+
 // Create new product (admin only)
 router.post('/', authenticate, authorize('admin'), validateProductCreation, handleValidationErrors, catchAsync(async (req, res) => {
     const { name, description, price, sku, category, brand, inventory, images } = req.body;

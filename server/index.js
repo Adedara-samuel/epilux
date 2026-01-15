@@ -34,28 +34,7 @@ const allowedOrigins = [
 
 // Middleware - Dynamic CORS handling
 app.use(cors({
-    origin: function (origin, callback) {
-        // Allow requests with no origin (like mobile apps, curl, etc)
-        if (!origin) return callback(null, true);
-        
-        // Check if the origin is in the allowed list
-        if (allowedOrigins.includes(origin)) {
-            return callback(null, true);
-        }
-        
-        // For development, allow any localhost with any port
-        if (process.env.NODE_ENV === 'development' && /^https?:\/\/localhost(:\d+)?$/.test(origin)) {
-            return callback(null, true);
-        }
-        
-        // For production, allow any subdomain of vercel.app
-        if (process.env.NODE_ENV === 'production' && /^https?:\/\/([a-zA-Z0-9-]+\.)*vercel\.app$/.test(origin)) {
-            return callback(null, true);
-        }
-        
-        console.log('CORS blocked origin:', origin);
-        return callback(new Error('Not allowed by CORS'));
-    },
+    origin: true, // Allow all origins
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-CSRF-Token', 'Accept', 'Accept-Version', 'Content-Length', 'X-Api-Version', 'X-Response-Time'],

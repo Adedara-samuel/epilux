@@ -29,7 +29,7 @@ const nextConfig: NextConfig = {
           {
             key: 'Access-Control-Allow-Origin',
             value: process.env.NODE_ENV === 'production'
-              ? 'https://www.epilux.com.ng'
+              ? 'https://epilux.com.ng'
               : 'https://epilux-backend.vercel.app',
           },
           {
