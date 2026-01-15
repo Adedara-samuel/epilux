@@ -21,11 +21,7 @@ const navigation = [
     { name: 'Settings', href: '/admin/settings' },
 ];
 
-interface AdminHeaderProps {
-    setSidebarOpen: (open: boolean) => void;
-}
-
-export function AdminHeader({ setSidebarOpen }: AdminHeaderProps) {
+export function AdminHeader() {
     const { user, logout, token } = useAuth();
     const pathname = usePathname();
     const router = useRouter();
@@ -95,19 +91,10 @@ export function AdminHeader({ setSidebarOpen }: AdminHeaderProps) {
     return (
         <>
         <header className="fixed top-0 left-0 lg:left-64 right-0 z-1000 bg-white border-b border-gray-200 shadow-sm">
-            <div className="px-6 lg:px-8">
-                <div className="flex items-center justify-between h-16">
-                    {/* Left side - Mobile menu button and page title */}
+            <div className="px-4 lg:px-8">
+                <div className="flex items-start justify-between h-12 lg:h-16 pt-2 lg:pt-3">
+                    {/* Left side - Page title */}
                     <div className="flex items-center gap-4">
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="lg:hidden cursor-pointer hover:bg-gray-100"
-                            onClick={() => setSidebarOpen(true)}
-                        >
-                            <Menu className="w-5 h-5" />
-                        </Button>
-
                         <div className="hidden sm:block">
                             <h1 className="text-xl font-semibold text-gray-900">
                                 {currentPage}
@@ -175,7 +162,7 @@ export function AdminHeader({ setSidebarOpen }: AdminHeaderProps) {
             </div>
 
             {/* Mobile page title */}
-            <div className="sm:hidden px-6 pb-3">
+            <div className="sm:hidden px-4 pb-2">
                 <h1 className="text-lg font-semibold text-gray-900">
                     {currentPage}
                 </h1>

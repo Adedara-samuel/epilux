@@ -198,37 +198,35 @@ function ProductsPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50">
-            {/* Header is now handled by the layout */}
-
+        <div className="app-content">
             {/* Main Content */}
-            <div className="container mx-auto px-4 py-6">
+            <div className="max-w-7xl mx-auto px-4 py-4 md:py-6">
                 {/* Products Tab */}
                 {activeTab === 'products' && (
                     <div className="space-y-6">
 
                         {/* Elegant Product Showcase */}
-                        <div className="bg-gradient-to-br from-blue-50 via-white to-indigo-50 rounded-3xl shadow-xl border border-blue-100/50 p-8 backdrop-blur-sm">
-                            <div className="text-center mb-8">
-                                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-                                    <Droplets className="w-8 h-8 text-white" />
+                        <div className="bg-gradient-to-br from-blue-50 via-white to-indigo-50 rounded-2xl md:rounded-3xl shadow-xl border border-blue-100/50 p-4 md:p-8 backdrop-blur-sm">
+                            <div className="text-center mb-6 md:mb-8">
+                                <div className="w-12 h-12 md:w-16 md:h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-3 md:mb-4 shadow-lg">
+                                    <Droplets className="w-6 h-6 md:w-8 md:h-8 text-white" />
                                 </div>
-                                <h2 className="text-3xl font-bold text-gray-900 mb-2">Premium Water Collection</h2>
-                                <p className="text-lg text-blue-600 max-w-2xl mx-auto">
+                                <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">Premium Water Collection</h2>
+                                <p className="text-base md:text-lg text-blue-600 max-w-2xl mx-auto px-2">
                                     Discover our complete range of high-quality water products, from convenient sachets to premium dispensers
                                 </p>
-                                <div className="flex items-center justify-center gap-4 mt-6">
-                                    <div className="flex items-center gap-2 bg-white/60 backdrop-blur-sm px-4 py-2 rounded-xl border border-blue-200">
+                                <div className="flex flex-col sm:flex-row items-center justify-center gap-2 md:gap-4 mt-4 md:mt-6">
+                                    <div className="flex items-center gap-2 bg-white/60 backdrop-blur-sm px-3 md:px-4 py-2 rounded-xl border border-blue-200">
                                         <Package2 className="w-4 h-4 text-blue-600" />
-                                        <span className="font-semibold text-blue-800">{products.length} Products</span>
+                                        <span className="font-semibold text-blue-800 text-sm md:text-base">{products.length} Products</span>
                                     </div>
-                                    <div className="flex items-center gap-2 bg-white/60 backdrop-blur-sm px-4 py-2 rounded-xl border border-green-200">
+                                    <div className="flex items-center gap-2 bg-white/60 backdrop-blur-sm px-3 md:px-4 py-2 rounded-xl border border-green-200">
                                         <Truck className="w-4 h-4 text-green-600" />
-                                        <span className="font-semibold text-green-800">Free Delivery</span>
+                                        <span className="font-semibold text-green-800 text-sm md:text-base">Free Delivery</span>
                                     </div>
-                                    <div className="flex items-center gap-2 bg-white/60 backdrop-blur-sm px-4 py-2 rounded-xl border border-purple-200">
+                                    <div className="flex items-center gap-2 bg-white/60 backdrop-blur-sm px-3 md:px-4 py-2 rounded-xl border border-purple-200">
                                         <Shield className="w-4 h-4 text-purple-600" />
-                                        <span className="font-semibold text-purple-800">Quality Guaranteed</span>
+                                        <span className="font-semibold text-purple-800 text-sm md:text-base">Quality Guaranteed</span>
                                     </div>
                                 </div>
                             </div>
@@ -278,10 +276,10 @@ function ProductsPage() {
                             </div> */}
 
                             {/* Call to Action */}
-                            <div className="text-center mt-8">
-                                <p className="text-gray-600 mb-4">Ready to start earning commissions?</p>
-                                <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                                    <Button className="cursor-pointer bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-8 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300" onClick={() => document.getElementById('products-section')?.scrollIntoView({ behavior: 'smooth' })}>
+                            <div className="text-center mt-6 md:mt-8">
+                                <p className="text-gray-600 mb-3 md:mb-4 text-sm md:text-base px-2">Ready to start earning commissions?</p>
+                                <div className="flex flex-col sm:flex-row gap-2 md:gap-3 justify-center px-4">
+                                    <Button className="cursor-pointer bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-6 md:px-8 py-2.5 md:py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 text-sm md:text-base" onClick={() => document.getElementById('products-section')?.scrollIntoView({ behavior: 'smooth' })}>
                                         <ShoppingBag className="w-4 h-4 mr-2" />
                                         Browse All Products
                                     </Button>
@@ -310,7 +308,7 @@ function ProductsPage() {
 
                                                 scrollToReferrals();
                                             }}
-                                            className="cursor-pointer border-2 border-purple-200 text-purple-700 hover:bg-purple-50 px-8 py-3 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                                            className="cursor-pointer border-2 border-purple-200 text-purple-700 hover:bg-purple-50 px-6 md:px-8 py-2.5 md:py-3 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-lg text-sm md:text-base"
                                         >
                                             <Users className="w-4 h-4 mr-2" />
                                             Share & Earn
@@ -364,29 +362,29 @@ function ProductsPage() {
                         </div>
 
                         {/* Trust Badges */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
-                            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 text-center">
-                                <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                                    <span className="text-xl">🚚</span>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 mt-6 md:mt-8">
+                            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 md:p-4 text-center">
+                                <div className="w-8 h-8 md:w-10 md:h-10 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-2 md:mb-3">
+                                    <span className="text-lg md:text-xl">🚚</span>
                                 </div>
-                                <h4 className="font-semibold text-gray-900 mb-1">Free Delivery</h4>
-                                <p className="text-sm text-gray-600">On orders above ₦10,000</p>
+                                <h4 className="font-semibold text-gray-900 mb-1 text-sm md:text-base">Free Delivery</h4>
+                                <p className="text-xs md:text-sm text-gray-600">On orders above ₦10,000</p>
                             </div>
 
-                            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 text-center">
-                                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                                    <span className="text-xl">✅</span>
+                            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 md:p-4 text-center">
+                                <div className="w-8 h-8 md:w-10 md:h-10 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-2 md:mb-3">
+                                    <span className="text-lg md:text-xl">✅</span>
                                 </div>
-                                <h4 className="font-semibold text-gray-900 mb-1">Quality Guaranteed</h4>
-                                <p className="text-sm text-gray-600">Premium water products</p>
+                                <h4 className="font-semibold text-gray-900 mb-1 text-sm md:text-base">Quality Guaranteed</h4>
+                                <p className="text-xs md:text-sm text-gray-600">Premium water products</p>
                             </div>
 
-                            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 text-center">
-                                <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                                    <span className="text-xl">🔒</span>
+                            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 md:p-4 text-center">
+                                <div className="w-8 h-8 md:w-10 md:h-10 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-2 md:mb-3">
+                                    <span className="text-lg md:text-xl">🔒</span>
                                 </div>
-                                <h4 className="font-semibold text-gray-900 mb-1">Secure Payments</h4>
-                                <p className="text-sm text-gray-600">Bank-grade security</p>
+                                <h4 className="font-semibold text-gray-900 mb-1 text-sm md:text-base">Secure Payments</h4>
+                                <p className="text-xs md:text-sm text-gray-600">Bank-grade security</p>
                             </div>
                         </div>
                     </div>

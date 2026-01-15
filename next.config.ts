@@ -13,11 +13,11 @@ const nextConfig: NextConfig = {
     return [
       {
         source: '/api/:path*',
-        destination: 'https://epilux-backend.vercel.app/api/:path*',
+        destination: `${process.env.NEXT_PUBLIC_API_URL || 'https://epilux-backend.vercel.app'}/api/:path*`,
       },
       {
         source: '/uploads/:path*',
-        destination: 'https://epilux-backend.vercel.app/uploads/:path*',
+        destination: `${process.env.NEXT_PUBLIC_API_URL || 'https://epilux-backend.vercel.app'}/uploads/:path*`,
       },
     ];
   },

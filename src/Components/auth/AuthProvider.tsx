@@ -96,7 +96,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     const adminLoginMutation = useMutation({
-        mutationFn: authAPI.adminLogin,
+        mutationFn: authAPI.login,
         onSuccess: (data: { user: any; token: any }) => {
             // Set token in localStorage using 'auth_token' key as specified
             if (typeof window !== 'undefined' && data.token) {

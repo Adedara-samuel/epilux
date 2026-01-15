@@ -40,7 +40,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
             {/* Sidebar - Now completely fixed */}
             <aside
-                className={`fixed top-0 left-0 h-screen w-72 bg-white shadow-xl z-50 transform transition-all duration-300 ease-in-out overflow-y-auto animate-slide-in-left
+                className={`app-sidebar fixed top-0 left-0 h-screen w-72 bg-white shadow-xl z-50 transform transition-all duration-300 ease-in-out overflow-y-auto animate-slide-in-left
                     ${isOpen ? 'translate-x-0' : '-translate-x-full'}
                     lg:fixed lg:translate-x-0 lg:w-64 lg:shadow-none lg:border-r lg:border-gray-200 lg:bg-gray-50`}
             >

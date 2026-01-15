@@ -65,7 +65,7 @@ export default function StandardPlanPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-green-50 to-white">
+        <div className="app-content min-h-screen bg-gradient-to-br from-green-50 to-white">
             {/* Hero Section */}
             <section className="relative py-20 overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-r from-green-600 to-green-800 opacity-10"></div>

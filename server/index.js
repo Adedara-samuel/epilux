@@ -7,6 +7,7 @@ import User from './models/User.js';
 import { validateConfig, getConfigStatus } from './config/validation.js';
 import { requestLogger } from './middleware/errorHandler.js';
 import supportRoutes from './routes/support.js';
+import emailService from './services/emailService.js';
 
 
 
@@ -20,7 +21,7 @@ const PORT = config.PORT;
 
 // CORS Configuration
 const allowedOrigins = [
-    'http://localhost:3000',
+    'https://epilux-backend.vercel.app',
     'http://192.168.1.100:3002',
     'http://192.168.1.100:3000',
     'https://epilux-backend.vercel.app',
@@ -243,6 +244,52 @@ app.get('/health', (req, res) => {
         timestamp: new Date().toISOString(),
         uptime: process.uptime()
     });
+});
+
+// Contact form submission (public route)
+app.post('/api/contact', async (req, res) => {
+    try {
+        const { name, email, phone, subject, message, inquiryType } = req.body;
+
+        // Basic validation
+        if (!name || !email || !subject || !message) {
+            return res.status(400).json({
+                success: false,
+                message: 'Name, email, subject, and message are required'
+            });
+        }
+
+        // Email validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Please provide a valid email address'
+            });
+        }
+
+        // Send email
+        await emailService.sendContactEmail({
+            name,
+            email,
+            phone,
+            subject,
+            message,
+            inquiryType
+        });
+
+        res.json({
+            success: true,
+            message: 'Thank you for your message! We\'ll get back to you within 24 hours.'
+        });
+
+    } catch (error) {
+        console.error('Contact form submission error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to send message. Please try again later.'
+        });
+    }
 });
 
 // 404 handler for undefined routes

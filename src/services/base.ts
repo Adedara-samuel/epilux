@@ -7,7 +7,7 @@ export const API_BASE_URL = 'https://epilux-backend.vercel.app';
 
 // Create axios instance with default config
 export const api = axios.create({
-    baseURL: API_BASE_URL, // Use relative URLs for Next.js rewrites
+    baseURL: API_BASE_URL, // Use backend URL directly
     headers: {
         'Content-Type': 'application/json',
     },

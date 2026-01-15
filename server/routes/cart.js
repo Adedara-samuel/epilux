@@ -137,9 +137,9 @@ router.post('/items', verifyToken, async (req, res) => {
 });
 
 // Update cart item quantity
-router.put('/items/:itemId', verifyToken, async (req, res) => {
+router.put('/items/:productId', verifyToken, async (req, res) => {
     try {
-        const { itemId } = req.params;
+        const { productId } = req.params;
         const { quantity } = req.body;
 
         if (!quantity || quantity < 1) {
@@ -157,7 +157,7 @@ router.put('/items/:itemId', verifyToken, async (req, res) => {
             });
         }
 
-        const item = cart.items.id(itemId);
+        const item = cart.items.find(item => item.productId.toString() === productId);
         if (!item) {
             return res.status(404).json({
                 success: false,
@@ -210,9 +210,9 @@ router.put('/items/:itemId', verifyToken, async (req, res) => {
 });
 
 // Remove item from cart
-router.delete('/items/:itemId', verifyToken, async (req, res) => {
+router.delete('/items/:productId', verifyToken, async (req, res) => {
     try {
-        const { itemId } = req.params;
+        const { productId } = req.params;
 
         const cart = await Cart.findOne({ userId: req.user.id });
         if (!cart) {
@@ -222,7 +222,15 @@ router.delete('/items/:itemId', verifyToken, async (req, res) => {
             });
         }
 
-        cart.items.pull(itemId);
+        const itemIndex = cart.items.findIndex(item => item.productId.toString() === productId);
+        if (itemIndex === -1) {
+            return res.status(404).json({
+                success: false,
+                message: 'Item not found in cart'
+            });
+        }
+
+        cart.items.splice(itemIndex, 1);
 
         // Recalculate total
         if (cart.items.length > 0) {

@@ -94,7 +94,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
     adminLogin: async (credentials: { email: string; password: string }) => {
         try {
-            const response = await authAPI.adminLogin(credentials);
+            const response = await authAPI.login(credentials);
 
             if (response.success && response.token && response.user) {
                 tokenManager.setToken(response.token);

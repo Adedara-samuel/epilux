@@ -55,7 +55,7 @@ export default function FestivalBundlePage() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-blue-50 to-blue-50">
+        <div className="app-content min-h-screen bg-gradient-to-br from-blue-50 via-blue-50 to-blue-50">
             {/* Floating Elements */}
             <div className="fixed inset-0 overflow-hidden pointer-events-none">
                 <div className="absolute top-20 left-10 w-20 h-20 bg-blue-200 rounded-full opacity-20 animate-bounce"></div>

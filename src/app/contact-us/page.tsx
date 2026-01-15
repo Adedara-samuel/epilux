@@ -7,7 +7,7 @@ import { Card, CardContent } from '@/Components/ui/card';
 import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
 import { Textarea } from '@/Components/ui/textarea';
-import { MapPin, Phone, Mail, Clock, Send, MessageCircle, Headphones, FileText } from 'lucide-react';
+import { MapPin, Phone, Mail, Clock, Send, MessageCircle, Headphones, FileText, ChevronDown, CheckCircle, X } from 'lucide-react';
 
 export default function ContactUsPage() {
     const [formData, setFormData] = useState({
@@ -18,6 +18,8 @@ export default function ContactUsPage() {
         message: '',
         inquiryType: 'general'
     });
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
     const contactMethods = [
         {
@@ -73,24 +75,50 @@ export default function ContactUsPage() {
         }
     ];
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        // Handle form submission
-        alert('Thank you for your message! We\'ll get back to you within 24 hours.');
-        setFormData({
-            name: '',
-            email: '',
-            phone: '',
-            subject: '',
-            message: '',
-            inquiryType: 'general'
-        });
+        setIsSubmitting(true);
+        setSubmitStatus('idle');
+
+        try {
+            const response = await fetch('https://epilux-backend.vercel.app/api/contact', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData),
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                setSubmitStatus('success');
+                setFormData({
+                    name: '',
+                    email: '',
+                    phone: '',
+                    subject: '',
+                    message: '',
+                    inquiryType: 'general'
+                });
+                setTimeout(() => setSubmitStatus('idle'), 3000);
+            } else {
+                setSubmitStatus('error');
+                setTimeout(() => setSubmitStatus('idle'), 3000);
+            }
+        } catch (error) {
+            console.error('Error submitting form:', error);
+            setSubmitStatus('error');
+            setTimeout(() => setSubmitStatus('idle'), 3000);
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+        <div className="app-content min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
             {/* Hero Section */}
-            <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-20">
+            <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-12 md:py-20">
                 <div className="container mx-auto px-4 text-center">
                     <h1 className="text-4xl md:text-5xl font-bold mb-6">
                         Contact Us
@@ -102,7 +130,7 @@ export default function ContactUsPage() {
                 </div>
             </div>
 
-            <div className="container mx-auto px-4 py-16">
+            <div className="container mx-auto px-4 py-8 md:py-16">
                 {/* Contact Methods */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
                     {contactMethods.map((method, index) => (
@@ -133,67 +161,74 @@ export default function ContactUsPage() {
 
                             <form onSubmit={handleSubmit} className="space-y-6">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <Label htmlFor="name">Full Name *</Label>
+                                    <div className="animate-fade-in">
+                                        <Label htmlFor="name" className="transition-colors duration-200">Full Name *</Label>
                                         <Input
                                             id="name"
                                             value={formData.name}
                                             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                             required
+                                            className="transition-all duration-300 hover:border-gray-300 focus:scale-105 focus:shadow-lg animate-fade-in"
                                         />
                                     </div>
-                                    <div>
-                                        <Label htmlFor="email">Email Address *</Label>
+                                    <div className="animate-fade-in" style={{ animationDelay: '0.1s' }}>
+                                        <Label htmlFor="email" className="transition-colors duration-200">Email Address *</Label>
                                         <Input
                                             id="email"
                                             type="email"
                                             value={formData.email}
                                             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                                             required
+                                            className="transition-all duration-300 hover:border-gray-300 focus:scale-105 focus:shadow-lg animate-fade-in"
                                         />
                                     </div>
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <Label htmlFor="phone">Phone Number</Label>
+                                    <div className="animate-fade-in" style={{ animationDelay: '0.2s' }}>
+                                        <Label htmlFor="phone" className="transition-colors duration-200">Phone Number</Label>
                                         <Input
                                             id="phone"
                                             type="tel"
                                             value={formData.phone}
                                             onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                                            className="transition-all duration-300 hover:border-gray-300 focus:scale-105 focus:shadow-lg animate-fade-in"
                                         />
                                     </div>
-                                    <div>
-                                        <Label htmlFor="inquiryType">Inquiry Type</Label>
-                                        <select
-                                            id="inquiryType"
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                                            value={formData.inquiryType}
-                                            onChange={(e) => setFormData({ ...formData, inquiryType: e.target.value })}
-                                        >
-                                            <option value="general">General Inquiry</option>
-                                            <option value="orders">Order Support</option>
-                                            <option value="subscriptions">Subscription Help</option>
-                                            <option value="bulk">Bulk Orders</option>
-                                            <option value="affiliate">Affiliate Program</option>
-                                            <option value="technical">Technical Support</option>
-                                        </select>
+                                    <div className="animate-fade-in" style={{ animationDelay: '0.3s' }}>
+                                        <Label htmlFor="inquiryType" className="transition-colors duration-200">Inquiry Type</Label>
+                                        <div className="relative">
+                                            <select
+                                                id="inquiryType"
+                                                className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 transition-all duration-300 hover:border-gray-300 hover:scale-105 focus:scale-105 focus:shadow-lg appearance-none cursor-pointer animate-fade-in"
+                                                value={formData.inquiryType}
+                                                onChange={(e) => setFormData({ ...formData, inquiryType: e.target.value })}
+                                            >
+                                                <option value="general">General Inquiry</option>
+                                                <option value="orders">Order Support</option>
+                                                <option value="subscriptions">Subscription Help</option>
+                                                <option value="bulk">Bulk Orders</option>
+                                                <option value="affiliate">Affiliate Program</option>
+                                                <option value="technical">Technical Support</option>
+                                            </select>
+                                            <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none transition-transform duration-200" />
+                                        </div>
                                     </div>
                                 </div>
 
-                                <div>
-                                    <Label htmlFor="subject">Subject *</Label>
+                                <div className="animate-fade-in" style={{ animationDelay: '0.4s' }}>
+                                    <Label htmlFor="subject" className="transition-colors duration-200">Subject *</Label>
                                     <Input
                                         id="subject"
                                         value={formData.subject}
                                         onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
                                         required
+                                        className="transition-all duration-300 hover:border-gray-300 focus:scale-105 focus:shadow-lg animate-fade-in"
                                     />
                                 </div>
 
-                                <div>
-                                    <Label htmlFor="message">Message *</Label>
+                                <div className="animate-fade-in" style={{ animationDelay: '0.5s' }}>
+                                    <Label htmlFor="message" className="transition-colors duration-200">Message *</Label>
                                     <Textarea
                                         id="message"
                                         rows={5}
@@ -201,12 +236,40 @@ export default function ContactUsPage() {
                                         onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                                         placeholder="Please provide details about your inquiry..."
                                         required
+                                        className="transition-all duration-300 hover:border-gray-300 focus:scale-105 focus:shadow-lg animate-fade-in resize-none"
                                     />
                                 </div>
 
-                                <Button type="submit" size="lg" className="w-full bg-blue-600 hover:bg-blue-700">
-                                    <Send className="w-4 h-4 mr-2" />
-                                    Send Message
+                                <Button
+                                    type="submit"
+                                    size="lg"
+                                    disabled={isSubmitting}
+                                    className={`w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 hover:scale-105 active:scale-95 animate-pulse-custom ${
+                                        submitStatus === 'success' ? 'bg-green-600 hover:bg-green-700' :
+                                        submitStatus === 'error' ? 'bg-red-600 hover:bg-red-700' : ''
+                                    }`}
+                                >
+                                    {isSubmitting ? (
+                                        <>
+                                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                                            Sending...
+                                        </>
+                                    ) : submitStatus === 'success' ? (
+                                        <>
+                                            <CheckCircle className="w-4 h-4 mr-2" />
+                                            Sent Successfully!
+                                        </>
+                                    ) : submitStatus === 'error' ? (
+                                        <>
+                                            <X className="w-4 h-4 mr-2" />
+                                            Failed to Send
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Send className="w-4 h-4 mr-2" />
+                                            Send Message
+                                        </>
+                                    )}
                                 </Button>
                             </form>
                         </div>
@@ -276,19 +339,25 @@ export default function ContactUsPage() {
                     </Card>
                 </div>
 
-                {/* Map Section (Placeholder) */}
+                {/* Map Section */}
                 <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
                     <h2 className="text-3xl font-bold text-gray-800 mb-4">Find Us</h2>
                     <p className="text-gray-600 mb-8 max-w-2xl mx-auto">
                         Visit our headquarters in Lagos for in-person consultations and product demonstrations.
                     </p>
-                    <div className="bg-gray-200 rounded-lg h-64 flex items-center justify-center">
-                        <div className="text-center">
-                            <MapPin className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                            <p className="text-gray-500">Interactive Map Coming Soon</p>
-                            <p className="text-sm text-gray-400 mt-2">123 Water Street, Lagos, Nigeria</p>
-                        </div>
+                    <div className="rounded-lg overflow-hidden shadow-lg">
+                        <iframe
+                            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3964.123456789012!2d3.3792055!3d6.5243793!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x103b8c5c5c5c5c5c%3A0x1234567890abcdef!2s123%20Water%20Street%2C%20Lagos%2C%20Nigeria!5e0!3m2!1sen!2sng!4v1234567890"
+                            width="100%"
+                            height="400"
+                            style={{ border: 0 }}
+                            allowFullScreen
+                            loading="lazy"
+                            referrerPolicy="no-referrer-when-downgrade"
+                            title="Epilux Water Office Location"
+                        ></iframe>
                     </div>
+                    <p className="text-sm text-gray-600 mt-4">123 Water Street, Lagos, Nigeria</p>
                 </div>
             </div>
         </div>

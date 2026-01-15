@@ -68,7 +68,7 @@ export default function BasicPlanPage() {
     };
 
     return (
-        <div className="min-h-screen bg-blue-50">
+        <div className="app-content min-h-screen bg-blue-50">
             {/* Hero Section */}
             <section className="py-20 bg-blue-600 text-white">
                 <div className="container mx-auto px-6">

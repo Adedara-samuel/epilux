@@ -46,7 +46,7 @@ export default function MyReviewsPage() {
                 return;
             }
 
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://epilux-backend.vercel.app'}/api/users/me/ratings`, {
+            const response = await fetch(`https://epilux-backend.vercel.app/api/users/me/ratings`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json',
@@ -78,7 +78,7 @@ export default function MyReviewsPage() {
                 return;
             }
 
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://epilux-backend.vercel.app'}/api/products/reviews/${reviewId}`, {
+            const response = await fetch(`https://epilux-backend.vercel.app/api/products/reviews/${reviewId}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${token}`,

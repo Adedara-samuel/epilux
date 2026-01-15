@@ -285,7 +285,7 @@ export default function AdminWithdrawalsPage() {
 
       {/* Processing Modal */}
       <Dialog open={isProcessingModalOpen} onOpenChange={setIsProcessingModalOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md animate-scaleIn">
           <DialogHeader>
             <DialogTitle>Process Withdrawal Request</DialogTitle>
           </DialogHeader>

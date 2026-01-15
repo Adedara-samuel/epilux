@@ -335,8 +335,8 @@ export default function AdminProductsPage() {
 
       {/* View Product Dialog */}
       {viewOpen && selectedProduct && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4" onClick={() => setViewOpen(false)}>
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-auto max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md animate-in fade-in duration-300 p-4" onClick={() => setViewOpen(false)}>
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-auto max-h-[90vh] overflow-y-auto animate-scaleIn" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-semibold mb-4">Product Details</h3>
             <div className="space-y-2">
               <p><strong>Name:</strong> {selectedProduct.name}</p>
@@ -355,8 +355,8 @@ export default function AdminProductsPage() {
 
       {/* Edit Product Dialog */}
       {editOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4" onClick={() => setEditOpen(false)}>
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-auto max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md animate-in fade-in duration-300 p-4" onClick={() => setEditOpen(false)}>
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-auto max-h-[90vh] overflow-y-auto animate-scaleIn" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-semibold mb-4">Edit Product</h3>
             <div className="space-y-4">
               <div>
@@ -421,8 +421,8 @@ export default function AdminProductsPage() {
 
       {/* Delete Confirmation Dialog */}
       {deleteOpen && selectedProduct && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4" onClick={() => setDeleteOpen(false)}>
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-auto" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md animate-in fade-in duration-300 p-4" onClick={() => setDeleteOpen(false)}>
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-auto animate-scaleIn" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-semibold mb-4">Delete Product</h3>
             <p>Are you sure you want to delete "{selectedProduct.name}"? This action cannot be undone.</p>
             <div className="flex justify-end gap-2 mt-4">
@@ -437,8 +437,8 @@ export default function AdminProductsPage() {
 
       {/* Image Viewer Modal */}
       {imageViewerOpen && selectedProduct && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-4" onClick={() => setImageViewerOpen(false)}>
-          <div className="relative max-w-4xl max-h-full" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md animate-in fade-in duration-300 p-4" onClick={() => setImageViewerOpen(false)}>
+          <div className="relative max-w-4xl max-h-full animate-scaleIn" onClick={(e) => e.stopPropagation()}>
             {/* Close button */}
             <Button
               variant="ghost"

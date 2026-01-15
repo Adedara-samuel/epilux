@@ -440,7 +440,7 @@ export default function WalletPage() {
                   </div>
                 )}
                 <Dialog open={isWithdrawalModalOpen} onOpenChange={setIsWithdrawalModalOpen}>
-                  <DialogContent className="sm:max-w-md">
+                  <DialogContent className="sm:max-w-md animate-scaleIn">
                     <DialogHeader>
                       <DialogTitle>Request Withdrawal</DialogTitle>
                     </DialogHeader>

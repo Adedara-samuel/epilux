@@ -42,6 +42,7 @@ export default function ProductCard({ product }: ProductCardProps) {
     // Initialize the mutation hook
     const addReviewMutation = useAddProductReview(); 
     
+    const cart = useCartStore((state) => state.cart);
     const addToCartStore = useCartStore((state) => state.addToCart);
     const addToCartAPI = useAddToCart();
 
@@ -124,7 +125,7 @@ export default function ProductCard({ product }: ProductCardProps) {
     };
 
     return (
-        <Card className={`group bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 border border-gray-200 hover:border-blue-200 ${!stockStatus.available ? 'opacity-60 grayscale' : ''}`}>
+        <Card className={`group bg-white rounded-lg md:rounded-xl shadow-sm md:shadow-md overflow-hidden hover:shadow-lg md:hover:shadow-xl transition-all duration-300 border border-gray-200 hover:border-blue-200 ${!stockStatus.available ? 'opacity-60 grayscale' : ''}`}>
             {/* Product Image */}
             <div className="relative">
                 <Link href={loginLinkHref}>
@@ -351,25 +352,28 @@ export default function ProductCard({ product }: ProductCardProps) {
                                             <div className="space-y-2">
                                                 {stockStatus.available ? (
                                                     <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium"
-                                                        onClick={async () => {
-                                                            try {
-                                                                // Add to local store for immediate UI feedback
-                                                                addToCartStore(product, quantity);
-
-                                                                // Always attempt API add as well
-                                                                await addToCartAPI.mutateAsync({
-                                                                    productId: productId,
-                                                                    quantity,
-                                                                    image: product.images?.[0]?.url || product.image || '',
-                                                                    name: product.name,
-                                                                    price: product.price
-                                                                });
-
-                                                                toast.success(`${quantity} ${product.name} added to cart!`);
-                                                            } catch (error: any) {
-                                                                toast.error(error?.response?.data?.message || 'Failed to add item to cart');
-                                                            }
-                                                        }}>
+                                                            onClick={async () => {
+                                                                const isInCart = cart.some(item => item.id === productId);
+                                                                const addQuantity = isInCart ? 1 : 5;
+   
+                                                                try {
+                                                                    // Add to local store for immediate UI feedback
+                                                                    addToCartStore(product, addQuantity);
+   
+                                                                    // Always attempt API add as well
+                                                                    await addToCartAPI.mutateAsync({
+                                                                        productId: productId,
+                                                                        quantity: addQuantity,
+                                                                        image: product.images?.[0]?.url || product.image || '',
+                                                                        name: product.name,
+                                                                        price: product.price
+                                                                    });
+   
+                                                                    toast.success(`${addQuantity} ${product.name} added to cart!`);
+                                                                } catch (error: any) {
+                                                                    toast.error(error?.response?.data?.message || 'Failed to add item to cart');
+                                                                }
+                                                            }}>
                                                         <ShoppingCart className="w-4 h-4 mr-2" />
                                                         Add to Cart
                                                     </Button>
@@ -475,12 +479,12 @@ export default function ProductCard({ product }: ProductCardProps) {
                 </Link>
             </div>
 
-            <CardContent className="p-4">
+            <CardContent className="p-3 md:p-4">
                 {/* Product Info */}
                 <div className="space-y-3">
                     <div>
                         <Link href={loginLinkHref}>
-                            <h3 className="font-semibold text-gray-900 mb-1 line-clamp-2 hover:text-blue-600 transition-colors text-sm leading-tight">
+                            <h3 className="font-semibold text-gray-900 mb-1 line-clamp-2 hover:text-blue-600 transition-colors text-sm md:text-base leading-tight">
                                 {product.name}
                             </h3>
                         </Link>
@@ -514,7 +518,7 @@ export default function ProductCard({ product }: ProductCardProps) {
                                 <Button
                                     variant="outline"
                                     size="sm"
-                                    className="flex-1 text-xs hover-lift border-blue-300 text-blue-600 hover:bg-blue-50"
+                                    className="flex-1 text-xs md:text-sm hover-lift border-blue-300 text-blue-600 hover:bg-blue-50 h-8 md:h-9"
                                     onClick={() => setShowDetails(true)}
                                 >
                                     <Eye className="w-3 h-3 mr-1" />
@@ -523,24 +527,27 @@ export default function ProductCard({ product }: ProductCardProps) {
                             </DialogTrigger>
                         </Dialog>
                         {stockStatus.available ? (
-                             <Button size="sm" className="flex-1 w-full bg-blue-600 hover:bg-blue-700 text-white text-xs"
+                             <Button size="sm" className="flex-1 w-full bg-blue-600 hover:bg-blue-700 text-white text-xs md:text-sm h-8 md:h-9"
                                  onClick={async () => {
+                                     const isInCart = cart.some(item => item.id === productId);
+                                     const addQuantity = isInCart ? 1 : 5;
+
                                      try {
                                          // Add to local store for immediate UI feedback
-                                         addToCartStore(product, quantity);
+                                         addToCartStore(product, addQuantity);
 
                                          // Also add to API if user is logged in
                                          if (token) {
                                              await addToCartAPI.mutateAsync({
                                                  productId: productId,
-                                                 quantity,
+                                                 quantity: addQuantity,
                                                  image: product.images?.[0]?.url || product.image || '',
                                                  name: product.name,
                                                  price: product.price
                                              });
                                          }
 
-                                         toast.success(`${quantity} ${product.name} added to cart!`);
+                                         toast.success(`${addQuantity} ${product.name} added to cart!`);
                                      } catch (error: any) {
                                          toast.error(error?.response?.data?.message || 'Failed to add item to cart');
                                      }
@@ -549,7 +556,7 @@ export default function ProductCard({ product }: ProductCardProps) {
                                  Add
                              </Button>
                          ) : (
-                            <Button size="sm" className="w-full bg-gray-400 text-white text-xs cursor-not-allowed" disabled>
+                            <Button size="sm" className="w-full bg-gray-400 text-white text-xs md:text-sm cursor-not-allowed h-8 md:h-9" disabled>
                                 <ShoppingCart className="w-3 h-3 mr-1" />
                                 Out
                             </Button>

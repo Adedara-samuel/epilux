@@ -77,29 +77,29 @@ export default function AboutPage() {
 
     const team = [
         {
-            name: 'Adebayo Johnson',
+            name: 'Ezeama Ugochukwu',
             role: 'Founder & CEO',
             bio: 'Visionary leader with 15+ years in the water industry, passionate about providing clean water solutions.',
             image: '/images/team1.jpg'
         },
         {
-            name: 'Ngozi Okoro',
+            name: 'Nwabenu udoka',
             role: 'Operations Director',
             bio: 'Expert in supply chain management and quality control, ensuring our products meet the highest standards.',
             image: '/images/team2.jpg'
         },
-        {
-            name: 'Emmanuel Adeyemi',
-            role: 'Marketing Director',
-            bio: 'Digital marketing specialist driving our affiliate program and brand awareness across Nigeria.',
-            image: '/images/team3.jpg'
-        }
+        // {
+        //     name: 'Emmanuel Adeyemi',
+        //     role: 'Marketing Director',
+        //     bio: 'Digital marketing specialist driving our affiliate program and brand awareness across Nigeria.',
+        //     image: '/images/team3.jpg'
+        // }
     ];
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+        <div className="app-content md:bg-gradient-to-br md:from-blue-50 md:via-white md:to-purple-50">
             {/* Hero Section */}
-            <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-20">
+            <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-12 md:py-20">
                 <div className="container mx-auto px-4 text-center">
                     <h1 className="text-4xl md:text-5xl font-bold mb-6">
                         About Epilux Water
@@ -111,7 +111,7 @@ export default function AboutPage() {
                 </div>
             </div>
 
-            <div className="container mx-auto px-4 py-16">
+            <div className="container mx-auto px-4 py-8 md:py-16">
                 {/* Stats Section */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-16">
                     {stats.map((stat, index) => (
@@ -206,21 +206,44 @@ export default function AboutPage() {
                     </div>
 
                     <div className="relative">
-                        <div className="absolute left-1/2 transform -translate-x-1/2 w-1 h-full bg-blue-200"></div>
-                        <div className="space-y-12">
-                            {milestones.map((milestone, index) => (
-                                <div key={index} className={`flex items-center ${index % 2 === 0 ? 'flex-row' : 'flex-row-reverse'}`}>
-                                    <div className={`w-1/2 ${index % 2 === 0 ? 'pr-8 text-right' : 'pl-8 text-left'}`}>
-                                        <div className="bg-white rounded-lg p-6 shadow-md">
-                                            <div className="flex items-center gap-3 mb-3">
-                                                <Badge className="bg-blue-100 text-blue-800">{milestone.year}</Badge>
+                        {/* Desktop Timeline */}
+                        <div className="hidden md:block">
+                            <div className="absolute left-1/2 transform -translate-x-1/2 w-1 h-full bg-blue-200"></div>
+                            <div className="space-y-12">
+                                {milestones.map((milestone, index) => (
+                                    <div key={index} className={`flex items-center ${index % 2 === 0 ? 'flex-row' : 'flex-row-reverse'}`}>
+                                        <div className={`w-1/2 ${index % 2 === 0 ? 'pr-8 text-right' : 'pl-8 text-left'}`}>
+                                            <div className="bg-white rounded-lg p-6 shadow-md">
+                                                <div className="flex items-center gap-3 mb-3">
+                                                    <Badge className="bg-blue-100 text-blue-800">{milestone.year}</Badge>
+                                                </div>
+                                                <h3 className="font-semibold text-gray-800 mb-2">{milestone.title}</h3>
+                                                <p className="text-gray-600 text-sm">{milestone.description}</p>
                                             </div>
-                                            <h3 className="font-semibold text-gray-800 mb-2">{milestone.title}</h3>
-                                            <p className="text-gray-600 text-sm">{milestone.description}</p>
                                         </div>
+                                        <div className="w-4 h-4 bg-blue-600 rounded-full border-4 border-white shadow-md z-10"></div>
+                                        <div className="w-1/2"></div>
                                     </div>
-                                    <div className="w-4 h-4 bg-blue-600 rounded-full border-4 border-white shadow-md z-10"></div>
-                                    <div className="w-1/2"></div>
+                                ))}
+                            </div>
+                        </div>
+                        {/* Mobile Timeline */}
+                        <div className="md:hidden space-y-6">
+                            {milestones.map((milestone, index) => (
+                                <div key={index} className="flex items-start gap-4">
+                                    <div className="flex-shrink-0">
+                                        <div className="w-4 h-4 bg-blue-600 rounded-full border-4 border-white shadow-md"></div>
+                                        {index < milestones.length - 1 && (
+                                            <div className="w-0.5 h-16 bg-blue-200 mx-auto mt-2"></div>
+                                        )}
+                                    </div>
+                                    <div className="flex-1 bg-white rounded-lg p-4 shadow-md">
+                                        <div className="flex items-center gap-3 mb-3">
+                                            <Badge className="bg-blue-100 text-blue-800">{milestone.year}</Badge>
+                                        </div>
+                                        <h3 className="font-semibold text-gray-800 mb-2">{milestone.title}</h3>
+                                        <p className="text-gray-600 text-sm">{milestone.description}</p>
+                                    </div>
                                 </div>
                             ))}
                         </div>

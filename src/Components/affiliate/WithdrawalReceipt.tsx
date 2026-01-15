@@ -119,7 +119,7 @@ export default function WithdrawalReceipt({ withdrawal, isOpen, onClose }: Withd
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent className="sm:max-w-2xl animate-scaleIn">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Download className="w-5 h-5" />

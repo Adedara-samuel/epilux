@@ -67,7 +67,7 @@ export default function PremiumPlanPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-purple-50 to-white">
+        <div className="app-content min-h-screen bg-gradient-to-br from-purple-50 to-white">
             {/* Hero Section */}
             <section className="relative py-20 overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-purple-800 opacity-10"></div>

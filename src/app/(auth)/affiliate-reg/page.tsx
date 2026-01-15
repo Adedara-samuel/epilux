@@ -60,8 +60,8 @@ export default function AffiliateWelcomePage() {
     return (
         <div className="min-h-screen flex flex-col bg-gray-50 font-sans">
             <AffiliateHeader onRegisterClick={() => router.push('/register')} />
-            
-            <main className="flex-grow">
+
+            <main className="app-content flex-grow">
                 {/* 1. Modern Hero Section */}
                 <section className="bg-gradient-to-br from-blue-600 to-blue-800 text-white py-24 md:py-36 shadow-xl">
                     <div className="container mx-auto px-6 text-center">
@@ -105,7 +105,7 @@ export default function AffiliateWelcomePage() {
                         </div>
                     </div>
                 </section>
-                
+
                 {/* 3. Why Epilux? (Document-Driven Features + Image) */}
                 <section className="py-20 bg-blue-50">
                     <div className="container mx-auto px-6">
@@ -161,9 +161,9 @@ export default function AffiliateWelcomePage() {
                         </button>
                     </div>
                 </section>
+                <Footer />
             </main>
 
-            <Footer />
         </div>
     );
 }

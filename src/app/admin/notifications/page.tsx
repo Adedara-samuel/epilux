@@ -572,8 +572,8 @@ export default function AdminNotificationsPage() {
 
             {/* View Details Dialog */}
             {viewDialogOpen && selectedNotification && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md" onClick={() => setViewDialogOpen(false)}>
-                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setViewDialogOpen(false)}>
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto animate-scaleIn" onClick={(e) => e.stopPropagation()}>
                         <div className="p-6">
                             <div className="flex items-center justify-between mb-6">
                                 <h3 className="text-2xl font-bold text-gray-900">Ticket Details</h3>
@@ -636,8 +636,8 @@ export default function AdminNotificationsPage() {
 
             {/* Reply Dialog */}
             {replyDialogOpen && selectedNotification && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md" onClick={() => setReplyDialogOpen(false)}>
-                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4" onClick={(e) => e.stopPropagation()}>
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md animate-in fade-in duration-300" onClick={() => setReplyDialogOpen(false)}>
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 animate-scaleIn" onClick={(e) => e.stopPropagation()}>
                         <div className="p-6">
                             <div className="flex items-center justify-between mb-6">
                                 <h3 className="text-2xl font-bold text-gray-900">Reply & Resolve Ticket</h3>

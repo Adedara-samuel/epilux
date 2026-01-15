@@ -92,7 +92,7 @@ export default function SubscriptionsPage() {
     ];
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+        <div className="app-content min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
             {/* Header */}
             <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-16">
                 <div className="container mx-auto px-4 text-center">
@@ -198,7 +198,7 @@ export default function SubscriptionsPage() {
                             <Button size="lg" className="bg-white text-green-600 hover:bg-gray-100">
                                 <Link href="/register">Start Subscription</Link>
                             </Button>
-                            <Button size="lg" variant="outline" className="text-white border-white hover:bg-white/10">
+                            <Button size="lg" variant="outline" className="bg-transparent text-white border-white hover:bg-white/10">
                                 <Link href="/contact">Contact Sales</Link>
                             </Button>
                         </div>

@@ -285,7 +285,7 @@ export default function AffiliateWallet() {
                   Request Withdrawal
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-md">
+              <DialogContent className="sm:max-w-md animate-scaleIn">
                 <DialogHeader>
                   <DialogTitle>Request Withdrawal</DialogTitle>
                 </DialogHeader>

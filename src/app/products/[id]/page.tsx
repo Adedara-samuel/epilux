@@ -189,8 +189,8 @@ export default function ProductDetailPage() {
     };
 
     return (
-        <div className="container mx-auto px-4 py-12">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 bg-white p-8 rounded-lg shadow-xl">
+        <div className="container mx-auto px-4 py-8 md:py-12">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 bg-white p-4 md:p-8 rounded-lg shadow-xl">
                 <div className="space-y-4">
                     {(() => {
                         const images = product.images && product.images.length > 0 ? product.images : [{ url: product.image || '/images/placeholder.jpg', alt: product.name }];
@@ -199,7 +199,7 @@ export default function ProductDetailPage() {
                         return (
                             <div className="space-y-4">
                                 {/* Main Image Carousel */}
-                                <div className="relative h-96 lg:h-[500px] rounded-lg overflow-hidden bg-gray-100 group">
+                                <div className="relative h-64 sm:h-80 md:h-96 lg:h-[500px] rounded-lg overflow-hidden bg-gray-100 group">
                                     <div
                                         className="w-full h-full cursor-pointer"
                                         onClick={() => {
@@ -270,7 +270,7 @@ export default function ProductDetailPage() {
                 </div>
 
                 <div>
-                    <h1 className="text-4xl font-extrabold text-blue-800 mb-3">{product.name}</h1>
+                    <h1 className="text-2xl md:text-3xl lg:text-4xl font-extrabold text-blue-800 mb-3">{product.name}</h1>
                     {product.category && (
                         <p className="text-lg text-gray-500 mb-4">Category: {product.category.charAt(0).toUpperCase() + product.category.slice(1)}</p>
                     )}
@@ -289,7 +289,7 @@ export default function ProductDetailPage() {
                     )}
 
                     <div className="flex items-center gap-4 mb-6">
-                        <span className="text-3xl font-bold text-blue-700">
+                        <span className="text-xl md:text-2xl lg:text-3xl font-bold text-blue-700">
                             ₦{product.price.toLocaleString()}
                         </span>
                         {product.originalPrice && (
@@ -308,8 +308,8 @@ export default function ProductDetailPage() {
                         </p>
                     </div>
 
-                    <div className="flex items-end gap-4 mb-8">
-                        <div className="w-32">
+                    <div className="flex flex-col sm:flex-row sm:items-end gap-4 mb-8">
+                        <div className="w-full sm:w-32">
                             <label htmlFor="quantity" className="block text-sm font-medium text-gray-700 mb-1">
                                 Quantity
                             </label>
@@ -345,7 +345,7 @@ export default function ProductDetailPage() {
                         </div>
 
                         <Button
-                            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md text-lg transition-colors"
+                            className="w-full sm:flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md text-base sm:text-lg transition-colors"
                             onClick={handleAddToCart}
                             disabled={product.stock === 0} // Disable if out of stock
                         >
@@ -368,7 +368,7 @@ export default function ProductDetailPage() {
                         <div className="flex items-center justify-between mb-6">
                             <div className="flex items-center gap-3">
                                 <MessageSquare className="w-6 h-6 text-blue-600" />
-                                <h2 className="text-2xl font-bold text-gray-900">Customer Reviews</h2>
+                                <h2 className="text-xl md:text-2xl font-bold text-gray-900">Customer Reviews</h2>
                                 {reviews.length > 0 && (
                                     <div className="flex items-center gap-2">
                                         <div className="flex">
@@ -519,8 +519,8 @@ export default function ProductDetailPage() {
 
             {/* Image Viewer Modal */}
             {imageViewerOpen && (
-                <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/90 p-4" onClick={() => setImageViewerOpen(false)}>
-                    <div className="relative max-w-4xl max-h-full" onClick={(e) => e.stopPropagation()}>
+                <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/90 p-2 md:p-4" onClick={() => setImageViewerOpen(false)}>
+                    <div className="relative max-w-full md:max-w-4xl max-h-full" onClick={(e) => e.stopPropagation()}>
                         {/* Close button */}
                         <Button
                             variant="ghost"
@@ -541,7 +541,7 @@ export default function ProductDetailPage() {
                                     <img
                                         src={currentImage.absoluteUrl || `${API_BASE_URL}${currentImage.url}`}
                                         alt={currentImage.alt || product?.name}
-                                        className="max-w-full max-h-[80vh] object-contain"
+                                        className="max-w-full max-h-[70vh] md:max-h-[80vh] object-contain"
                                         onTouchStart={handleTouchStart}
                                         onTouchMove={handleTouchMove}
                                         onTouchEnd={handleTouchEnd}
@@ -588,12 +588,12 @@ export default function ProductDetailPage() {
                                     <div className="text-white text-sm mb-2">
                                         {selectedImageIndex + 1} of {images.length}
                                     </div>
-                                    <div className="flex gap-2 overflow-x-auto max-w-full">
+                                    <div className="flex gap-2 overflow-x-auto max-w-full px-4">
                                         {images.map((image: any, index: number) => (
                                             <button
                                                 key={index}
                                                 onClick={() => setSelectedImageIndex(index)}
-                                                className={`flex-shrink-0 w-16 h-16 rounded border-2 overflow-hidden ${
+                                                className={`flex-shrink-0 w-12 h-12 md:w-16 md:h-16 rounded border-2 overflow-hidden ${
                                                     index === selectedImageIndex ? 'border-blue-500' : 'border-gray-400'
                                                 }`}
                                             >

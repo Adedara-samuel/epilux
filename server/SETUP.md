@@ -175,7 +175,7 @@ npm start
 npm run dev
 
 # Check configuration status
-curl http://localhost:5000/health
+curl https://epilux-backend.vercel.app/health
 ```
 
 ## Troubleshooting

@@ -209,110 +209,7 @@ export default function CommissionRatesPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-      {/* Header */}
-      <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-40">
-        <div className="container mx-auto px-6 py-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent animate-bounceIn">
-                Commission Records Management
-              </h1>
-              <p className="text-gray-600 mt-1 animate-fadeIn animation-delay-300">View and manage all affiliate commission records</p>
-            </div>
-            <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
-              <DialogTrigger asChild>
-                <Button className="bg-blue-600 hover:bg-blue-700 text-white px-4 sm:px-6 py-2 rounded-lg shadow-md hover:shadow-lg transition-all hover-lift animate-fadeIn animation-delay-500 w-full sm:w-auto">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Commission Rate
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-md animate-scaleIn z-1000 sm:rounded-lg max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle className="flex items-center gap-2">
-                    <Percent className="w-5 h-5 text-blue-600" />
-                    Create Commission Rate
-                  </DialogTitle>
-                </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div>
-                    <Label htmlFor="name">Name</Label>
-                    <Input
-                      id="name"
-                      value={formData.name}
-                      onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                      placeholder="e.g., Standard Product Commission"
-                      required
-                      className="mt-1"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="description">Description (Optional)</Label>
-                    <Input
-                      id="description"
-                      value={formData.description}
-                      onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                      placeholder="Brief description of this commission rate"
-                      className="mt-1"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="rate">Rate</Label>
-                      <Input
-                        id="rate"
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        max="100"
-                        value={formData.rate}
-                        onChange={(e) => setFormData(prev => ({ ...prev, rate: parseFloat(e.target.value) || 0 }))}
-                        required
-                        className="mt-1"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="type">Type</Label>
-                      <Select value={formData.type} onValueChange={(value: 'percentage' | 'fixed') => setFormData(prev => ({ ...prev, type: value }))}>
-                        <SelectTrigger className="mt-1">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="percentage">Percentage</SelectItem>
-                          <SelectItem value="fixed">Fixed Amount</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  <div>
-                    <Label htmlFor="category">Category</Label>
-                    <Select value={formData.category} onValueChange={(value: 'product' | 'service' | 'referral' | 'general') => setFormData(prev => ({ ...prev, category: value }))}>
-                      <SelectTrigger className="mt-1">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="general">General</SelectItem>
-                        <SelectItem value="product">Product</SelectItem>
-                        <SelectItem value="service">Service</SelectItem>
-                        <SelectItem value="referral">Referral</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex gap-3 pt-4">
-                    <Button type="button" variant="outline" onClick={closeModals} className="flex-1">
-                      Cancel
-                    </Button>
-                    <Button type="submit" disabled={submitting || createCommissionRate.isPending} className="flex-1 bg-blue-600 hover:bg-blue-700">
-                      {submitting || createCommissionRate.isPending ? 'Creating...' : 'Create Rate'}
-                    </Button>
-                  </div>
-                </form>
-              </DialogContent>
-            </Dialog>
-          </div>
-        </div>
-      </div>
-
-      <div className="container mx-auto px-6 py-8">
+      <div className="container mx-auto px-4 lg:px-6 py-6 lg:py-8">
         {/* Commission Settings Display */}
         {settingsData?.data && settingsData.data.commissionRate !== undefined && (
           <CommissionSettingsDisplay settings={settingsData.data} />
@@ -379,36 +276,246 @@ export default function CommissionRatesPage() {
           </div>
         )}
 
-        {/* Commission Records Section */}
-      <Card className="bg-white/80 backdrop-blur-sm border border-gray-200 shadow-sm mb-8">
-        <CardHeader>
-          <CardTitle>All Commission Records</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {commissionsLoading ? (
-            <div className="py-6 text-sm text-gray-600">Loading commissions...</div>
-          ) : (commissionsData?.commissions?.length ? (
-            <div className="space-y-3">
-              {commissionsData.commissions.slice(0, 10).map((c) => (
-                <div key={c._id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 border rounded-lg gap-3">
-                  <div className="text-sm flex-1">
-                    <div className="font-semibold">₦{(c.amount || 0).toLocaleString()}</div>
-                    <div className="text-gray-600">{new Date(c.createdAt).toLocaleString()}</div>
-                    {c.affiliate && (
-                      <div className="text-xs text-blue-600">{c.affiliate.firstName} {c.affiliate.lastName}</div>
-                    )}
-                    {c.order && (
-                      <div className="text-xs text-green-600">Order: {c.order.orderNumber}</div>
-                    )}
+        {/* Commission Rates Section */}
+        <div className="bg-white/80 backdrop-blur-sm border border-gray-200 rounded-2xl shadow-sm mb-8 overflow-hidden">
+          <div className="p-6 border-b border-gray-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">Commission Rates</h2>
+                <p className="text-sm text-gray-600 mt-1">Manage commission rate configurations</p>
+              </div>
+              <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
+                <DialogTrigger asChild>
+                  <Button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow-md hover:shadow-lg transition-all">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Rate
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md animate-scaleIn z-1000 sm:rounded-lg max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2">
+                      <Percent className="w-5 h-5 text-blue-600" />
+                      Create Commission Rate
+                    </DialogTitle>
+                  </DialogHeader>
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    <div>
+                      <Label htmlFor="name">Name</Label>
+                      <Input
+                        id="name"
+                        value={formData.name}
+                        onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                        placeholder="e.g., Standard Product Commission"
+                        required
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="description">Description (Optional)</Label>
+                      <Input
+                        id="description"
+                        value={formData.description}
+                        onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                        placeholder="Brief description of this commission rate"
+                        className="mt-1"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="rate">Rate</Label>
+                        <Input
+                          id="rate"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          max="100"
+                          value={formData.rate}
+                          onChange={(e) => setFormData(prev => ({ ...prev, rate: parseFloat(e.target.value) || 0 }))}
+                          required
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="type">Type</Label>
+                        <Select value={formData.type} onValueChange={(value: 'percentage' | 'fixed') => setFormData(prev => ({ ...prev, type: value }))}>
+                          <SelectTrigger className="mt-1">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="percentage">Percentage</SelectItem>
+                            <SelectItem value="fixed">Fixed Amount</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <div>
+                      <Label htmlFor="category">Category</Label>
+                      <Select value={formData.category} onValueChange={(value: 'product' | 'service' | 'referral' | 'general') => setFormData(prev => ({ ...prev, category: value }))}>
+                        <SelectTrigger className="mt-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="general">General</SelectItem>
+                          <SelectItem value="product">Product</SelectItem>
+                          <SelectItem value="service">Service</SelectItem>
+                          <SelectItem value="referral">Referral</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex gap-3 pt-4">
+                      <Button type="button" variant="outline" onClick={closeModals} className="flex-1">
+                        Cancel
+                      </Button>
+                      <Button type="submit" disabled={submitting || createCommissionRate.isPending} className="flex-1 bg-blue-600 hover:bg-blue-700">
+                        {submitting || createCommissionRate.isPending ? 'Creating...' : 'Create Rate'}
+                      </Button>
+                    </div>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            </div>
+          </div>
+          <div className="p-6">
+            {ratesLoading ? (
+              <div className="py-12 flex items-center justify-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                <span className="ml-3 text-gray-600">Loading rates...</span>
+              </div>
+            ) : (filteredRates.length ? (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {filteredRates.map((rate) => (
+                  <div key={rate._id} className="bg-gray-50 rounded-xl p-4 hover:bg-gray-100 transition-colors">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                          <Percent className="w-5 h-5 text-blue-600" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-gray-900">{rate.name}</h3>
+                          <p className="text-sm text-gray-500 capitalize">{rate.category}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleToggleStatus(rate)}
+                          className={`w-8 h-8 p-0 ${rate.isActive ? 'text-green-600' : 'text-gray-400'}`}
+                        >
+                          {rate.isActive ? <ToggleRight className="w-4 h-4" /> : <ToggleLeft className="w-4 h-4" />}
+                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm" className="w-8 h-8 p-0">
+                              <MoreHorizontal className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => openEditModal(rate)}>
+                              <Edit className="w-4 h-4 mr-2" />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleDelete(rate)} className="text-red-600">
+                              <Trash2 className="w-4 h-4 mr-2" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-600">Rate:</span>
+                        <span className="font-semibold text-lg text-blue-600">
+                          {rate.rate}{rate.type === 'percentage' ? '%' : '₦'}
+                        </span>
+                      </div>
+                      {rate.description && (
+                        <p className="text-sm text-gray-600">{rate.description}</p>
+                      )}
+                      <div className="flex items-center justify-between pt-2 border-t border-gray-200">
+                        <Badge variant={rate.isActive ? 'default' : 'secondary'}>
+                          {rate.isActive ? 'Active' : 'Inactive'}
+                        </Badge>
+                        <span className="text-xs text-gray-500">
+                          {new Date(rate.createdAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
-                    <Badge variant="outline" className="capitalize self-start">{c.status}</Badge>
+                ))}
+              </div>
+            ) : (
+              <div className="py-12 text-center">
+                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Percent className="w-8 h-8 text-gray-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">No commission rates yet</h3>
+                <p className="text-gray-600 mb-4">Create your first commission rate to get started.</p>
+                <Button onClick={() => setIsCreateModalOpen(true)} className="bg-blue-600 hover:bg-blue-700">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Commission Rate
+                </Button>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Commission Records Section */}
+      <div className="bg-white/80 backdrop-blur-sm border border-gray-200 rounded-2xl shadow-sm mb-8 overflow-hidden">
+        <div className="p-6 border-b border-gray-100">
+          <h2 className="text-xl font-bold text-gray-900">Commission Records</h2>
+          <p className="text-sm text-gray-600 mt-1">Recent commission transactions</p>
+        </div>
+        <div className="p-6">
+          {commissionsLoading ? (
+            <div className="py-12 flex items-center justify-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <span className="ml-3 text-gray-600">Loading commissions...</span>
+            </div>
+          ) : (commissionsData?.commissions?.length ? (
+            <div className="space-y-4">
+              {commissionsData.commissions.slice(0, 10).map((c) => (
+                <div key={c._id} className="bg-gray-50 rounded-xl p-4 hover:bg-gray-100 transition-colors">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                        <span className="text-green-600 font-bold text-sm">₦</span>
+                      </div>
+                      <div>
+                        <div className="font-semibold text-lg text-gray-900">₦{(c.amount || 0).toLocaleString()}</div>
+                        <div className="text-sm text-gray-500">{new Date(c.createdAt).toLocaleDateString()}</div>
+                      </div>
+                    </div>
+                    <Badge variant={
+                      c.status === 'available' ? 'default' :
+                      c.status === 'pending' ? 'secondary' :
+                      c.status === 'withdrawn' ? 'outline' : 'destructive'
+                    } className="capitalize">
+                      {c.status}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm text-gray-600">
+                      {c.affiliate && (
+                        <div className="flex items-center gap-1">
+                          <span className="text-blue-600">👤</span>
+                          {c.affiliate.firstName} {c.affiliate.lastName}
+                        </div>
+                      )}
+                      {c.order && (
+                        <div className="flex items-center gap-1 mt-1">
+                          <span className="text-green-600">📦</span>
+                          Order: {c.order.orderNumber}
+                        </div>
+                      )}
+                    </div>
                     <Select
                       onValueChange={(value) => updateCommissionStatus.mutate({ id: c._id, status: value as any })}
                       disabled={updateCommissionStatus.isPending}
                     >
-                      <SelectTrigger className="w-full sm:w-36">
-                        <SelectValue placeholder="Change status" />
+                      <SelectTrigger className="w-32 h-8 text-xs">
+                        <SelectValue placeholder="Update" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="pending">Pending</SelectItem>
@@ -422,10 +529,16 @@ export default function CommissionRatesPage() {
               ))}
             </div>
           ) : (
-            <div className="py-6 text-sm text-gray-600">No commissions found.</div>
+            <div className="py-12 text-center">
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl">💰</span>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">No commissions yet</h3>
+              <p className="text-gray-600">Commission records will appear here once affiliates earn them.</p>
+            </div>
           ))}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
         {/* Edit Modal */}
         <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>

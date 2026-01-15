@@ -90,21 +90,6 @@ const authAPI = {
         }
     },
 
-    /**
-     * Logs in an admin with the backend API.
-     * @param credentials - The admin credentials including email and password.
-     * @returns A promise that resolves with the API response (e.g., auth token).
-     */
-    adminLogin: async (credentials: UserCredentials) => {
-        const response = await fetch(`${getBaseUrl()}/api/auth/admin/login`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(credentials),
-        });
-        return handleResponse(response, 'Admin login failed');
-    },
 
     /**
      * Gets the current user's profile.
@@ -209,6 +194,15 @@ const authAPI = {
             body: JSON.stringify({ role }),
         });
         return handleResponse(response, 'Role update failed');
+    },
+
+    /**
+     * Admin login (same as regular login, backend handles role checking).
+     * @param credentials - The admin credentials including email and password.
+     * @returns A promise that resolves with the API response.
+     */
+    adminLogin: async (credentials: UserCredentials) => {
+        return authAPI.login(credentials);
     },
 
     /**

@@ -46,22 +46,22 @@ export const cartAPI = {
     },
 
     // Update cart item quantity
-    updateCartItem: async (token: string, itemId: string, quantity: number): Promise<{ data: Cart }> => {
+    updateCartItem: async (token: string, productId: string, quantity: number): Promise<{ data: Cart }> => {
         if (!token) {
             throw new Error('Authentication required');
         }
-        const response = await api.put(`/api/cart/items/${itemId}`, { quantity }, {
+        const response = await api.put(`/api/cart/items/${productId}`, { quantity }, {
             headers: { Authorization: `Bearer ${token}` }
         });
         return response.data;
     },
 
     // Remove item from cart
-    removeFromCart: async (token: string, itemId: string): Promise<{ data: Cart }> => {
+    removeFromCart: async (token: string, productId: string): Promise<{ data: Cart }> => {
         if (!token) {
             throw new Error('Authentication required');
         }
-        const response = await api.delete(`/api/cart/items/${itemId}`, {
+        const response = await api.delete(`/api/cart/items/${productId}`, {
             headers: { Authorization: `Bearer ${token}` }
         });
         return response.data;
