@@ -19,7 +19,7 @@ export default function ProductsLayout({
                 <div className="flex flex-1">
                     <ClientSidebarWrapper />
                     
-                    <main className="flex-1 lg:ml-64">
+                    <main className="app-content flex-1 lg:ml-64 overflow-y-auto">
                         <Header />
                         {children}
                     </main>

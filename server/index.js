@@ -7,6 +7,7 @@ import User from './models/User.js';
 import { validateConfig, getConfigStatus } from './config/validation.js';
 import { requestLogger } from './middleware/errorHandler.js';
 import supportRoutes from './routes/support.js';
+import paymentRoutes from './routes/payment.js';
 import emailService from './services/emailService.js';
 
 
@@ -101,6 +102,7 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/affiliate', affiliateRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/support', supportRoutes);
+app.use('/api/payment', paymentRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/commission/admin/commissions', commissionRoutes);
 app.use('/api/delivery', deliveryRoutes);

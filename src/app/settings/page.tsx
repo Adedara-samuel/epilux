@@ -331,8 +331,8 @@ export default function SettingsPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50">
-            <div className="container mx-auto px-4 py-12">
+        <div className="app-content bg-gray-50 overflow-y-auto">
+            <div className="app-content container mx-auto px-4 py-12">
                 {/* Header */}
                 <div className="text-center mb-12">
                     <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-4">
@@ -571,8 +571,8 @@ export default function SettingsPage() {
                                 <div className="space-y-4 mb-8">
                                     <h3 className="text-lg font-semibold text-gray-800">Your Saved Addresses</h3>
                                     
-                                    {(addressesData?.addresses || []).map((address: any) => (
-                                        <div key={address.id} className="bg-gray-50 rounded-xl p-6 border border-gray-200">
+                                    {(addressesData?.addresses || []).map((address: any, index: number) => (
+                                        <div key={address.id || `address-${index}`} className="bg-gray-50 rounded-xl p-6 border border-gray-200">
                                             <div className="flex justify-between items-start">
                                                 <div>
                                                     {/* Display Address Type */}

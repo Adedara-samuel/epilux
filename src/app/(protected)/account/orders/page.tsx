@@ -142,7 +142,7 @@ export default function MyOrdersPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-20 md:pb-0">
+        <div className="app-content min-h-screen bg-gray-50 pb-20 md:pb-0">
             {/* Rating Modal */}
             {ratingModal && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-fadeIn">
