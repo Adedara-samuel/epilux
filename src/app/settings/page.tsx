@@ -331,7 +331,7 @@ export default function SettingsPage() {
     }
 
     return (
-        <div className="app-content bg-gray-50 overflow-y-auto">
+        <div className="bg-gray-50 overflow-y-auto">
             <div className="app-content container mx-auto px-4 py-12">
                 {/* Header */}
                 <div className="text-center mb-12">

@@ -131,35 +131,53 @@ export default function CheckoutPage() {
             const deliveryInfo = form.getValues();
             const orderData = {
                 items: normalizedCartItems.map(item => ({
-                    productId: item.id,
+                    product: item.id,
                     quantity: item.quantity,
+                    price: item.price,
                 })),
                 shippingAddress: {
-                    street: deliveryInfo.address,
+                    address: deliveryInfo.address,
                     city: deliveryInfo.city,
                     state: deliveryInfo.state,
-                    zipCode: '000000', // Default
                     country: 'Nigeria',
                 },
-                billingAddress: {
-                    street: deliveryInfo.address,
-                    city: deliveryInfo.city,
-                    state: deliveryInfo.state,
-                    zipCode: '000000',
-                    country: 'Nigeria',
+                customerInfo: {
+                    name: deliveryInfo.fullName,
+                    phone: `+234${deliveryInfo.phone.replace(/^\+?234/, '')}`,
+                    email: user?.email || '',
                 },
-                paymentMethod: 'online',
-                notes: deliveryInfo.additionalInfo,
+                paymentMethod: 'wallet',
+                totalAmount: totalAmount,
             };
 
             console.log('Creating order with data:', orderData);
             // Create order first
-            const orderResponse = await createOrderMutation.mutateAsync(orderData);
+            const orderResponse = await (createOrderMutation.mutateAsync as any)(orderData);
             console.log('Order created:', orderResponse);
 
             console.log('Initializing payment for order:', orderResponse.id);
             // Initialize payment
-            const paymentData = await paymentAPI.initializePayment(orderResponse.id, { amount: totalAmount });
+            const paymentPayload = {
+                items: normalizedCartItems.map(item => ({
+                    product: item.id,
+                    quantity: item.quantity,
+                    price: item.price,
+                })),
+                shippingAddress: {
+                    address: deliveryInfo.address,
+                    city: deliveryInfo.city,
+                    state: deliveryInfo.state,
+                    country: 'Nigeria',
+                },
+                customerInfo: {
+                    name: deliveryInfo.fullName,
+                    phone: `+234${deliveryInfo.phone.replace(/^\+?234/, '')}`,
+                    email: user?.email || '',
+                },
+                paymentMethod: 'wallet',
+                totalAmount: totalAmount,
+            };
+            const paymentData = await paymentAPI.initializePayment(orderResponse.id, paymentPayload);
             console.log('Payment initialized:', paymentData);
 
             // Assuming the API returns a payment URL
