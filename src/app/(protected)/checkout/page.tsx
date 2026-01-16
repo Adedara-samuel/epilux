@@ -131,23 +131,31 @@ export default function CheckoutPage() {
             const deliveryInfo = form.getValues();
             const orderData = {
                 items: normalizedCartItems.map(item => ({
-                    product: item.id,
+                    productId: item.id,
                     quantity: item.quantity,
-                    price: item.price,
                 })),
                 shippingAddress: {
-                    address: deliveryInfo.address,
+                    street: deliveryInfo.address,
                     city: deliveryInfo.city,
                     state: deliveryInfo.state,
+                    zipCode: '000000',
                     country: 'Nigeria',
                 },
-                customerInfo: {
-                    name: deliveryInfo.fullName,
-                    phone: `+234${deliveryInfo.phone.replace(/^\+?234/, '')}`,
-                    email: user?.email || '',
+                billingAddress: {
+                    street: deliveryInfo.address,
+                    city: deliveryInfo.city,
+                    state: deliveryInfo.state,
+                    zipCode: '000000',
+                    country: 'Nigeria',
                 },
                 paymentMethod: 'wallet',
+                buyer: user?.id,
+                userId: user?.id,
                 totalAmount: totalAmount,
+                shipping: deliveryFee,
+                tax: 0,
+                subtotal: subtotal,
+                notes: deliveryInfo.additionalInfo,
             };
 
             console.log('Creating order with data:', orderData);
@@ -155,40 +163,8 @@ export default function CheckoutPage() {
             const orderResponse = await (createOrderMutation.mutateAsync as any)(orderData);
             console.log('Order created:', orderResponse);
 
-            console.log('Initializing payment for order:', orderResponse.id);
-            // Initialize payment
-            const paymentPayload = {
-                items: normalizedCartItems.map(item => ({
-                    product: item.id,
-                    quantity: item.quantity,
-                    price: item.price,
-                })),
-                shippingAddress: {
-                    address: deliveryInfo.address,
-                    city: deliveryInfo.city,
-                    state: deliveryInfo.state,
-                    country: 'Nigeria',
-                },
-                customerInfo: {
-                    name: deliveryInfo.fullName,
-                    phone: `+234${deliveryInfo.phone.replace(/^\+?234/, '')}`,
-                    email: user?.email || '',
-                },
-                paymentMethod: 'wallet',
-                totalAmount: totalAmount,
-            };
-            const paymentData = await paymentAPI.initializePayment(orderResponse.id, paymentPayload);
-            console.log('Payment initialized:', paymentData);
-
-            // Assuming the API returns a payment URL
-            if (paymentData.paymentUrl) {
-                console.log('Redirecting to payment URL:', paymentData.paymentUrl);
-                window.location.href = paymentData.paymentUrl;
-            } else {
-                toast.success("Payment initialized successfully!");
-                clearCart();
-                router.push(`/order/success?orderId=${orderResponse.id}`);
-            }
+            // Redirect to payment method selection page
+            router.push(`/payment/${orderResponse.id}`);
         } catch (error: any) {
             console.error('Error processing payment:', error);
             const errorMessage = error.response?.data?.error || error.response?.data?.message || error.message || "Failed to process payment. Please try again.";
@@ -291,7 +267,6 @@ export default function CheckoutPage() {
                                                         placeholder="Street address, building name"
                                                         className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                                                         {...field}
-                                                        disabled
                                                     />
                                                 </FormControl>
                                                 <FormMessage className="text-red-500 text-sm" />
@@ -307,12 +282,11 @@ export default function CheckoutPage() {
                                                 <FormItem>
                                                     <FormLabel className="text-gray-700 font-medium">City</FormLabel>
                                                     <FormControl>
-                                                        <Input
-                                                            placeholder="e.g., Lagos"
-                                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                                            {...field}
-                                                            disabled
-                                                        />
+                                                            <Input
+                                                                placeholder="e.g., Lagos"
+                                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                                                {...field}
+                                                            />
                                                     </FormControl>
                                                     <FormMessage className="text-red-500 text-sm" />
                                                 </FormItem>
@@ -326,12 +300,11 @@ export default function CheckoutPage() {
                                                 <FormItem>
                                                     <FormLabel className="text-gray-700 font-medium">State</FormLabel>
                                                     <FormControl>
-                                                        <Input
-                                                            placeholder="e.g., Lagos State"
-                                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                                            {...field}
-                                                            disabled
-                                                        />
+                                                            <Input
+                                                                placeholder="e.g., Lagos State"
+                                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                                                {...field}
+                                                            />
                                                     </FormControl>
                                                     <FormMessage className="text-red-500 text-sm" />
                                                 </FormItem>
