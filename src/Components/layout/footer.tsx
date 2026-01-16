@@ -1,5 +1,5 @@
 // components/layout/Footer.tsx
-import { Facebook, Instagram, Mail, Phone, Twitter } from 'lucide-react'; // Import icons
+import { Facebook, Instagram, Mail, Phone, Twitter, Youtube, MessageCircle, Video, MessageSquare, Send } from 'lucide-react'; // Import icons
 import Link from 'next/link';
 import React from 'react';
 
@@ -20,10 +20,10 @@ const Footer: React.FC = () => {
                     <h4 className="font-bold text-lg text-blue-400 mb-5">Quick Links</h4>
                     <ul className="space-y-3">
                         <li><Link href="/" className="hover:text-white transition-colors text-sm">Home</Link></li>
-                        <li><Link href="/login?redirect=/products" className="hover:text-white transition-colors text-sm">Products</Link></li>
-                        <li><Link href="/login?redirect=/subscription" className="hover:text-white transition-colors text-sm">Subscriptions</Link></li>
-                        <li><Link href="/login?redirect=/about" className="hover:text-white transition-colors text-sm">About Us</Link></li>
-                        <li><Link href="/login?redirect=/contact" className="hover:text-white transition-colors text-sm">Contact Us</Link></li>
+                        <li><Link href="/products" className="hover:text-white transition-colors text-sm">Products</Link></li>
+                        <li><Link href="/subscriptions" className="hover:text-white transition-colors text-sm">Subscriptions</Link></li>
+                        <li><Link href="/about" className="hover:text-white transition-colors text-sm">About Us</Link></li>
+                        <li><Link href="/contact-us" className="hover:text-white transition-colors text-sm">Contact Us</Link></li>
                     </ul>
                 </div>
 
@@ -37,9 +37,9 @@ const Footer: React.FC = () => {
                             </Link>
                         </li>
                         <li>
-                            <Link href="/admin-login" className="hover:text-white transition-colors text-sm">
+                            {/* <Link href="/admin-login" className="hover:text-white transition-colors text-sm">
                                 Admin Portal
-                            </Link>
+                            </Link> */}
                         </li>
                     </ul>
                 </div>
@@ -57,15 +57,30 @@ const Footer: React.FC = () => {
                             <span>+234 800 000 0000</span>
                         </li>
                     </ul>
-                    <div className="flex space-x-4 mt-6">
-                        <a href="#" className="text-gray-400 hover:text-white transition-colors">
-                            <Facebook className="h-6 w-6" />
+                    <div className="flex flex-nowrap gap-4 mt-6">
+                        <a href="https://www.facebook.com/share/17UnVMTq9d/" className="text-gray-400 hover:text-white transition-colors">
+                            <Facebook className="h-4 w-4 transition-transform duration-200 hover:scale-110 active:scale-95" />
                         </a>
-                        <a href="#" className="text-gray-400 hover:text-white transition-colors">
-                            <Twitter className="h-6 w-6" />
+                        <a href="https://x.com/Epilux_NG" className="text-gray-400 hover:text-white transition-colors">
+                            <Twitter className="h-4 w-4 transition-transform duration-200 hover:scale-110 active:scale-95" />
                         </a>
-                        <a href="#" className="text-gray-400 hover:text-white transition-colors">
-                            <Instagram className="h-6 w-6" />
+                        <a href="https://www.instagram.com/epilux_industries.NG" className="text-gray-400 hover:text-white transition-colors">
+                            <Instagram className="h-4 w-4 transition-transform duration-200 hover:scale-110 active:scale-95" />
+                        </a>
+                        <a href="https://www.youtube.com/EpiluxNg" className="text-gray-400 hover:text-white transition-colors">
+                            <Youtube className="h-4 w-4 transition-transform duration-200 hover:scale-110 active:scale-95" />
+                        </a>
+                        <a href="https://t.me/EpiluxindustriesNG" className="text-gray-400 hover:text-white transition-colors">
+                            <MessageCircle className="h-4 w-4 transition-transform duration-200 hover:scale-110 active:scale-95" />
+                        </a>
+                        <a href="https://www.tiktok.com/@epilux_industries_ng" className="text-gray-400 hover:text-white transition-colors">
+                            <Video className="h-4 w-4 transition-transform duration-200 hover:scale-110 active:scale-95" />
+                        </a>
+                        <a href="https://wa.me/2349136274739?text=Hello%20I%20am%20interested%20in%20Epilux%20Premium%20Products" className="text-gray-400 hover:text-white transition-colors">
+                            <MessageSquare className="h-4 w-4 transition-transform duration-200 hover:scale-110 active:scale-95" />
+                        </a>
+                        <a href="https://whatsapp.com/channel/0029VbBamKa1XqubmzxYlX1F" className="text-gray-400 hover:text-white transition-colors">
+                            <Send className="h-4 w-4 transition-transform duration-200 hover:scale-110 active:scale-95" />
                         </a>
                     </div>
                 </div>

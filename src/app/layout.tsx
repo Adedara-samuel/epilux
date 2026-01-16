@@ -10,6 +10,25 @@ const inter = Inter({ subsets: ['latin'] });
 export const metadata = {
   title: 'Epilux Water - Premium Water Delivery',
   description: 'Your trusted source for premium sachet and bottled water, delivered to your doorstep.',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Epilux Water',
+  },
+  formatDetection: {
+    telephone: false,
+  },
+  other: {
+    'mobile-web-app-capable': 'yes',
+  },
+};
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  themeColor: '#007bff',
 };
 
 export default function RootLayout({
@@ -19,15 +38,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body className={`${inter.className} app-container`}>
         <Providers>
           <AuthInitializer />
           <Toaster position="top-center" richColors />
-          <div className="flex flex-col min-h-screen">
-            <main className="flex-grow">
-              {children}
-            </main>
-          </div>
+          <main className="app-main">
+            {children}
+          </main>
         </Providers>
       </body>
     </html>

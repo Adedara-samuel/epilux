@@ -1,10 +1,16 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 'use client';
 
-import { Menu, Bell, Search } from 'lucide-react';
+import { useState } from 'react';
+import { Menu, Bell, Search, User, Settings, LogOut, ChevronRight, MessageSquare, Loader2, X } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import Link from 'next/link';
+
+// Import the hook to fetch support ticket data
+import { useSupportTickets } from '@/hooks/useMessages';
 
 const navigation = [
     { name: 'Dashboard', href: '/admin/dashboard' },
@@ -15,31 +21,80 @@ const navigation = [
     { name: 'Settings', href: '/admin/settings' },
 ];
 
-interface AdminHeaderProps {
-    setSidebarOpen: (open: boolean) => void;
-}
-
-export function AdminHeader({ setSidebarOpen }: AdminHeaderProps) {
-    const { user } = useAuth();
+export function AdminHeader() {
+    const { user, logout, token } = useAuth();
     const pathname = usePathname();
+    const router = useRouter();
+
+    // 1. Fetch support tickets using the hook
+    const { data: ticketsData, isLoading } = useSupportTickets();
+
+    // 2. Calculate unread metrics
+    const unreadTickets = (ticketsData?.tickets || []).filter(
+        (ticket) => ticket.status === 'pending'
+    );
+    const unreadCount = unreadTickets.length;
+
+    const [profileOpen, setProfileOpen] = useState(false);
+    const [notificationsOpen, setNotificationsOpen] = useState(false);
 
     const currentPage = navigation.find(item => item.href === pathname)?.name || 'Admin Panel';
 
-    return (
-        <header className="sticky top-0 z-30 bg-white border-b border-gray-200 shadow-sm">
-            <div className="px-4 sm:px-6 lg:px-8">
-                <div className="flex items-center justify-between h-16">
-                    {/* Left side - Mobile menu button and page title */}
-                    <div className="flex items-center gap-4">
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="lg:hidden"
-                            onClick={() => setSidebarOpen(true)}
-                        >
-                            <Menu className="w-5 h-5" />
-                        </Button>
+    const handleProfileClick = () => {
+        setProfileOpen(true);
+        setNotificationsOpen(false); // Close other dialog
+    };
 
+    const handleNotificationsClick = () => {
+        setNotificationsOpen(prev => !prev); // Toggle notifications
+        setProfileOpen(false); // Close other dialog
+    };
+
+    const handleLogout = async () => {
+        try {
+            const token = localStorage.getItem('auth_token');
+            if (token) {
+                await fetch('https://epilux-backend.vercel.app/api/auth/logout', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                });
+            }
+        } catch (error) {
+            console.error('Logout API failed:', error);
+        } finally {
+            // Clear local auth data
+            localStorage.removeItem('auth_token');
+            localStorage.removeItem('user');
+            localStorage.removeItem('tokenTimestamp');
+            document.cookie = 'authToken=; path=/; max-age=0; samesite=strict';
+            router.push('/login');
+        }
+    };
+
+    const formatTimestamp = (timestamp: string) => {
+        const date = new Date(timestamp);
+        const now = new Date();
+        const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+
+        if (diffInMinutes < 60) {
+            return `${diffInMinutes} minutes ago`;
+        }
+        if (diffInMinutes < 1440) { // Less than 24 hours
+            return `${Math.floor(diffInMinutes / 60)} hours ago`;
+        }
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    };
+
+    return (
+        <>
+        <header className="fixed top-0 left-0 lg:left-64 right-0 z-1000 bg-white border-b border-gray-200 shadow-sm">
+            <div className="px-4 lg:px-8">
+                <div className="flex items-start justify-between h-12 lg:h-16 pt-2 lg:pt-3">
+                    {/* Left side - Page title */}
+                    <div className="flex items-center gap-4">
                         <div className="hidden sm:block">
                             <h1 className="text-xl font-semibold text-gray-900">
                                 {currentPage}
@@ -64,7 +119,7 @@ export function AdminHeader({ setSidebarOpen }: AdminHeaderProps) {
                         <Button
                             variant="ghost"
                             size="icon"
-                            className="md:hidden"
+                            className="md:hidden cursor-pointer hover:bg-gray-100"
                         >
                             <Search className="w-5 h-5" />
                         </Button>
@@ -73,16 +128,21 @@ export function AdminHeader({ setSidebarOpen }: AdminHeaderProps) {
                         <Button
                             variant="ghost"
                             size="icon"
-                            className="relative"
+                            className="relative cursor-pointer hover:bg-gray-100"
+                            onClick={handleNotificationsClick}
                         >
                             <Bell className="w-5 h-5" />
-                            <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full text-xs text-white flex items-center justify-center">
-                                3
-                            </span>
+                            {/* DYNAMIC COUNT HERE */}
+                            {unreadCount > 0 && (
+                                <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full text-xs text-white flex items-center justify-center">
+                                    {/* Use 99+ for very high counts */}
+                                    {unreadCount > 99 ? '99+' : unreadCount}
+                                </span>
+                            )}
                         </Button>
 
                         {/* User info */}
-                        <div className="hidden sm:flex items-center gap-3">
+                        <div className="hidden sm:flex items-center gap-3 cursor-pointer hover:bg-gray-50 rounded-lg p-2 transition-colors" onClick={handleProfileClick}>
                             <div className="text-right">
                                 <div className="text-sm font-medium text-gray-900">
                                     {user?.firstName} {user?.lastName}
@@ -102,11 +162,129 @@ export function AdminHeader({ setSidebarOpen }: AdminHeaderProps) {
             </div>
 
             {/* Mobile page title */}
-            <div className="sm:hidden px-4 pb-3">
+            <div className="sm:hidden px-4 pb-2">
                 <h1 className="text-lg font-semibold text-gray-900">
                     {currentPage}
                 </h1>
             </div>
         </header>
+
+        {/* Profile Dialog - Remains the same */}
+        {profileOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md cursor-pointer p-4" onClick={() => setProfileOpen(false)}>
+                <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-auto" onClick={(e) => e.stopPropagation()}>
+                    <div className="p-6">
+                        <div className="text-center mb-6">
+                            <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <span className="text-white font-bold text-2xl">
+                                    {user?.firstName?.charAt(0)?.toUpperCase() || 'A'}
+                                </span>
+                            </div>
+                            <h3 className="text-xl font-bold text-gray-900">{user?.firstName} {user?.lastName}</h3>
+                            <p className="text-gray-600">{user?.email}</p>
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 mt-2">
+                                {user?.role}
+                            </span>
+                        </div>
+
+                        <div className="space-y-3">
+                            <Link href="/admin/settings" onClick={() => setProfileOpen(false)}>
+                                <div className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => setProfileOpen(false)}>
+                                    <Settings className="w-5 h-5 text-gray-600" />
+                                    <span className="text-gray-700">Settings</span>
+                                    <ChevronRight className="w-4 h-4 text-gray-400 ml-auto" />
+                                </div>
+                            </Link>
+
+                            <div className="border-t pt-3">
+                                <button
+                                    onClick={handleLogout}
+                                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-red-50 transition-colors cursor-pointer w-full text-left"
+                                >
+                                    <LogOut className="w-5 h-5 text-red-600" />
+                                    <span className="text-red-600">Sign Out</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        )}
+
+        {/* Notifications Dialog - DYNAMIC CONTENT */}
+        {notificationsOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md cursor-pointer p-4" onClick={() => setNotificationsOpen(false)}>
+                <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-auto max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                    <div className="p-6">
+                        <div className="flex items-center justify-between mb-6 sticky top-0 bg-white pb-3 border-b">
+                            <h3 className="text-xl font-bold text-gray-900">Customer Messages</h3>
+                            {unreadCount > 0 && (
+                                <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">
+                                    {unreadCount} New
+                                </span>
+                            )}
+                            <button
+                                onClick={() => setNotificationsOpen(false)}
+                                className="p-1 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        {isLoading ? (
+                            <div className="py-10 flex flex-col items-center justify-center">
+                                <Loader2 className="w-6 h-6 animate-spin text-blue-600 mb-3" />
+                                <p className="text-gray-600">Loading tickets...</p>
+                            </div>
+                        ) : unreadCount === 0 ? (
+                            <div className="py-10 text-center">
+                                <MessageSquare className="w-8 h-8 text-gray-400 mx-auto mb-3" />
+                                <p className="text-gray-600 font-medium">No new messages!</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-4 mb-6">
+                                {/* Map over the unread tickets */}
+                                {unreadTickets.slice(0, 5).map(ticket => (
+                                    <Link 
+                                        key={ticket.id} 
+                                        href={`/admin/notifications?view=${ticket.id}`} 
+                                        onClick={() => setNotificationsOpen(false)}
+                                    >
+                                        <div className="p-4 bg-blue-50 rounded-lg border-l-4 border-blue-500 hover:bg-blue-100 transition-colors cursor-pointer">
+                                            <div className="flex items-center justify-between">
+                                                <h4 className="font-semibold text-gray-900 truncate max-w-[80%]">{ticket.subject}</h4>
+                                                <MessageSquare className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                                            </div>
+                                            <p className="text-sm text-gray-600 mt-1">
+                                                From: {ticket.name} ({ticket.email})
+                                            </p>
+                                            <p className="text-sm text-gray-700 mt-2 line-clamp-2">
+                                                {ticket.message}
+                                            </p>
+                                            <span className="text-xs text-gray-500 mt-2 block">
+                                                {formatTimestamp(ticket.createdAt)}
+                                            </span>
+                                        </div>
+                                    </Link>
+                                ))}
+
+                                {unreadTickets.length > 5 && (
+                                    <p className="text-sm text-center text-gray-500 mt-4">
+                                        + {unreadTickets.length - 5} more pending messages...
+                                    </p>
+                                )}
+                            </div>
+                        )}
+
+                        <Link href="/admin/notifications" onClick={() => setNotificationsOpen(false)}>
+                            <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white cursor-pointer">
+                                View All Tickets
+                            </Button>
+                        </Link>
+                    </div>
+                </div>
+            </div>
+        )}
+    </>
     );
 }

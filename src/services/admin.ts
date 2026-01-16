@@ -1,120 +1,192 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // src/services/admin.ts
+import { api } from './base';
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://epilux-backend.vercel.app';
+// Admin Users API
+export const adminUsersAPI = {
+  // Get all users
+  getUsers: async (params?: { page?: number; limit?: number }) => {
+    const response = await api.get('/api/admin/users', { params });
+    return response.data;
+  },
 
-/**
- * Helper function to handle fetch response errors consistently.
- */
-const handleResponse = async (response: Response, defaultMessage: string) => {
-    if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: defaultMessage }));
-        throw new Error(errorData.message || defaultMessage);
+  // Create new user
+  createUser: async (userData: any) => {
+    const response = await api.post('/api/auth/admin/users', userData);
+    return response.data;
+  },
+
+  // Get user by ID
+  getUser: async (id: string) => {
+    const response = await api.get(`/api/admin/users/${id}`);
+    return response.data;
+  },
+
+  // Update user
+  updateUser: async (id: string, userData: any) => {
+    const response = await api.put(`/api/admin/users/${id}`, userData);
+    return response.data;
+  },
+
+  // Delete user
+  deleteUser: async (id: string) => {
+    const response = await api.delete(`/api/admin/users/${id}`);
+    return response.data;
+  },
+
+  // Update user role
+  updateUserRole: async (id: string, role: string) => {
+    const response = await api.patch(`/api/auth/admin/users/${id}/role`, { role });
+    return response.data;
+  },
+
+  // Suspend user
+  suspendUser: async (id: string, suspended: boolean = true) => {
+    const response = await api.put(`/api/admin/users/${id}/suspend`, { suspended });
+    return response.data;
+  },
+};
+
+// Admin Affiliates API
+export const adminAffiliatesAPI = {
+  // Get all affiliates
+  getAffiliates: async () => {
+    const response = await api.get('/api/admin/affiliates');
+    return response.data;
+  },
+
+  // Get affiliate by ID
+  getAffiliate: async (id: string) => {
+    const response = await api.get(`/api/admin/affiliates/${id}`);
+    return response.data;
+  },
+
+  // Update affiliate status
+  updateAffiliateStatus: async (id: string, status: string) => {
+    const response = await api.put(`/api/admin/affiliates/${id}/status`, { status });
+    return response.data;
+  },
+
+  // Get affiliate commissions
+  getAffiliateCommissions: async (id: string) => {
+    const response = await api.get(`/api/admin/affiliates/${id}/commissions`);
+    return response.data;
+  },
+
+  // Create commission
+  createCommission: async (id: string, commissionData: any) => {
+    const response = await api.post(`/api/admin/affiliates/${id}/commission`, commissionData);
+    return response.data;
+  },
+};
+
+// Admin Commissions API
+export const adminCommissionsAPI = {
+  // Update commission status
+  updateCommissionStatus: async (id: string, status: string) => {
+    const response = await api.put(`/api/commission/admin/commissions/${id}/status`, { status });
+    return response.data;
+  },
+};
+
+// Admin Withdrawals API
+export const adminWithdrawalsAPI = {
+  // Get all withdrawals
+  getWithdrawals: async () => {
+    const response = await api.get('/api/admin/withdrawals');
+    return response.data;
+  },
+
+  // Update withdrawal status
+  updateWithdrawalStatus: async (id: string, status: string) => {
+    const response = await api.put(`/api/admin/withdrawals/${id}/status`, { status });
+    return response.data;
+  },
+};
+
+// Admin Settings API
+export const adminSettingsAPI = {
+  // Get system settings
+  getSettings: async () => {
+    const response = await api.get('/api/commission/admin/settings');
+    return response.data;
+  },
+
+  // Update system settings
+  updateSettings: async (settingsData: any) => {
+    const response = await api.put('/api/commission/admin/settings', settingsData);
+    return response.data;
+  },
+};
+
+// Admin Dashboard API
+export const adminDashboardAPI = {
+  // Get dashboard statistics
+  getStats: async () => {
+    try {
+      // API call executes here
+      const response = await api.get('/api/admin/dashboard/stats');
+      // This returns the whole response object: { "success": true, "data": { ... } }
+      return response.data;
+    } catch (error) {
+      // Critical: Re-throw the error so React Query catches it.
+      console.error("Error fetching admin dashboard stats:", error);
+      throw error;
     }
-    return response.json();
+  },
 };
 
-const adminAPI = {
-    /**
-     * Gets all users (admin only).
-     * @param token - The authorization token.
-     * @returns A promise that resolves with the users data.
-     */
-    getUsers: async (token: string) => {
-        const response = await fetch(`${BASE_URL}/api/admin/users`, {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-            },
-        });
-        return handleResponse(response, 'Failed to get users');
-    },
+// Admin Commission Rates API
+export const adminCommissionRatesAPI = {
+  // Get all commission rates
+  getCommissionRates: async (params?: { page?: number; limit?: number; category?: string; isActive?: boolean }) => {
+    const response = await api.get('/api/commission/admin/commissions', { params });
+    return response.data;
+  },
 
-    /**
-     * Gets a user by ID (admin only).
-     * @param token - The authorization token.
-     * @param id - The user ID.
-     * @returns A promise that resolves with the user data.
-     */
-    getUser: async (token: string, id: string) => {
-        const response = await fetch(`${BASE_URL}/api/admin/users/${id}`, {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-            },
-        });
-        return handleResponse(response, 'Failed to get user');
-    },
+  // Get single commission rate
+  getCommissionRate: async (id: string) => {
+    const response = await api.get(`/api/commission/admin/commissions/${id}`);
+    return response.data;
+  },
 
-    /**
-     * Updates a user's role (admin only).
-     * @param token - The authorization token.
-     * @param id - The user ID.
-     * @param role - The new role.
-     * @returns A promise that resolves with the updated user data.
-     */
-    updateUserRole: async (token: string, id: string, role: string) => {
-        const response = await fetch(`${BASE_URL}/api/admin/users/${id}/role`, {
-            method: 'PUT',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ role }),
-        });
-        return handleResponse(response, 'Failed to update user role');
-    },
+  // Create commission rate
+  createCommissionRate: async (data: {
+    name: string;
+    description?: string;
+    rate: number;
+    type: 'percentage' | 'fixed';
+    category: 'product' | 'service' | 'referral' | 'general';
+  }) => {
+    const response = await api.post('/api/commission/admin/commissions', data);
+    return response.data;
+  },
 
-    /**
-     * Deletes a user (admin only).
-     * @param token - The authorization token.
-     * @param id - The user ID.
-     * @returns A promise that resolves with the response.
-     */
-    deleteUser: async (token: string, id: string) => {
-        const response = await fetch(`${BASE_URL}/api/admin/users/${id}`, {
-            method: 'DELETE',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-            },
-        });
-        return handleResponse(response, 'Failed to delete user');
-    },
+  // Update commission rate
+  updateCommissionRate: async (id: string, data: Partial<{
+    name: string;
+    description?: string;
+    rate: number;
+    type: 'percentage' | 'fixed';
+    category: 'product' | 'service' | 'referral' | 'general';
+    isActive: boolean;
+  }>) => {
+    const response = await api.put(`/api/commission/admin/commissions/${id}`, data);
+    return response.data;
+  },
 
-    /**
-     * Gets admin dashboard stats (admin only).
-     * @param token - The authorization token.
-     * @returns A promise that resolves with the stats data.
-     */
-    getDashboardStats: async (token: string) => {
-        // Use relative URL for Next.js API
-        const response = await fetch('/api/admin/dashboard/stats', {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-            },
-        });
-        return handleResponse(response, 'Failed to get dashboard stats');
-    },
+  // Toggle commission rate status
+  toggleCommissionRateStatus: async (id: string) => {
+    const response = await api.patch(`/api/commission/admin/commissions/${id}/toggle-status`);
+    return response.data;
+  },
 
-    /**
-     * Gets recent users (admin only).
-     * @param token - The authorization token.
-     * @returns A promise that resolves with the recent users data.
-     */
-    getRecentUsers: async (token: string) => {
-        const response = await fetch(`${BASE_URL}/api/admin/users/recent`, {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-            },
-        });
-        return handleResponse(response, 'Failed to get recent users');
-    },
+  // Delete commission rate
+  deleteCommissionRate: async (id: string) => {
+    const response = await api.delete(`/api/commission/admin/commissions/${id}`);
+    return response.data;
+  },
 };
 
-export { adminAPI };
+// Alias for backward compatibility
+export const adminAPI = adminCommissionRatesAPI;

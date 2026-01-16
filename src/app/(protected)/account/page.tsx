@@ -1,11 +1,15 @@
 // app/account/page.tsx
 'use client';
 
-import { useAuth } from '@/app/context/auth-context';
+// Forces the page to be rendered dynamically on every request,
+// preventing static prerendering which triggers errors in client-side components
+export const dynamic = 'force-dynamic';
+
+import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import Link from 'next/link';
-import { ShoppingBag, Mail, HelpCircle, Phone, Settings, LogOut } from 'lucide-react';
+import { ShoppingBag, Mail, HelpCircle, Phone, Settings, LogOut, Truck } from 'lucide-react';
 import { Button } from '@/Components/ui/button';
 
 export default function AccountPage() {
@@ -34,7 +38,7 @@ export default function AccountPage() {
             <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
                 <h2 className="text-2xl font-bold text-gray-800 mb-4">Access Denied</h2>
                 <p className="text-gray-600 mb-6">Please log in to view your account.</p>
-                <Button asChild className="bg-blue-600 hover:bg-blue-700">
+                <Button asChild className="bg-blue-600 hover:bg-blue-700 cursor-pointer">
                     <Link href="/login?redirect=/account">Go to Login</Link>
                 </Button>
             </div>
@@ -42,7 +46,7 @@ export default function AccountPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+        <div className="app-content min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
             <div className="container mx-auto px-4 py-12">
                 {/* Header Section */}
                 <div className="text-center mb-12">
@@ -86,8 +90,11 @@ export default function AccountPage() {
                             )}
 
                             <Button
-                                onClick={logout}
-                                className="w-full bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5"
+                                onClick={async () => {
+                                    await logout();
+                                    router.push('/');
+                                }}
+                                className="w-full bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5 cursor-pointer"
                             >
                                 <LogOut className="w-5 h-5 mr-2" />
                                 Sign Out
@@ -173,6 +180,44 @@ export default function AccountPage() {
                                 </Link>
 
                                 <Link
+                                    href="/account/reviews"
+                                    className="group bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-2xl p-6 text-white hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 hover:scale-105"
+                                >
+                                    <div className="flex items-center gap-4 mb-4">
+                                        <div className="p-3 bg-white/20 rounded-xl group-hover:bg-white/30 transition-colors">
+                                            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <h3 className="text-xl font-bold">My Reviews</h3>
+                                            <p className="text-indigo-100">View & manage reviews</p>
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <span className="text-2xl">→</span>
+                                    </div>
+                                </Link>
+
+                                <Link
+                                    href="/account/delivery"
+                                    className="group bg-gradient-to-br from-teal-500 to-teal-600 rounded-2xl p-6 text-white hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 hover:scale-105"
+                                >
+                                    <div className="flex items-center gap-4 mb-4">
+                                        <div className="p-3 bg-white/20 rounded-xl group-hover:bg-white/30 transition-colors">
+                                            <Truck className="w-8 h-8" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-xl font-bold">Delivery Tracking</h3>
+                                            <p className="text-teal-100">Track packages & estimate costs</p>
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <span className="text-2xl">→</span>
+                                    </div>
+                                </Link>
+
+                                <Link
                                     href="/settings"
                                     className="group bg-gradient-to-br from-pink-500 to-pink-600 rounded-2xl p-6 text-white hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 hover:scale-105"
                                 >
@@ -181,8 +226,8 @@ export default function AccountPage() {
                                             <Settings className="w-8 h-8" />
                                         </div>
                                         <div>
-                                            <h3 className="text-xl font-bold">Settings</h3>
-                                            <p className="text-pink-100">Account preferences</p>
+                                            <h3 className="text-xl font-bold">Account Settings</h3>
+                                            <p className="text-pink-100">Manage profile & preferences</p>
                                         </div>
                                     </div>
                                     <div className="text-right">

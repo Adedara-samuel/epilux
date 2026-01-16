@@ -1,8 +1,9 @@
 // src/services/auth.ts
 
-// Use the environment variable, falling back to localhost:5000 if not set.
-// This requires NEXT_PUBLIC_API_URL to be defined in .env.local
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://epilux-backend.vercel.app';
+// Use relative URLs for all requests to leverage Next.js rewrites
+const getBaseUrl = () => {
+  return 'https://epilux-backend.vercel.app';
+};
 
 /**
  * Defines the structure for user registration data.
@@ -56,7 +57,7 @@ const authAPI = {
      * @returns A promise that resolves with the API response (e.g., auth token and user data).
      */
     async login(credentials: UserCredentials) {
-        const response = await fetch(`${BASE_URL}/api/auth/login`, {
+        const response = await fetch(`${getBaseUrl()}/api/auth/login`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -73,10 +74,9 @@ const authAPI = {
      * @returns A promise that resolves with the API response (e.g., user data or token).
      */
     register: async (userData: UserRegistrationData) => {
-        console.log('Attempting to register user at:', `${BASE_URL}/api/auth/register`);
+        console.log('Attempting to register user at:', `${getBaseUrl()}/api/auth/register`);
         try {
-            const response = await fetch(`${BASE_URL}/api/auth/register`, {
-                // const response = await fetch("http://localhost:5000/api/auth/register", {
+            const response = await fetch(`${getBaseUrl()}/api/auth/register`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -90,22 +90,6 @@ const authAPI = {
         }
     },
 
-    /**
-     * Logs in an admin with the backend API.
-     * @param credentials - The admin credentials including email and password.
-     * @returns A promise that resolves with the API response (e.g., auth token).
-     */
-    adminLogin: async (credentials: UserCredentials) => {
-        const response = await fetch(`${BASE_URL}/api/auth/admin/login`, {
-        // const response = await fetch("http://localhost:5000/api/auth/admin/login", {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(credentials),
-        });
-        return handleResponse(response, 'Admin login failed');
-    },
 
     /**
      * Gets the current user's profile.
@@ -113,7 +97,7 @@ const authAPI = {
      * @returns A promise that resolves with the user profile data.
      */
     getProfile: async (token: string) => {
-        const response = await fetch(`${BASE_URL}/api/auth/profile`, {
+        const response = await fetch(`${getBaseUrl()}/api/user/profile`, {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -129,7 +113,7 @@ const authAPI = {
      * @returns A promise that resolves with the API response.
      */
     logout: async (token: string) => {
-        const response = await fetch(`${BASE_URL}/api/auth/logout`, {
+        const response = await fetch(`${getBaseUrl()}/api/auth/logout`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -146,7 +130,7 @@ const authAPI = {
      * @returns A promise that resolves with the API response.
      */
     updateProfile: async (token: string, profileData: UserProfileUpdateData) => {
-        const response = await fetch(`${BASE_URL}/api/auth/profile`, {
+        const response = await fetch(`${getBaseUrl()}/api/users/me`, {
             method: 'PUT',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -164,7 +148,7 @@ const authAPI = {
      * @returns A promise that resolves with the API response.
      */
     changePassword: async (token: string, passwordData: { currentPassword: string; newPassword: string }) => {
-        const response = await fetch(`${BASE_URL}/api/auth/password`, {
+        const response = await fetch(`${getBaseUrl()}/api/auth/change-password`, {
             method: 'PUT',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -176,12 +160,58 @@ const authAPI = {
     },
 
     /**
+     * Creates a new user (admin only).
+     * @param token - The authorization token.
+     * @param userData - The user data including firstName, lastName, email, password, and role.
+     * @returns A promise that resolves with the API response.
+     */
+    createUser: async (token: string, userData: UserRegistrationData) => {
+        const response = await fetch(`${getBaseUrl()}/api/auth/admin/users`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(userData),
+        });
+        return handleResponse(response, 'User creation failed');
+    },
+
+    /**
+     * Updates a user's role (admin only).
+     * @param token - The authorization token.
+     * @param userId - The user ID to update.
+     * @param role - The new role for the user.
+     * @returns A promise that resolves with the API response.
+     */
+    updateUserRole: async (token: string, userId: string, role: string) => {
+        const response = await fetch(`${getBaseUrl()}/api/auth/admin/users/${userId}/role`, {
+            method: 'PATCH',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ role }),
+        });
+        return handleResponse(response, 'Role update failed');
+    },
+
+    /**
+     * Admin login (same as regular login, backend handles role checking).
+     * @param credentials - The admin credentials including email and password.
+     * @returns A promise that resolves with the API response.
+     */
+    adminLogin: async (credentials: UserCredentials) => {
+        return authAPI.login(credentials);
+    },
+
+    /**
      * Sends a forgot password request.
      * @param data - The data including email.
      * @returns A promise that resolves with the API response.
      */
     forgotPassword: async (data: { email: string }) => {
-        const response = await fetch(`${BASE_URL}/api/auth/forgot-password`, {
+        const response = await fetch(`${getBaseUrl()}/api/auth/forgot-password`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

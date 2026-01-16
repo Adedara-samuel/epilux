@@ -5,7 +5,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node server/index.js",
+    "start": "node index.js",
     "dev": "nodemon --experimental-modules --es-module-specifier-resolution=node index.js",
     "test": "cross-env NODE_ENV=test jest --testEnvironment=node --verbose",
     "test:watch": "cross-env NODE_ENV=test jest --watch",
@@ -25,10 +25,14 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@radix-ui/react-dialog": "^1.1.15",
+    "@radix-ui/react-select": "^2.2.6",
     "bcryptjs": "^2.4.3",
+    "cloudinary": "^2.8.0",
     "cors": "^2.8.5",
     "d-": "^1.0.0",
     "dotenv": "^17.2.2",
+    "ejs": "^3.1.10",
     "express": "^5.1.0",
     "express-validator": "^7.2.1",
     "jsonwebtoken": "^9.0.2",

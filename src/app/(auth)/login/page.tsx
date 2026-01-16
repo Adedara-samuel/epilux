@@ -6,19 +6,23 @@
 'use client';
 
 import { useAuth } from '@/hooks/useAuth';
+import { useAuthStore } from '@/stores/auth-store';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { toast } from 'sonner';
+import { Eye, EyeOff, User } from 'lucide-react';
 
 function LoginPage() {
     const { user, loading: authLoading, login: loginMutation } = useAuth();
+    const { isAuthenticating } = useAuthStore();
     const router = useRouter();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
 
     // State to hold the redirect path
     const [redirectTo, setRedirectTo] = useState<string | null>(null);
@@ -28,26 +32,29 @@ function LoginPage() {
         if (typeof window !== 'undefined') {
             const params = new URLSearchParams(window.location.search);
             setRedirectTo(params.get('redirect') || '/products');
+        } else {
+            setRedirectTo('/products');
         }
     }, []);
 
-    // Redirect if already logged in (after redirectTo is set and user data is available)
+    // Redirect based on user role after successful login
     useEffect(() => {
-        if (!authLoading && user && redirectTo) {
+        if (!authLoading && !isAuthenticating && user) {
             if (!user.emailVerified) {
                 router.replace('/verify-email');
             } else {
                 const role = user.role;
                 if (role === 'admin') {
                     router.replace('/admin/dashboard');
-                } else if (role === 'affiliate') {
-                    router.replace('/affiliate/dashboard');
+                } else if (role === 'marketer') {
+                    router.replace('/marketer');
                 } else {
-                    router.replace(redirectTo);
+                    // Default for regular users
+                    router.replace('/products');
                 }
             }
         }
-    }, [user, authLoading, router, redirectTo]);
+    }, [user, authLoading, isAuthenticating, router]);
 
     // Form validation
     const isFormValid = email && password && email.includes('@') && password.length >= 6;
@@ -61,15 +68,18 @@ function LoginPage() {
             onSuccess: () => {
                 // Redirect will be handled by the useEffect that watches user state
                 setIsSubmitting(false);
+                toast.success('Login successful! Welcome back!');
             },
             onError: (err: any) => {
-                setError(err.message || "Login failed. Please check your credentials.");
+                const errorMessage = err?.response?.data?.message || err?.message || "Login failed. Please check your credentials.";
+                setError(errorMessage);
                 setIsSubmitting(false);
+                toast.error(errorMessage);
             },
         });
     };
 
-    if (authLoading || (user && !redirectTo)) {
+    if (authLoading || isAuthenticating || (user && !redirectTo)) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-white">
                 <motion.div
@@ -82,26 +92,24 @@ function LoginPage() {
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+        <div className="app-content flex items-center justify-center md:bg-gradient-to-br md:from-blue-50 md:via-white md:to-indigo-50 p-4">
             <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-                className="w-full max-w-6xl bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col lg:flex-row"
+                initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ duration: 0.6, ease: "easeOut" }}
+                className="w-full max-w-6xl bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col lg:flex-row transform hover:shadow-3xl transition-shadow duration-300"
             >
                 <div className="w-full lg:w-1/2 p-8 sm:p-12">
-                    <div className="text-center mb-10">
-                        <Link href="/" className="inline-block mb-6">
-                            <img
-                                src="/images/logo.png"
-                                alt="Epilux Water Logo"
-                                width={120}
-                                height={120}
-                                className="h-20 w-20"
-                            />
-                        </Link>
-                        <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome Back</h1>
-                        <p className="text-gray-500">Log in to access your dashboard</p>
+                    <div className="text-center mb-8">
+                        <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg animate-bounceIn">
+                            <User className="w-8 h-8 text-white" />
+                        </div>
+                        <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2 animate-fadeIn">
+                            Welcome Back
+                        </h1>
+                        <p className="text-gray-500 animate-fadeIn" style={{ animationDelay: '0.2s' }}>
+                            Log in to access your dashboard
+                        </p>
                     </div>
 
                     {error && (
@@ -134,22 +142,31 @@ function LoginPage() {
                                     <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                                         Password
                                     </label>
-                                    <Link href="/forgot-password" className="text-sm text-blue-500 hover:underline">
+                                    {/* <Link href="/forgot-password" className="text-sm text-blue-500 hover:underline cursor-pointer">
                                         Forgot password?
-                                    </Link>
+                                    </Link> */}
                                 </div>
-                                <input
-                                    id="password"
-                                    name="password"
-                                    type="password"
-                                    autoComplete="current-password"
-                                    required
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    className="w-full text-black px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-                                    placeholder="••••••••"
-                                    minLength={6}
-                                />
+                                <div className="relative">
+                                    <input
+                                        id="password"
+                                        name="password"
+                                        type={showPassword ? "text" : "password"}
+                                        autoComplete="current-password"
+                                        required
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        className="w-full text-black px-4 py-3 pr-12 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                                        placeholder="••••••••"
+                                        minLength={6}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                    >
+                                        {showPassword ? <EyeOff className="h-5 w-5 cursor-pointer" /> : <Eye className="h-5 w-5 cursor-pointer" />}
+                                    </button>
+                                </div>
                             </div>
 
                             <div className="flex items-center">
@@ -185,9 +202,9 @@ function LoginPage() {
                             </motion.button>
                         </form>
 
-                        <div className="text-center text-sm text-gray-500">
+                        <div className="text-center text-sm text-gray-500 animate-fadeIn" style={{ animationDelay: '0.4s' }}>
                             Don't have an account?{' '}
-                            <Link href="/register" className="font-medium text-blue-600 hover:underline">
+                            <Link href="/register" className="font-medium text-blue-600 hover:text-blue-700 transition-colors hover:underline transform hover:scale-105 inline-block">
                                 Sign up
                             </Link>
                         </div>

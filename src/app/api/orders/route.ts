@@ -1,38 +1,24 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+const BASE_URL = 'https://epilux-backend.vercel.app';
 
 export async function POST(request: NextRequest) {
-    try {
-        // Verify user token
-        const authHeader = request.headers.get('authorization');
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-        }
+  try {
+    const body = await request.json();
 
-        const token = authHeader.substring(7);
-        const decoded = jwt.verify(token, JWT_SECRET) as any;
+    const response = await fetch(`${BASE_URL}/api/orders`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': request.headers.get('authorization') || '',
+      },
+      body: JSON.stringify(body),
+    });
 
-        const orderData = await request.json();
-
-        // Mock create order
-        const order = {
-            id: Date.now().toString(),
-            userId: decoded.id,
-            items: orderData.items,
-            totalAmount: orderData.totalAmount,
-            deliveryFee: orderData.deliveryFee,
-            status: 'pending',
-            paymentMethod: orderData.paymentMethod,
-            deliveryAddress: orderData.deliveryAddress,
-            createdAt: new Date().toISOString()
-        };
-
-        return NextResponse.json({ order, message: 'Order created successfully' });
-    } catch (error) {
-        console.error('Create order error:', error);
-        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-    }
+    const data = await response.json();
+    return NextResponse.json(data, { status: response.status });
+  } catch (error) {
+    console.error('Create order proxy error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
 }
