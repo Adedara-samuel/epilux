@@ -1,9 +1,11 @@
 // app/layout.tsx
 import './globals.css';
+import './animations.css';
 import { Inter } from 'next/font/google';
 import { Toaster } from 'sonner';
 import { AuthInitializer } from '@/Components/AuthInitializer';
 import { Providers } from '@/Components/providers';
+import PageTransition from '@/Components/PageTransition';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -43,6 +45,7 @@ export default function RootLayout({
           <AuthInitializer />
           <Toaster position="top-center" richColors />
           <main className="app-main">
+            <PageTransition />
             {children}
           </main>
         </Providers>

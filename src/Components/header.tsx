@@ -5,7 +5,7 @@
 import Link from 'next/link';
 import React, { useState } from 'react';
 import { Button } from './ui/button';
-import { LogIn, LogOut, User, ShoppingBag, Wallet, Users } from 'lucide-react';
+import { LogIn, LogOut, User, ShoppingBag, Wallet, Users, Menu } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useCartStore } from '@/stores/cart-store';
 
@@ -13,6 +13,7 @@ const Header: React.FC = () => {
     const { user, logout } = useAuth();
     const totalItems = useCartStore((s) => s.getTotalItems());
     const [hoveredItem, setHoveredItem] = useState<string | null>(null);
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
     const handleLogout = async () => {
         try {
@@ -40,8 +41,19 @@ const Header: React.FC = () => {
 
     return (
         <>
-            <header className="bg-white/95 backdrop-blur-sm text-blue-700 p-4 shadow-lg sticky top-0 z-50 border-b border-gray-100">
+            <header className="bg-white/95 backdrop-blur-sm text-blue-700 py-2 sm:py-4 px-4 shadow-lg sticky top-0 z-50 border-b border-gray-100">
                 <div className="container mx-auto flex justify-between items-center">
+                    {/* Mobile menu button */}
+                    <div className="flex items-center gap-2 lg:hidden">
+                        <button
+                            aria-label="Open menu"
+                            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                            className="p-2 rounded-md hover:bg-gray-100 active:bg-gray-200"
+                        >
+                            <Menu className="w-6 h-6 text-blue-700" />
+                        </button>
+                    </div>
+
                     <Link href="/" className="flex items-center gap-2 group">
                         <img
                             src="/images/logo.png"
@@ -49,12 +61,12 @@ const Header: React.FC = () => {
                             className="h-9 w-auto rounded-full border-2 border-white transition-transform group-hover:scale-105"
 
                         />
-                        <span className="text-2xl font-bold text-blue-700 hidden sm:block">
+                        <span className="text-lg sm:text-2xl font-bold text-blue-700 hidden sm:block">
                             Epilux <span className="text-blue-300">Water</span>
                         </span>
                     </Link>
 
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-3">
                         {/* Cart Icon - Always visible on mobile, hidden on desktop */}
                         <div className="relative md:hidden">
                             <Link href="/cart">
@@ -112,7 +124,7 @@ const Header: React.FC = () => {
                                 </Button>
                             </>
                         ) : (
-                            <Button asChild variant="secondary" className="bg-blue-700 hover:bg-blue-800 text-white px-6 py-2 rounded-full shadow-md cursor-pointer">
+                            <Button asChild variant="secondary" className="bg-blue-700 hover:bg-blue-800 text-white px-3 py-1.5 sm:px-6 sm:py-2 rounded-full shadow-md text-sm sm:text-base cursor-pointer">
                                 <Link href="/login">
                                     <LogIn className="w-4 h-4 mr-2" />
                                     Login
@@ -122,6 +134,23 @@ const Header: React.FC = () => {
                     </div>
                 </div>
             </header>
+
+            {/* Mobile dropdown menu (simple) */}
+            {mobileMenuOpen && (
+                <div className="lg:hidden absolute top-16 left-0 right-0 z-40 bg-white border-t border-gray-100 shadow-md">
+                    <div className="flex flex-col p-3 space-y-1">
+                        <Link href="/" className="px-3 py-2 rounded-md hover:bg-gray-50">Home</Link>
+                        <Link href="/products" className="px-3 py-2 rounded-md hover:bg-gray-50">Products</Link>
+                        <Link href="/subscriptions" className="px-3 py-2 rounded-md hover:bg-gray-50">Subscriptions</Link>
+                        <Link href="/contact-us" className="px-3 py-2 rounded-md hover:bg-gray-50">Contact</Link>
+                        {user ? (
+                            <button onClick={handleLogout} className="text-left px-3 py-2 rounded-md hover:bg-gray-50">Logout</button>
+                        ) : (
+                            <Link href="/login" className="px-3 py-2 rounded-md hover:bg-gray-50">Login</Link>
+                        )}
+                    </div>
+                </div>
+            )}
 
             {/* Mobile Bottom Navigation - Only for affiliates */}
             {user && user.role === 'affiliate' && (

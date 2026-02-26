@@ -8,6 +8,12 @@ export const useInitializePayment = () => {
     mutationFn: ({ orderId, paymentData }: {
       orderId: string;
       paymentData: {
+        // duplicate of service shape including required extras
+        amount: number;
+        email: string;
+        phone: string;
+        name: string;
+
         items: Array<{
           product: string;
           quantity: number;

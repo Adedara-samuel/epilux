@@ -1,0 +1,73 @@
+/* Page transition progress bar shown on route changes */
+.page-progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    z-index: 60;
+    pointer-events: none;
+    background: transparent;
+}
+
+.page-progress .bar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #3b82f6, #7c3aed);
+    transition: width 650ms cubic-bezier(.2, .9, .2, 1), opacity 300ms ease;
+    opacity: 0;
+    transform-origin: left center;
+}
+
+.page-progress.show .bar {
+    width: 100%;
+    opacity: 1;
+}
+
+/* Global click/tap feedback for interactive elements */
+a,
+button,
+[role="button"],
+input[type="button"],
+input[type="submit"],
+.btn {
+    transition: transform 140ms ease, opacity 140ms ease, box-shadow 140ms ease;
+    will-change: transform, opacity;
+    -webkit-tap-highlight-color: transparent;
+}
+
+a:active,
+button:active,
+[role="button"]:active,
+.btn:active {
+    transform: scale(0.97);
+    opacity: 0.92;
+}
+
+a:focus,
+button:focus,
+[role="button"]:focus {
+    outline: none;
+    box-shadow: 0 6px 18px rgba(59, 130, 246, 0.12);
+}
+
+/* Dialog/modal default enter/exit helpers */
+.dialog-animate-enter {
+    animation: fadeInScale 240ms ease-out both;
+}
+
+.dialog-animate-exit {
+    animation: fadeOutScale 180ms ease-in both;
+}
+
+@keyframes fadeOutScale {
+    from {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    to {
+        opacity: 0;
+        transform: scale(0.98);
+    }
+}

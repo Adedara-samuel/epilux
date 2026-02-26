@@ -5,6 +5,12 @@ import { api } from './base';
 export const paymentAPI = {
   // Initialize payment for an order
   initializePayment: async (orderId: string, paymentData: {
+    // top‑level extras required by backend
+    amount: number;
+    email: string;
+    phone: string;
+    name: string;
+
     items: Array<{
       product: string;
       quantity: number;
@@ -24,7 +30,7 @@ export const paymentAPI = {
     paymentMethod: string;
     totalAmount: number;
   }) => {
-    const response = await api.post(`/api/payment/initialize/${orderId}`, paymentData);
+    const response = await api.post(`/api/flutterwave/initialize/${orderId}`, paymentData);
     return response.data;
   },
-};
+}; 

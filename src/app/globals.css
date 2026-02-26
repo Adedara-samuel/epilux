@@ -54,6 +54,7 @@ html {
     transform: translateX(-100%);
     opacity: 0;
   }
+
   to {
     transform: translateX(0);
     opacity: 1;
@@ -65,6 +66,7 @@ html {
     transform: translateX(100%);
     opacity: 0;
   }
+
   to {
     transform: translateX(0);
     opacity: 1;
@@ -76,6 +78,7 @@ html {
     transform: translateY(-100%);
     opacity: 0;
   }
+
   to {
     transform: translateY(0);
     opacity: 1;
@@ -87,6 +90,7 @@ html {
     transform: translateY(100%);
     opacity: 0;
   }
+
   to {
     transform: translateY(0);
     opacity: 1;
@@ -98,6 +102,7 @@ html {
     opacity: 0;
     transform: scale(0.9);
   }
+
   to {
     opacity: 1;
     transform: scale(1);
@@ -109,13 +114,16 @@ html {
     opacity: 0;
     transform: scale(0.3);
   }
+
   50% {
     opacity: 1;
     transform: scale(1.05);
   }
+
   70% {
     transform: scale(0.9);
   }
+
   100% {
     opacity: 1;
     transform: scale(1);
@@ -123,22 +131,36 @@ html {
 }
 
 @keyframes pulse {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 1;
   }
+
   50% {
     opacity: 0.5;
   }
 }
 
 @keyframes shake {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateX(0);
   }
-  10%, 30%, 50%, 70%, 90% {
+
+  10%,
+  30%,
+  50%,
+  70%,
+  90% {
     transform: translateX(-2px);
   }
-  20%, 40%, 60%, 80% {
+
+  20%,
+  40%,
+  60%,
+  80% {
     transform: translateX(2px);
   }
 }
@@ -242,6 +264,7 @@ html {
   from {
     transform: rotate(0deg);
   }
+
   to {
     transform: rotate(360deg);
   }
@@ -252,23 +275,53 @@ html {
 }
 
 /* Stagger animations for lists */
-.stagger-children > * {
+.stagger-children>* {
   animation: fadeInScale 0.4s ease-out;
 }
 
-.stagger-children > *:nth-child(1) { animation-delay: 0.1s; }
-.stagger-children > *:nth-child(2) { animation-delay: 0.2s; }
-.stagger-children > *:nth-child(3) { animation-delay: 0.3s; }
-.stagger-children > *:nth-child(4) { animation-delay: 0.4s; }
-.stagger-children > *:nth-child(5) { animation-delay: 0.5s; }
-.stagger-children > *:nth-child(6) { animation-delay: 0.6s; }
-.stagger-children > *:nth-child(7) { animation-delay: 0.7s; }
-.stagger-children > *:nth-child(8) { animation-delay: 0.8s; }
-.stagger-children > *:nth-child(9) { animation-delay: 0.9s; }
-.stagger-children > *:nth-child(10) { animation-delay: 1.0s; }
+.stagger-children>*:nth-child(1) {
+  animation-delay: 0.1s;
+}
+
+.stagger-children>*:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.stagger-children>*:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+.stagger-children>*:nth-child(4) {
+  animation-delay: 0.4s;
+}
+
+.stagger-children>*:nth-child(5) {
+  animation-delay: 0.5s;
+}
+
+.stagger-children>*:nth-child(6) {
+  animation-delay: 0.6s;
+}
+
+.stagger-children>*:nth-child(7) {
+  animation-delay: 0.7s;
+}
+
+.stagger-children>*:nth-child(8) {
+  animation-delay: 0.8s;
+}
+
+.stagger-children>*:nth-child(9) {
+  animation-delay: 0.9s;
+}
+
+.stagger-children>*:nth-child(10) {
+  animation-delay: 1.0s;
+}
 
 /* Performance optimizations for animations */
 @media (prefers-reduced-motion: reduce) {
+
   *,
   *::before,
   *::after {
@@ -281,8 +334,10 @@ html {
 
 /* App-like responsive design */
 @media (max-width: 768px) {
+
   /* Mobile app optimizations */
-  html, body {
+  html,
+  body {
     height: 100vh;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
@@ -317,8 +372,10 @@ html {
 
   .app-main {
     flex: 1;
-    padding-top: 4rem; /* Account for fixed header */
-    padding-bottom: 4rem; /* Account for bottom nav */
+    padding-top: 4rem;
+    /* Account for fixed header */
+    padding-bottom: 4rem;
+    /* Account for bottom nav */
   }
 
   .app-bottom-nav {
@@ -339,13 +396,22 @@ html {
   }
 
   /* Text sizing for mobile */
-  h1 { font-size: 1.875rem; }
-  h2 { font-size: 1.5rem; }
-  h3 { font-size: 1.25rem; }
+  h1 {
+    font-size: 1.875rem;
+  }
+
+  h2 {
+    font-size: 1.5rem;
+  }
+
+  h3 {
+    font-size: 1.25rem;
+  }
 
   /* Button sizing for mobile */
   .btn-mobile {
-    min-height: 44px; /* iOS touch target */
+    min-height: 44px;
+    /* iOS touch target */
     padding: 0.75rem 1rem;
   }
 
@@ -371,12 +437,13 @@ html {
     animation-duration: 0.3s;
   }
 
-  .stagger-children > * {
+  .stagger-children>* {
     animation-duration: 0.3s;
   }
 }
 
 @media (min-width: 641px) and (max-width: 768px) {
+
   /* Tablet optimizations */
   .container {
     padding-left: 1.5rem;
@@ -390,8 +457,10 @@ html {
 }
 
 @media (min-width: 769px) {
+
   /* Desktop app optimizations */
-  html, body {
+  html,
+  body {
     height: 100vh;
     overflow: hidden;
   }
@@ -428,7 +497,10 @@ html {
 
   .app-content {
     flex: 1;
+    display: flex;
+    flex-direction: column;
     overflow-y: auto;
+    min-height: 100vh;
     /* padding: 2rem; */
   }
 
@@ -446,10 +518,21 @@ html {
       font-size: 0.875rem;
     }
 
-    h1 { font-size: 1.5rem; }
-    h2 { font-size: 1.25rem; }
-    h3 { font-size: 1.125rem; }
-    p { font-size: 0.875rem; }
+    h1 {
+      font-size: 1.5rem;
+    }
+
+    h2 {
+      font-size: 1.25rem;
+    }
+
+    h3 {
+      font-size: 1.125rem;
+    }
+
+    p {
+      font-size: 0.875rem;
+    }
   }
 
   /* Hide mobile-specific elements on desktop */
@@ -459,6 +542,7 @@ html {
 }
 
 @media (min-width: 769px) and (max-width: 1024px) {
+
   /* Desktop optimizations */
   .container {
     padding-left: 2rem;
@@ -472,11 +556,12 @@ html {
 }
 
 @media (min-width: 1025px) {
+
   /* Large desktop optimizations */
   .container {
     max-width: 1200px;
     margin: 0 auto;
-    padding-left: 2rem; 
+    padding-left: 2rem;
     padding-right: 2rem;
   }
 
@@ -488,6 +573,7 @@ html {
 
 /* Optimize for touch devices */
 @media (hover: none) and (pointer: coarse) {
+
   .hover-lift:hover,
   .hover-scale:hover,
   .hover-glow:hover {
@@ -639,6 +725,7 @@ html {
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }

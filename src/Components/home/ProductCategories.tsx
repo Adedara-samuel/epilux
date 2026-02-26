@@ -12,7 +12,7 @@ const ProductCategories: React.FC = () => {
     })) as Product[];
 
     return (
-        <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16 bg-blue-50 rounded-lg shadow-lg -mt-8 relative z-20">
+        <section className="ml-4 mr-4 px-6 sm:px-6 lg:px-8 py-12 md:py-16 bg-blue-50 rounded-lg shadow-lg -mt-8 relative z-20">
             <div className="text-center mb-8 md:mb-14">
                 <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-blue-700 mb-4 tracking-tight">Discover Our Premium Products</h2>
                 <p className="text-base sm:text-lg text-blue-600 max-w-3xl mx-auto leading-relaxed px-4">

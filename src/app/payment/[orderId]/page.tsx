@@ -29,6 +29,12 @@ export default function PaymentPage() {
         try {
             // For now, using dummy data as per the example. In real app, fetch order details
             const paymentPayload = {
+                // top-level fields expected by backend
+                amount: 2500,
+                email: "john@example.com",
+                phone: "+234800000000",
+                name: "John Doe",
+
                 items: [
                     {
                         product: "64a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5",
@@ -93,11 +99,10 @@ export default function PaymentPage() {
                     <div className="space-y-6">
                         {/* Wallet Payment Option */}
                         <div
-                            className={`p-6 border-2 rounded-xl cursor-pointer transition-all ${
-                                selectedMethod === 'wallet'
+                            className={`p-6 border-2 rounded-xl cursor-pointer transition-all ${selectedMethod === 'wallet'
                                     ? 'border-green-500 bg-green-50'
                                     : 'border-gray-200 hover:border-green-300'
-                            }`}
+                                }`}
                             onClick={() => setSelectedMethod('wallet')}
                         >
                             <div className="flex items-center gap-4">
@@ -120,11 +125,10 @@ export default function PaymentPage() {
 
                         {/* Online Payment Option */}
                         <div
-                            className={`p-6 border-2 rounded-xl cursor-pointer transition-all ${
-                                selectedMethod === 'online'
+                            className={`p-6 border-2 rounded-xl cursor-pointer transition-all ${selectedMethod === 'online'
                                     ? 'border-blue-500 bg-blue-50'
                                     : 'border-gray-200 hover:border-blue-300'
-                            }`}
+                                }`}
                             onClick={() => setSelectedMethod('online')}
                         >
                             <div className="flex items-center gap-4">

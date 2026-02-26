@@ -18,34 +18,25 @@ const HomePage: React.FC = () => {
     <>
       <Header />
 
-      {/* Main Content */}
-      <div className="app-content">
-        {/* Mobile Layout */}
-        <div className="md:hidden space-y-2 px-4">
-          <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6 rounded-lg">
-            <h1 className="text-2xl font-bold mb-2">Welcome to Epilux Water</h1>
-            <p className="text-blue-100">Premium water delivery at your doorstep</p>
-          </div>
-          <ProductCategories />
-          <FeaturedProducts />
-          <AffiliateProgram />
-          <SubscriptionPlans />
-          <SeasonalPromotions />
-          <Testimonials />
-        </div>
+      {/* Main Content wrapper for full-screen experience */}
+      <main className="app-content flex flex-col min-h-screen bg-gradient-to-br from-gray-50 to-white">
+        {/* Hero occupies full viewport height and serves as the "app" entry screen */}
+        <HeroSection />
 
-        {/* Desktop Layout */}
-        <div className="hidden md:block px-8 flex-1 overflow-y-auto">
-          <HeroSection />
+        {/* Subsequent sections - stacked and responsive */}
+        <section className="flex-grow">
+          {/* categories, products, etc. will scale responsively */}
           <ProductCategories />
           <FeaturedProducts />
           <AffiliateProgram />
           <SubscriptionPlans />
           <SeasonalPromotions />
           <Testimonials />
-        </div>
+        </section>
+
+        {/* Footer remains at bottom */}
         <Footer />
-      </div>
+      </main>
     </>
   );
 }
