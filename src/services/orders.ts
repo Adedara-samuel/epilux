@@ -36,6 +36,10 @@ export const ordersAPI = {
       country: string;
     };
     paymentMethod: string;
+    subtotal?: number;
+    tax?: number;
+    shipping?: number;
+    totalAmount?: number;
     notes?: string;
   }) => {
     const response = await api.post('/api/orders', orderData);

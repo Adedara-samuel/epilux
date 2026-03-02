@@ -128,11 +128,11 @@ export default function CheckoutPage() {
 
             const tax = Math.max(0, Math.round(Number(subtotal) * 0.1));
             const shipping = Number(deliveryFee) || 0;
-            const total = Number(subtotal) + tax + shipping;
+            const totalAmount = Number(subtotal) + tax + shipping;
 
-            console.log('Calculated values:', { subtotal: Number(subtotal), tax, shipping, total });
+            console.log('Calculated values:', { subtotal: Number(subtotal), tax, shipping, totalAmount });
 
-            if (!isFinite(total) || total <= 0) {
+            if (!isFinite(totalAmount) || totalAmount <= 0) {
                 toast.error('Total amount must be greater than 0. Please check your cart.');
                 setIsProcessingPayment(false);
                 return;
@@ -145,9 +145,9 @@ export default function CheckoutPage() {
                     price: item.price
                 })),
                 subtotal: Number(subtotal),
-                tax,
-                shipping,
-                total,
+                tax: Number(tax),
+                shipping: Number(shipping),
+                totalAmount: Number(totalAmount),
                 shippingAddress: {
                     street: deliveryInfo.address,
                     city: deliveryInfo.city,
@@ -159,16 +159,13 @@ export default function CheckoutPage() {
                     street: deliveryInfo.address,
                     city: deliveryInfo.city,
                     state: deliveryInfo.state,
-                    country: 'Nigeria'
-                },
-                customerInfo: {
-                    name: deliveryInfo.fullName,
-                    phone: deliveryInfo.phone,
-                    email: deliveryInfo.email || user?.email || ''
+                    country: 'Nigeria',
+                    zipCode: deliveryInfo.zipCode || 'N/A'
                 },
                 paymentMethod: 'card',
                 notes: deliveryInfo.additionalInfo || undefined,
-                userId: user?._id || user?.id || undefined
+                userId: user?._id || user?.id,
+                buyer: user?._id || user?.id
             };
 
             console.log('Order Data being sent:', orderData);
@@ -188,7 +185,7 @@ export default function CheckoutPage() {
             const paymentPayload = {
                 orderId: createdOrderId,
                 paymentData: {
-                    amount: total,
+                    amount: totalAmount,
                     email: deliveryInfo.email || user?.email || '',
                     phone: deliveryInfo.phone,
                     name: deliveryInfo.fullName,
@@ -209,7 +206,7 @@ export default function CheckoutPage() {
                         email: deliveryInfo.email || user?.email || ''
                     },
                     paymentMethod: 'card',
-                    totalAmount: total
+                    totalAmount: totalAmount
                 }
             };
 
