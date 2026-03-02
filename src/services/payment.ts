@@ -3,6 +3,31 @@ import { api } from './base';
 
 // Payment API functions
 export const paymentAPI = {
+  // Create order first
+  createOrder: async (orderData: {
+    items: Array<{
+      product: string;
+      quantity: number;
+      price: number;
+    }>;
+    shippingAddress: {
+      address: string;
+      city: string;
+      state: string;
+      country: string;
+    };
+    paymentMethod: string;
+    customerInfo: {
+      name: string;
+      phone: string;
+      email: string;
+    };
+    totalAmount: number;
+  }) => {
+    const response = await api.post('/api/orders', orderData);
+    return response.data;
+  },
+
   // Initialize payment for an order
   initializePayment: async (orderId: string, paymentData: {
     // top‑level extras required by backend

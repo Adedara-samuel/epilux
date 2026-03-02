@@ -18,6 +18,7 @@ import { useEffect, useState } from 'react';
 import { Loader2, ArrowLeft } from 'lucide-react';
 import { useUserAddresses } from '@/hooks/useUser';
 import { useCart } from '@/hooks/useCart';
+import { useCreateOrder } from '@/hooks/useOrders';
 import { useInitializePayment } from '@/hooks/usePayment';
 
 interface CartItem {
@@ -34,6 +35,7 @@ const formSchema = z.object({
     address: z.string().min(5, 'Delivery address is required'),
     city: z.string().min(2, 'City is required'),
     state: z.string().min(2, 'State is required'),
+    zipCode: z.string().min(1, 'Zip code is required'),
     additionalInfo: z.string().optional(),
 });
 
@@ -42,6 +44,7 @@ export default function CheckoutPage() {
     const { user, loading: authLoading, token } = useAuth();
     const cart = useCartStore((s) => s.cart);
 
+    const createOrderMutation = useCreateOrder();
     const initializePaymentMutation = useInitializePayment();
 
     const { data: cartData, isLoading: cartLoading } = useCart();
@@ -62,9 +65,9 @@ export default function CheckoutPage() {
         .map((item: any) => ({
             id: item.product || item.productId?._id || item._id || item.id,
             name: item.name || item.product?.name || item.productId?.name || '',
-            price: item.price || item.product?.price || item.productId?.price || 0,
+            price: Number(item.price || item.product?.price || item.productId?.price || 0) || 0,
             image: item.image || item.product?.image || item.productId?.images?.[0]?.url || '',
-            quantity: item.quantity || item.qty || 1,
+            quantity: Number(item.quantity || item.qty || 1) || 1,
         }));
 
     const subtotal = normalizedCartItems.reduce((total: number, item: any) => total + item.price * item.quantity, 0);
@@ -80,6 +83,7 @@ export default function CheckoutPage() {
             address: '',
             city: '',
             state: '',
+            zipCode: '',
             additionalInfo: '',
         },
     });
@@ -98,6 +102,7 @@ export default function CheckoutPage() {
                 address: defaultAddress?.street || '',
                 city: defaultAddress?.city || '',
                 state: defaultAddress?.state || '',
+                zipCode: defaultAddress?.zipCode || '',
             });
             if (defaultAddress?._id) {
                 setSelectedAddressId(defaultAddress._id);
@@ -112,30 +117,81 @@ export default function CheckoutPage() {
             return;
         }
 
-        // CORRECTED ID PICKING: Trying different possible paths for the ID
-        const cartAny: any = cartData;
-        const orderId = cartAny?.data?._id || cartAny?._id || cartAny?.data?.id || cartAny?.id || (cart as any)?._id || (cart as any)?.id;
-
-        if (!orderId) {
-            console.error("Cart Data structure:", cartData);
-            toast.error("Order session not found. Please go back to cart and try again.");
-            return;
-        }
-
         setIsProcessingPayment(true);
 
         try {
             const deliveryInfo = form.getValues();
 
+            // Step 1: Create the order first
+            console.log('Cart Items:', normalizedCartItems);
+            console.log('Subtotal before calc:', subtotal, typeof subtotal);
+
+            const tax = Math.max(0, Math.round(Number(subtotal) * 0.1));
+            const shipping = Number(deliveryFee) || 0;
+            const total = Number(subtotal) + tax + shipping;
+
+            console.log('Calculated values:', { subtotal: Number(subtotal), tax, shipping, total });
+
+            if (!isFinite(total) || total <= 0) {
+                toast.error('Total amount must be greater than 0. Please check your cart.');
+                setIsProcessingPayment(false);
+                return;
+            }
+
+            const orderData: any = {
+                items: normalizedCartItems.map((item: any) => ({
+                    product: item.id,
+                    quantity: item.quantity,
+                    price: item.price
+                })),
+                subtotal: Number(subtotal),
+                tax,
+                shipping,
+                total,
+                shippingAddress: {
+                    street: deliveryInfo.address,
+                    city: deliveryInfo.city,
+                    state: deliveryInfo.state,
+                    country: 'Nigeria',
+                    zipCode: deliveryInfo.zipCode || 'N/A'
+                },
+                billingAddress: {
+                    street: deliveryInfo.address,
+                    city: deliveryInfo.city,
+                    state: deliveryInfo.state,
+                    country: 'Nigeria'
+                },
+                customerInfo: {
+                    name: deliveryInfo.fullName,
+                    phone: deliveryInfo.phone,
+                    email: deliveryInfo.email || user?.email || ''
+                },
+                paymentMethod: 'card',
+                notes: deliveryInfo.additionalInfo || undefined,
+                userId: user?._id || user?.id || undefined
+            };
+
+            console.log('Order Data being sent:', orderData);
+
+            const orderResponse = await createOrderMutation.mutateAsync(orderData);
+            const createdOrderId = orderResponse?.data?._id || orderResponse?.order?._id || orderResponse?._id;
+
+            if (!createdOrderId) {
+                toast.error("Failed to create order. Please try again.");
+                setIsProcessingPayment(false);
+                return;
+            }
+
+            toast.success("Order created successfully!");
+
+            // Step 2: Now initialize payment with the created order ID
             const paymentPayload = {
-                orderId: orderId,
+                orderId: createdOrderId,
                 paymentData: {
-                    // extras required for backend validation
-                    amount: totalAmount,
+                    amount: total,
                     email: deliveryInfo.email || user?.email || '',
                     phone: deliveryInfo.phone,
                     name: deliveryInfo.fullName,
-
                     items: normalizedCartItems.map((item: any) => ({
                         product: item.id,
                         quantity: item.quantity,
@@ -152,21 +208,21 @@ export default function CheckoutPage() {
                         phone: deliveryInfo.phone,
                         email: deliveryInfo.email || user?.email || ''
                     },
-                    paymentMethod: 'flutterwave',
-                    totalAmount: totalAmount
+                    paymentMethod: 'card',
+                    totalAmount: total
                 }
             };
 
-            const response = await initializePaymentMutation.mutateAsync(paymentPayload);
+            const paymentResponse = await initializePaymentMutation.mutateAsync(paymentPayload);
 
-            if (response?.data?.link || response?.link) {
-                window.location.href = response.data?.link || response.link;
+            if (paymentResponse?.data?.link || paymentResponse?.link) {
+                window.location.href = paymentResponse.data?.link || paymentResponse.link;
             } else {
                 toast.error("Unable to generate payment link.");
             }
 
         } catch (error: any) {
-            toast.error(error.response?.data?.message || "Payment initialization failed.");
+            toast.error(error.response?.data?.message || "Payment process failed. Please try again.");
         } finally {
             setIsProcessingPayment(false);
         }
@@ -228,6 +284,7 @@ export default function CheckoutPage() {
                                                     form.setValue('address', found.street || '');
                                                     form.setValue('city', found.city || '');
                                                     form.setValue('state', found.state || '');
+                                                    form.setValue('zipCode', found.zipCode || '');
                                                 }
                                             }
                                         }}
@@ -290,6 +347,14 @@ export default function CheckoutPage() {
                                             </FormItem>
                                         )} />
                                     </div>
+
+                                    <FormField control={form.control} name="zipCode" render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel className="text-gray-700 font-semibold">Zip Code</FormLabel>
+                                            <FormControl><Input placeholder="e.g. 100001" className="rounded-xl border-gray-200" {...field} /></FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )} />
 
                                     <FormField control={form.control} name="additionalInfo" render={({ field }) => (
                                         <FormItem>
