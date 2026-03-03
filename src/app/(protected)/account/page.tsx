@@ -47,41 +47,41 @@ export default function AccountPage() {
 
     return (
         <div className="app-content min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-            <div className="container mx-auto px-4 py-12">
+            <div className="container mx-auto px-3 sm:px-4 py-6 sm:py-12">
                 {/* Header Section */}
-                <div className="text-center mb-12">
-                    <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4">
+                <div className="text-center mb-8 sm:mb-12">
+                    <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2 sm:mb-4">
                         Welcome back, {user.firstName}!
                     </h1>
-                    <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                    <p className="text-sm sm:text-base md:text-lg text-gray-600 max-w-2xl mx-auto px-2">
                         Manage your account, track orders, and explore our premium water products
                     </p>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
                     {/* User Profile Card */}
                     <div className="lg:col-span-1">
-                        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-8 text-center hover:shadow-2xl transition-all duration-300">
+                        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-6 sm:p-8 text-center hover:shadow-2xl transition-all duration-300 sticky top-4">
                             <div className="relative mb-6">
-                                <div className="w-32 h-32 mx-auto rounded-full bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center text-white text-4xl font-bold shadow-lg">
+                                <div className="w-24 h-24 sm:w-32 sm:h-32 mx-auto rounded-full bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center text-white text-2xl sm:text-4xl font-bold shadow-lg">
                                     {user.firstName.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || 'U'}
                                 </div>
                                 {user.emailVerified && (
-                                    <div className="absolute bottom-2 right-2 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center shadow-lg">
-                                        <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                    <div className="absolute bottom-2 right-2 w-6 h-6 sm:w-8 sm:h-8 bg-green-500 rounded-full flex items-center justify-center shadow-lg">
+                                        <svg className="w-4 h-4 sm:w-5 sm:h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
                                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                                         </svg>
                                     </div>
                                 )}
                             </div>
 
-                            <h2 className="text-2xl font-bold text-gray-800 mb-2">{`${user.firstName} ${user.lastName}`}</h2>
-                            <p className="text-gray-600 mb-4">{user.email}</p>
+                            <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2 line-clamp-1">{`${user.firstName} ${user.lastName}`}</h2>
+                            <p className="text-sm sm:text-base text-gray-600 mb-4 break-all">{user.email}</p>
 
                             {!user.emailVerified && (
                                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
-                                    <p className="text-yellow-800 text-sm flex items-center gap-2">
-                                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <p className="text-yellow-800 text-xs sm:text-sm flex items-center gap-2 justify-center">
+                                        <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                             <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                                         </svg>
                                         Email not verified
@@ -94,9 +94,9 @@ export default function AccountPage() {
                                     await logout();
                                     router.push('/');
                                 }}
-                                className="w-full bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5 cursor-pointer"
+                                className="w-full bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white font-semibold py-2 sm:py-3 px-4 sm:px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5 cursor-pointer text-sm sm:text-base"
                             >
-                                <LogOut className="w-5 h-5 mr-2" />
+                                <LogOut className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
                                 Sign Out
                             </Button>
                         </div>
@@ -104,20 +104,20 @@ export default function AccountPage() {
 
                     {/* Account Navigation Links */}
                     <div className="lg:col-span-3">
-                        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-8">
-                            <h2 className="text-3xl font-bold text-gray-800 mb-8 text-center">Account Dashboard</h2>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-6 sm:p-8">
+                            <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-6 sm:mb-8 text-center">Account Dashboard</h2>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
                                 <Link
                                     href="/account/orders"
-                                    className="group bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-6 text-white hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 hover:scale-105"
+                                    className="group bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl sm:rounded-2xl p-4 sm:p-6 text-white hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 hover:scale-105 active:scale-95"
                                 >
-                                    <div className="flex items-center gap-4 mb-4">
-                                        <div className="p-3 bg-white/20 rounded-xl group-hover:bg-white/30 transition-colors">
-                                            <ShoppingBag className="w-8 h-8" />
+                                    <div className="flex items-center gap-3 sm:gap-4 mb-4">
+                                        <div className="p-2 sm:p-3 bg-white/20 rounded-lg sm:rounded-xl group-hover:bg-white/30 transition-colors flex-shrink-0">
+                                            <ShoppingBag className="w-6 h-6 sm:w-8 sm:h-8" />
                                         </div>
-                                        <div>
-                                            <h3 className="text-xl font-bold">My Orders</h3>
-                                            <p className="text-blue-100">Track your purchases</p>
+                                        <div className="min-w-0">
+                                            <h3 className="text-lg sm:text-xl font-bold truncate">My Orders</h3>
+                                            <p className="text-xs sm:text-sm text-blue-100 truncate">Track your purchases</p>
                                         </div>
                                     </div>
                                     <div className="text-right">
@@ -127,15 +127,15 @@ export default function AccountPage() {
 
                                 <Link
                                     href="/account/inbox"
-                                    className="group bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-6 text-white hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 hover:scale-105"
+                                    className="group bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl sm:rounded-2xl p-4 sm:p-6 text-white hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 hover:scale-105 active:scale-95"
                                 >
-                                    <div className="flex items-center gap-4 mb-4">
-                                        <div className="p-3 bg-white/20 rounded-xl group-hover:bg-white/30 transition-colors">
-                                            <Mail className="w-8 h-8" />
+                                    <div className="flex items-center gap-3 sm:gap-4 mb-4">
+                                        <div className="p-2 sm:p-3 bg-white/20 rounded-lg sm:rounded-xl group-hover:bg-white/30 transition-colors flex-shrink-0">
+                                            <Mail className="w-6 h-6 sm:w-8 sm:h-8" />
                                         </div>
-                                        <div>
-                                            <h3 className="text-xl font-bold">My Inbox</h3>
-                                            <p className="text-purple-100">Messages & notifications</p>
+                                        <div className="min-w-0">
+                                            <h3 className="text-lg sm:text-xl font-bold truncate">My Inbox</h3>
+                                            <p className="text-xs sm:text-sm text-purple-100 truncate">Messages & notifications</p>
                                         </div>
                                     </div>
                                     <div className="text-right">
@@ -145,15 +145,15 @@ export default function AccountPage() {
 
                                 <Link
                                     href="/account/help"
-                                    className="group bg-gradient-to-br from-green-500 to-green-600 rounded-2xl p-6 text-white hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 hover:scale-105"
+                                    className="group bg-gradient-to-br from-green-500 to-green-600 rounded-xl sm:rounded-2xl p-4 sm:p-6 text-white hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 hover:scale-105 active:scale-95"
                                 >
-                                    <div className="flex items-center gap-4 mb-4">
-                                        <div className="p-3 bg-white/20 rounded-xl group-hover:bg-white/30 transition-colors">
-                                            <HelpCircle className="w-8 h-8" />
+                                    <div className="flex items-center gap-3 sm:gap-4 mb-4">
+                                        <div className="p-2 sm:p-3 bg-white/20 rounded-lg sm:rounded-xl group-hover:bg-white/30 transition-colors flex-shrink-0">
+                                            <HelpCircle className="w-6 h-6 sm:w-8 sm:h-8" />
                                         </div>
-                                        <div>
-                                            <h3 className="text-xl font-bold">Help Center</h3>
-                                            <p className="text-green-100">Get support & answers</p>
+                                        <div className="min-w-0">
+                                            <h3 className="text-lg sm:text-xl font-bold truncate">Help Center</h3>
+                                            <p className="text-xs sm:text-sm text-green-100 truncate">Get support & answers</p>
                                         </div>
                                     </div>
                                     <div className="text-right">
@@ -163,15 +163,15 @@ export default function AccountPage() {
 
                                 <Link
                                     href="/account/contact"
-                                    className="group bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl p-6 text-white hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 hover:scale-105"
+                                    className="group bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl sm:rounded-2xl p-4 sm:p-6 text-white hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 hover:scale-105 active:scale-95"
                                 >
-                                    <div className="flex items-center gap-4 mb-4">
-                                        <div className="p-3 bg-white/20 rounded-xl group-hover:bg-white/30 transition-colors">
-                                            <Phone className="w-8 h-8" />
+                                    <div className="flex items-center gap-3 sm:gap-4 mb-4">
+                                        <div className="p-2 sm:p-3 bg-white/20 rounded-lg sm:rounded-xl group-hover:bg-white/30 transition-colors flex-shrink-0">
+                                            <Phone className="w-6 h-6 sm:w-8 sm:h-8" />
                                         </div>
-                                        <div>
-                                            <h3 className="text-xl font-bold">Contact Us</h3>
-                                            <p className="text-orange-100">Reach our team</p>
+                                        <div className="min-w-0">
+                                            <h3 className="text-lg sm:text-xl font-bold truncate">Contact Us</h3>
+                                            <p className="text-xs sm:text-sm text-orange-100 truncate">Reach our team</p>
                                         </div>
                                     </div>
                                     <div className="text-right">
@@ -181,17 +181,17 @@ export default function AccountPage() {
 
                                 <Link
                                     href="/account/reviews"
-                                    className="group bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-2xl p-6 text-white hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 hover:scale-105"
+                                    className="group bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl sm:rounded-2xl p-4 sm:p-6 text-white hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 hover:scale-105 active:scale-95"
                                 >
-                                    <div className="flex items-center gap-4 mb-4">
-                                        <div className="p-3 bg-white/20 rounded-xl group-hover:bg-white/30 transition-colors">
-                                            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <div className="flex items-center gap-3 sm:gap-4 mb-4">
+                                        <div className="p-2 sm:p-3 bg-white/20 rounded-lg sm:rounded-xl group-hover:bg-white/30 transition-colors flex-shrink-0">
+                                            <svg className="w-6 h-6 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
                                             </svg>
                                         </div>
-                                        <div>
-                                            <h3 className="text-xl font-bold">My Reviews</h3>
-                                            <p className="text-indigo-100">View & manage reviews</p>
+                                        <div className="min-w-0">
+                                            <h3 className="text-lg sm:text-xl font-bold truncate">My Reviews</h3>
+                                            <p className="text-xs sm:text-sm text-indigo-100 truncate">View & manage reviews</p>
                                         </div>
                                     </div>
                                     <div className="text-right">
@@ -201,15 +201,15 @@ export default function AccountPage() {
 
                                 <Link
                                     href="/account/delivery"
-                                    className="group bg-gradient-to-br from-teal-500 to-teal-600 rounded-2xl p-6 text-white hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 hover:scale-105"
+                                    className="group bg-gradient-to-br from-teal-500 to-teal-600 rounded-xl sm:rounded-2xl p-4 sm:p-6 text-white hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 hover:scale-105 active:scale-95"
                                 >
-                                    <div className="flex items-center gap-4 mb-4">
-                                        <div className="p-3 bg-white/20 rounded-xl group-hover:bg-white/30 transition-colors">
-                                            <Truck className="w-8 h-8" />
+                                    <div className="flex items-center gap-3 sm:gap-4 mb-4">
+                                        <div className="p-2 sm:p-3 bg-white/20 rounded-lg sm:rounded-xl group-hover:bg-white/30 transition-colors flex-shrink-0">
+                                            <Truck className="w-6 h-6 sm:w-8 sm:h-8" />
                                         </div>
-                                        <div>
-                                            <h3 className="text-xl font-bold">Delivery Tracking</h3>
-                                            <p className="text-teal-100">Track packages & estimate costs</p>
+                                        <div className="min-w-0">
+                                            <h3 className="text-lg sm:text-xl font-bold truncate">Delivery Tracking</h3>
+                                            <p className="text-xs sm:text-sm text-teal-100 truncate">Track packages & costs</p>
                                         </div>
                                     </div>
                                     <div className="text-right">
@@ -219,15 +219,15 @@ export default function AccountPage() {
 
                                 <Link
                                     href="/settings"
-                                    className="group bg-gradient-to-br from-pink-500 to-pink-600 rounded-2xl p-6 text-white hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 hover:scale-105"
+                                    className="group bg-gradient-to-br from-pink-500 to-pink-600 rounded-xl sm:rounded-2xl p-4 sm:p-6 text-white hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 hover:scale-105 active:scale-95"
                                 >
-                                    <div className="flex items-center gap-4 mb-4">
-                                        <div className="p-3 bg-white/20 rounded-xl group-hover:bg-white/30 transition-colors">
-                                            <Settings className="w-8 h-8" />
+                                    <div className="flex items-center gap-3 sm:gap-4 mb-4">
+                                        <div className="p-2 sm:p-3 bg-white/20 rounded-lg sm:rounded-xl group-hover:bg-white/30 transition-colors flex-shrink-0">
+                                            <Settings className="w-6 h-6 sm:w-8 sm:h-8" />
                                         </div>
-                                        <div>
-                                            <h3 className="text-xl font-bold">Account Settings</h3>
-                                            <p className="text-pink-100">Manage profile & preferences</p>
+                                        <div className="min-w-0">
+                                            <h3 className="text-lg sm:text-xl font-bold truncate">Account Settings</h3>
+                                            <p className="text-xs sm:text-sm text-pink-100 truncate">Manage profile</p>
                                         </div>
                                     </div>
                                     <div className="text-right">
@@ -236,13 +236,13 @@ export default function AccountPage() {
                                 </Link>
 
                                 {/* Placeholder for future features */}
-                                <div className="bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl p-6 border-2 border-dashed border-gray-300 flex items-center justify-center">
+                                <div className="bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl sm:rounded-2xl p-4 sm:p-6 border-2 border-dashed border-gray-300 flex items-center justify-center min-h-32 sm:min-h-48">
                                     <div className="text-center text-gray-500">
-                                        <div className="w-12 h-12 mx-auto mb-3 bg-gray-300 rounded-xl flex items-center justify-center">
-                                            <span className="text-2xl">+</span>
+                                        <div className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-3 bg-gray-300 rounded-lg sm:rounded-xl flex items-center justify-center">
+                                            <span className="text-xl sm:text-2xl">+</span>
                                         </div>
-                                        <p className="font-medium">Coming Soon</p>
-                                        <p className="text-sm">New features</p>
+                                        <p className="font-medium text-sm sm:text-base">Coming Soon</p>
+                                        <p className="text-xs sm:text-sm">New features</p>
                                     </div>
                                 </div>
                             </div>

@@ -103,9 +103,9 @@ export default function SettingsPage() {
 
     const updateProfileMutation = useUpdateProfile();
     const changePasswordMutation = useChangePassword();
-    
+
     const { data: addressesData, isLoading: addressesLoading } = useAddresses();
-    
+
     const addAddressMutation = useAddAddress();
     const updateAddressMutation = useUpdateAddress();
     const deleteAddressMutation = useDeleteAddress();
@@ -161,7 +161,7 @@ export default function SettingsPage() {
         const stateValue = addressForm.watch('state');
         // Use the state name directly as the key
         const cities = STATE_CITIES[stateValue];
-        
+
         if (cities) {
             setAvailableCities(cities);
             // Reset city if current city is not in the new state's cities
@@ -235,7 +235,7 @@ export default function SettingsPage() {
 
     const handleUpdateAddress = async (values: z.infer<typeof addressSchema>) => {
         if (!editingAddress) return;
-        
+
         updateAddressMutation.mutate({ id: editingAddress.id, data: values }, {
             onSuccess: () => {
                 // SUCCESS MESSAGE 2: UPDATE
@@ -331,57 +331,57 @@ export default function SettingsPage() {
     }
 
     return (
-        <div className="bg-gray-50 overflow-y-auto">
-            <div className="app-content container mx-auto px-4 py-12">
+        <div className="bg-gray-50 overflow-y-auto min-h-screen">
+            <div className="app-content container mx-auto px-3 sm:px-4 py-6 sm:py-12">
                 {/* Header */}
-                <div className="text-center mb-12">
-                    <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-4">
+                <div className="text-center mb-8 sm:mb-12">
+                    <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-2 sm:mb-4">
                         Account Settings
                     </h1>
-                    <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+                    <p className="text-sm sm:text-base md:text-lg text-gray-600 max-w-3xl mx-auto px-2">
                         Manage your personal information, security settings, and account preferences
                     </p>
                 </div>
 
-                <div className="max-w-4xl mx-auto space-y-8">
+                <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8">
                     {/* Profile Information Card */}
-                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                        <div className="p-8 border-b border-gray-100">
-                            <div className="flex items-center gap-4">
-                                <div className="p-3 bg-blue-100 rounded-lg">
-                                    <User className="h-6 w-6 text-blue-600" />
+                    <div className="bg-white rounded-xl sm:rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                        <div className="p-4 sm:p-8 border-b border-gray-100">
+                            <div className="flex items-center gap-3 sm:gap-4">
+                                <div className="p-2 sm:p-3 bg-blue-100 rounded-lg flex-shrink-0">
+                                    <User className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
                                 </div>
-                                <div>
-                                    <h2 className="text-2xl font-bold text-gray-900">Profile Information</h2>
-                                    <p className="text-gray-600">Update your personal details</p>
+                                <div className="min-w-0">
+                                    <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Profile Information</h2>
+                                    <p className="text-sm sm:text-base text-gray-600">Update your personal details</p>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="p-8">
+                        <div className="p-4 sm:p-8">
                             <Form {...profileForm}>
                                 <form onSubmit={profileForm.handleSubmit(handleProfileUpdate)} className="space-y-6">
-                                    <div className="bg-gray-50/50 rounded-xl p-6 border border-gray-100">
-                                        <h3 className="text-lg font-semibold text-gray-800 mb-4">Email Address</h3>
+                                    <div className="bg-gray-50/50 rounded-lg sm:rounded-xl p-4 sm:p-6 border border-gray-100">
+                                        <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-3 sm:mb-4">Email Address</h3>
                                         <Input
                                             value={user.email || 'N/A'}
                                             disabled
-                                            className="bg-white border-gray-200 cursor-not-allowed rounded-xl"
+                                            className="bg-white border-gray-200 cursor-not-allowed rounded-lg sm:rounded-xl h-10 sm:h-12 text-sm sm:text-base"
                                         />
-                                        <p className="text-sm text-gray-500 mt-2">Email cannot be changed here for security reasons.</p>
+                                        <p className="text-xs sm:text-sm text-gray-500 mt-2">Email cannot be changed here for security reasons.</p>
                                     </div>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                                         <FormField
                                             control={profileForm.control}
                                             name="firstName"
                                             render={({ field }) => (
                                                 <FormItem>
-                                                    <FormLabel className="text-gray-700 font-medium text-lg">First Name</FormLabel>
+                                                    <FormLabel className="text-gray-700 font-medium text-sm sm:text-base">First Name</FormLabel>
                                                     <FormControl>
                                                         <Input
                                                             placeholder="Enter your first name"
-                                                            className="rounded-xl border-gray-200 focus:border-blue-500 focus:ring-blue-500 h-12"
+                                                            className="rounded-lg sm:rounded-xl border-gray-200 focus:border-blue-500 focus:ring-blue-500 h-10 sm:h-12 text-sm sm:text-base"
                                                             {...field}
                                                         />
                                                     </FormControl>
@@ -394,11 +394,11 @@ export default function SettingsPage() {
                                             name="lastName"
                                             render={({ field }) => (
                                                 <FormItem>
-                                                    <FormLabel className="text-gray-700 font-medium text-lg">Last Name</FormLabel>
+                                                    <FormLabel className="text-gray-700 font-medium text-sm sm:text-base">Last Name</FormLabel>
                                                     <FormControl>
                                                         <Input
                                                             placeholder="Enter your last name"
-                                                            className="rounded-xl border-gray-200 focus:border-blue-500 focus:ring-blue-500 h-12"
+                                                            className="rounded-lg sm:rounded-xl border-gray-200 focus:border-blue-500 focus:ring-blue-500 h-10 sm:h-12 text-sm sm:text-base"
                                                             {...field}
                                                         />
                                                     </FormControl>
@@ -411,11 +411,11 @@ export default function SettingsPage() {
                                     <Button
                                         type="submit"
                                         disabled={profileForm.formState.isSubmitting}
-                                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-6 rounded-lg shadow-md hover:shadow-lg transition-colors text-lg"
+                                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 sm:py-4 px-4 sm:px-6 rounded-lg sm:rounded-lg shadow-md hover:shadow-lg transition-colors text-sm sm:text-base"
                                     >
                                         {profileForm.formState.isSubmitting ? (
                                             <>
-                                                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                                                <Loader2 className="mr-2 h-4 w-4 sm:h-5 sm:w-5 animate-spin inline" />
                                                 Updating Profile...
                                             </>
                                         ) : (
@@ -428,20 +428,20 @@ export default function SettingsPage() {
                     </div>
 
                     {/* Change Password Card */}
-                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                        <div className="p-8 border-b border-gray-100">
-                            <div className="flex items-center gap-4">
-                                <div className="p-3 bg-yellow-100 rounded-lg">
-                                    <Key className="h-6 w-6 text-yellow-600" />
+                    <div className="bg-white rounded-xl sm:rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                        <div className="p-4 sm:p-8 border-b border-gray-100">
+                            <div className="flex items-center gap-3 sm:gap-4">
+                                <div className="p-2 sm:p-3 bg-yellow-100 rounded-lg flex-shrink-0">
+                                    <Key className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-600" />
                                 </div>
-                                <div>
-                                    <h2 className="text-2xl font-bold text-gray-900">Security Settings</h2>
-                                    <p className="text-gray-600">Change your password to keep your account secure</p>
+                                <div className="min-w-0">
+                                    <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Security Settings</h2>
+                                    <p className="text-sm sm:text-base text-gray-600">Change your password to keep your account secure</p>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="p-8">
+                        <div className="p-4 sm:p-8">
                             <Form {...passwordForm}>
                                 <form onSubmit={passwordForm.handleSubmit(handlePasswordChange)} className="space-y-6">
                                     <FormField
@@ -449,12 +449,12 @@ export default function SettingsPage() {
                                         name="currentPassword"
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel className="text-gray-700 font-medium text-lg">Current Password</FormLabel>
+                                                <FormLabel className="text-gray-700 font-medium text-sm sm:text-base">Current Password</FormLabel>
                                                 <FormControl>
                                                     <Input
                                                         type="password"
                                                         placeholder="Enter your current password"
-                                                        className="rounded-xl border-gray-200 focus:border-yellow-500 focus:ring-yellow-500 h-12"
+                                                        className="rounded-lg sm:rounded-xl border-gray-200 focus:border-yellow-500 focus:ring-yellow-500 h-10 sm:h-12 text-sm sm:text-base"
                                                         {...field}
                                                     />
                                                 </FormControl>
@@ -463,18 +463,18 @@ export default function SettingsPage() {
                                         )}
                                     />
 
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                                         <FormField
                                             control={passwordForm.control}
                                             name="newPassword"
                                             render={({ field }) => (
                                                 <FormItem>
-                                                    <FormLabel className="text-gray-700 font-medium text-lg">New Password</FormLabel>
+                                                    <FormLabel className="text-gray-700 font-medium text-sm sm:text-base">New Password</FormLabel>
                                                     <FormControl>
                                                         <Input
                                                             type="password"
                                                             placeholder="Enter new password"
-                                                            className="rounded-xl border-gray-200 focus:border-yellow-500 focus:ring-yellow-500 h-12"
+                                                            className="rounded-lg sm:rounded-xl border-gray-200 focus:border-yellow-500 focus:ring-yellow-500 h-10 sm:h-12 text-sm sm:text-base"
                                                             {...field}
                                                         />
                                                     </FormControl>
@@ -487,12 +487,12 @@ export default function SettingsPage() {
                                             name="confirmNewPassword"
                                             render={({ field }) => (
                                                 <FormItem>
-                                                    <FormLabel className="text-gray-700 font-medium text-lg">Confirm New Password</FormLabel>
+                                                    <FormLabel className="text-gray-700 font-medium text-sm sm:text-base">Confirm New Password</FormLabel>
                                                     <FormControl>
                                                         <Input
                                                             type="password"
                                                             placeholder="Confirm new password"
-                                                            className="rounded-xl border-gray-200 focus:border-yellow-500 focus:ring-yellow-500 h-12"
+                                                            className="rounded-lg sm:rounded-xl border-gray-200 focus:border-yellow-500 focus:ring-yellow-500 h-10 sm:h-12 text-sm sm:text-base"
                                                             {...field}
                                                         />
                                                     </FormControl>
@@ -502,14 +502,14 @@ export default function SettingsPage() {
                                         />
                                     </div>
 
-                                    <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
-                                        <div className="flex items-start gap-3">
-                                            <div className="p-1 bg-yellow-100 rounded-lg">
+                                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg sm:rounded-xl p-3 sm:p-4">
+                                        <div className="flex items-start gap-2 sm:gap-3">
+                                            <div className="p-1 bg-yellow-100 rounded-lg flex-shrink-0">
                                                 <Key className="h-4 w-4 text-yellow-600" />
                                             </div>
-                                            <div>
-                                                <h4 className="font-medium text-yellow-800">Password Requirements</h4>
-                                                <ul className="text-sm text-yellow-700 mt-1 space-y-1">
+                                            <div className="min-w-0">
+                                                <h4 className="font-medium text-yellow-800 text-sm sm:text-base">Password Requirements</h4>
+                                                <ul className="text-xs sm:text-sm text-yellow-700 mt-1 space-y-1">
                                                     <li>• At least 6 characters long</li>
                                                     <li>• Use a mix of letters and numbers</li>
                                                     <li>• Avoid common passwords</li>
@@ -521,11 +521,11 @@ export default function SettingsPage() {
                                     <Button
                                         type="submit"
                                         disabled={passwordForm.formState.isSubmitting}
-                                        className="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-semibold py-4 px-6 rounded-lg shadow-md hover:shadow-lg transition-colors text-lg"
+                                        className="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-semibold py-2.5 sm:py-4 px-4 sm:px-6 rounded-lg shadow-md hover:shadow-lg transition-colors text-sm sm:text-base"
                                     >
                                         {passwordForm.formState.isSubmitting ? (
                                             <>
-                                                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                                                <Loader2 className="mr-2 h-4 w-4 sm:h-5 sm:w-5 animate-spin inline" />
                                                 Changing Password...
                                             </>
                                         ) : (
@@ -538,60 +538,69 @@ export default function SettingsPage() {
                     </div>
 
                     {/* Addresses Card */}
-                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                    <div className="bg-white rounded-xl sm:rounded-lg shadow-sm border border-gray-200 overflow-hidden">
                         {/* Header with Add Button */}
-                        <div className="p-8 border-b border-gray-100 flex justify-between items-center">
-                            <div className="flex items-center gap-4">
-                                <div className="p-3 bg-green-100 rounded-lg">
-                                    <MapPin className="h-6 w-6 text-green-600" />
+                        <div className="p-4 sm:p-8 border-b border-gray-100 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+                            <div className="flex items-center gap-3 sm:gap-4">
+                                <div className="p-2 sm:p-3 bg-green-100 rounded-lg flex-shrink-0">
+                                    <MapPin className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
                                 </div>
-                                <div>
-                                    <h2 className="text-2xl font-bold text-gray-900">Delivery Addresses</h2>
-                                    <p className="text-gray-600">Manage your shipping addresses</p>
+                                <div className="min-w-0">
+                                    <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Delivery Addresses</h2>
+                                    <p className="text-sm sm:text-base text-gray-600">Manage your shipping addresses</p>
                                 </div>
                             </div>
-                            
-                            <Button 
+
+                            <Button
                                 onClick={startAddingNewAddress}
-                                className="bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg shadow-md hover:shadow-lg transition-colors"
+                                className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white font-semibold py-2 sm:py-3 px-3 sm:px-6 rounded-lg shadow-md hover:shadow-lg transition-colors text-sm sm:text-base"
                             >
-                                <MapPin className="mr-2 h-5 w-5" />
+                                <MapPin className="mr-2 h-4 w-4 sm:h-5 sm:w-5 inline" />
                                 Add New Address
                             </Button>
                         </div>
 
-                        <div className="p-8">
+                        <div className="p-4 sm:p-8">
                             {/* Existing Addresses Cards */}
                             {addressesLoading ? (
-                                <div className="flex justify-center items-center p-6 bg-gray-50 rounded-xl">
-                                    <Loader2 className="h-6 w-6 animate-spin text-green-600" />
-                                    <p className="ml-2 text-gray-600">Loading addresses...</p>
+                                <div className="flex justify-center items-center p-4 sm:p-6 bg-gray-50 rounded-lg sm:rounded-xl">
+                                    <Loader2 className="h-5 w-5 sm:h-6 sm:w-6 animate-spin text-green-600" />
+                                    <p className="ml-2 text-sm sm:text-base text-gray-600">Loading addresses...</p>
                                 </div>
                             ) : (addressesData?.addresses?.length ?? 0) > 0 ? (
-                                <div className="space-y-4 mb-8">
-                                    <h3 className="text-lg font-semibold text-gray-800">Your Saved Addresses</h3>
-                                    
+                                <div className="space-y-3 sm:space-y-4 mb-6 sm:mb-8">
+                                    <h3 className="text-base sm:text-lg font-semibold text-gray-800">Your Saved Addresses</h3>
+
                                     {(addressesData?.addresses || []).map((address: any, index: number) => (
-                                        <div key={address.id || `address-${index}`} className="bg-gray-50 rounded-xl p-6 border border-gray-200">
-                                            <div className="flex justify-between items-start">
-                                                <div>
+                                        <div key={address.id || `address-${index}`} className="bg-gray-50 rounded-lg sm:rounded-xl p-4 sm:p-6 border border-gray-200 hover:border-gray-300 transition-colors">
+                                            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 sm:gap-4">
+                                                <div className="min-w-0">
                                                     {/* Display Address Type */}
-                                                    <span className="inline-block px-3 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-700 mb-2 capitalize">
+                                                    <span className="inline-block px-2 sm:px-3 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-700 mb-2 capitalize">
                                                         {address.type || 'Home'}
                                                     </span>
-                                                    <p className="font-medium text-gray-800">{address.street}</p>
-                                                    <p className="text-gray-600">{address.city}, {address.state}, {address.country}</p>
-                                                    {address.zipCode && <p className="text-gray-600">ZIP: {address.zipCode}</p>}
+                                                    <p className="font-medium text-gray-800 text-sm sm:text-base break-words">{address.street}</p>
+                                                    <p className="text-gray-600 text-sm sm:text-base">{address.city}, {address.state}, {address.country}</p>
+                                                    {address.zipCode && <p className="text-gray-600 text-xs sm:text-sm">ZIP: {address.zipCode}</p>}
                                                 </div>
-                                                <div className="flex gap-2">
+                                                <div className="flex gap-2 flex-shrink-0">
                                                     <Button
                                                         variant="outline"
                                                         size="sm"
                                                         onClick={() => startEditingAddress(address)}
-                                                        className="rounded-lg"
+                                                        className="rounded-lg text-xs sm:text-sm h-9 sm:h-10 px-3"
                                                     >
-                                                        <Edit className="w-4 h-4 mr-1" />
+                                                        <Edit className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
                                                         Edit
+                                                    </Button>
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => handleDeleteAddress(address.id)}
+                                                        className="rounded-lg text-xs sm:text-sm h-9 sm:h-10 px-3 text-red-600 border-red-200 hover:bg-red-50"
+                                                    >
+                                                        <Trash2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                                                        Delete
                                                     </Button>
                                                 </div>
                                             </div>
@@ -599,31 +608,31 @@ export default function SettingsPage() {
                                     ))}
                                 </div>
                             ) : (
-                                <div className="p-6 text-center text-gray-500 border border-dashed border-gray-300 rounded-xl mb-8">
-                                    You have no saved addresses. Click "Add New Address" above to get started.
+                                <div className="p-4 sm:p-6 text-center text-gray-500 border border-dashed border-gray-300 rounded-lg sm:rounded-xl mb-6 sm:mb-8">
+                                    <p className="text-sm sm:text-base">You have no saved addresses. Click "Add New Address" above to get started.</p>
                                 </div>
                             )}
 
                             {/* Add/Edit Address Form - Conditional Display */}
                             {(isFormVisible || (addressesData?.addresses?.length ?? 0) === 0) && (
                                 <Form {...addressForm}>
-                                    <form onSubmit={addressForm.handleSubmit(handleAddressSubmit)} className="space-y-6 pt-4">
-                                        <h3 className="text-xl font-bold text-gray-800 border-b pb-2 mb-4">
+                                    <form onSubmit={addressForm.handleSubmit(handleAddressSubmit)} className="space-y-4 sm:space-y-6 pt-4">
+                                        <h3 className="text-lg sm:text-xl font-bold text-gray-800 border-b pb-2 mb-3 sm:mb-4">
                                             {editingAddress ? 'Edit Address' : 'Add New Address Details'}
                                         </h3>
 
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                                             {/* Street Address */}
                                             <FormField
                                                 control={addressForm.control}
                                                 name="street"
                                                 render={({ field }) => (
                                                     <FormItem>
-                                                        <FormLabel className="text-gray-700 font-medium">Street Address</FormLabel>
+                                                        <FormLabel className="text-gray-700 font-medium text-sm sm:text-base">Street Address</FormLabel>
                                                         <FormControl>
                                                             <Input
                                                                 placeholder="Enter street address"
-                                                                className="rounded-xl border-gray-200 focus:border-green-500 focus:ring-green-500 h-12"
+                                                                className="rounded-lg sm:rounded-xl border-gray-200 focus:border-green-500 focus:ring-green-500 h-10 sm:h-12 text-sm sm:text-base"
                                                                 {...field}
                                                             />
                                                         </FormControl>
@@ -638,12 +647,12 @@ export default function SettingsPage() {
                                                 name="state"
                                                 render={({ field }) => (
                                                     <FormItem>
-                                                        <FormLabel className="text-gray-700 font-medium">State</FormLabel>
+                                                        <FormLabel className="text-gray-700 font-medium text-sm sm:text-base">State</FormLabel>
                                                         <FormControl>
                                                             {/* Using a standard HTML select with professional styling */}
                                                             <select
                                                                 {...field}
-                                                                className="flex h-12 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-base ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                                                className="flex h-10 sm:h-12 w-full rounded-lg sm:rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm sm:text-base ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                                                                 value={field.value || ''}
                                                             >
                                                                 <option value="" disabled>Select a State</option>
@@ -658,19 +667,19 @@ export default function SettingsPage() {
                                                     </FormItem>
                                                 )}
                                             />
-                                            
+
                                             {/* City Selection (Cascading Dynamic Select) */}
                                             <FormField
                                                 control={addressForm.control}
                                                 name="city"
                                                 render={({ field }) => (
                                                     <FormItem>
-                                                        <FormLabel className="text-gray-700 font-medium">City</FormLabel>
+                                                        <FormLabel className="text-gray-700 font-medium text-sm sm:text-base">City</FormLabel>
                                                         <FormControl>
                                                             <select
                                                                 {...field}
                                                                 disabled={!addressForm.getValues('state') || availableCities.length === 0}
-                                                                className="flex h-12 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-base ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                                                className="flex h-10 sm:h-12 w-full rounded-lg sm:rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm sm:text-base ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                                                                 value={field.value || ''}
                                                             >
                                                                 <option value="" disabled>
@@ -694,11 +703,11 @@ export default function SettingsPage() {
                                                 name="type"
                                                 render={({ field }) => (
                                                     <FormItem>
-                                                        <FormLabel className="text-gray-700 font-medium">Address Type</FormLabel>
+                                                        <FormLabel className="text-gray-700 font-medium text-sm sm:text-base">Address Type</FormLabel>
                                                         <FormControl>
                                                             <select
                                                                 {...field}
-                                                                className="flex h-12 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-base ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                                                className="flex h-10 sm:h-12 w-full rounded-lg sm:rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm sm:text-base ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                                                                 value={field.value || 'home'}
                                                             >
                                                                 <option value="home">Home</option>
@@ -717,13 +726,13 @@ export default function SettingsPage() {
                                                 name="country"
                                                 render={({ field }) => (
                                                     <FormItem>
-                                                        <FormLabel className="text-gray-700 font-medium">Country</FormLabel>
+                                                        <FormLabel className="text-gray-700 font-medium text-sm sm:text-base">Country</FormLabel>
                                                         <FormControl>
                                                             <Input
                                                                 placeholder="Enter country"
-                                                                className="rounded-xl border-gray-200 focus:border-green-500 focus:ring-green-500 h-12"
+                                                                className="rounded-lg sm:rounded-xl border-gray-200 focus:border-green-500 focus:ring-green-500 h-10 sm:h-12 text-sm sm:text-base"
                                                                 {...field}
-                                                                disabled 
+                                                                disabled
                                                             />
                                                         </FormControl>
                                                         <FormMessage />
@@ -737,11 +746,11 @@ export default function SettingsPage() {
                                                 name="zipCode"
                                                 render={({ field }) => (
                                                     <FormItem>
-                                                        <FormLabel className="text-gray-700 font-medium">Zip/Postal Code (Optional)</FormLabel>
+                                                        <FormLabel className="text-gray-700 font-medium text-sm sm:text-base">Zip/Postal Code (Optional)</FormLabel>
                                                         <FormControl>
                                                             <Input
                                                                 placeholder="Enter zip code"
-                                                                className="rounded-xl border-gray-200 focus:border-green-500 focus:ring-green-500 h-12"
+                                                                className="rounded-lg sm:rounded-xl border-gray-200 focus:border-green-500 focus:ring-green-500 h-10 sm:h-12 text-sm sm:text-base"
                                                                 {...field}
                                                             />
                                                         </FormControl>
@@ -751,15 +760,15 @@ export default function SettingsPage() {
                                             />
                                         </div>
 
-                                        <div className="flex gap-4 pt-4">
+                                        <div className="flex gap-3 sm:gap-4 pt-4 flex-col sm:flex-row">
                                             <Button
                                                 type="submit"
                                                 disabled={addressForm.formState.isSubmitting || addAddressMutation.isPending || updateAddressMutation.isPending}
-                                                className="bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg shadow-md hover:shadow-lg transition-colors"
+                                                className="bg-green-600 hover:bg-green-700 text-white font-semibold py-2.5 sm:py-3 px-4 sm:px-6 rounded-lg shadow-md hover:shadow-lg transition-colors text-sm sm:text-base w-full sm:w-auto"
                                             >
                                                 {addressForm.formState.isSubmitting || addAddressMutation.isPending || updateAddressMutation.isPending ? (
                                                     <>
-                                                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                                                        <Loader2 className="mr-2 h-4 w-4 sm:h-5 sm:w-5 animate-spin inline" />
                                                         {editingAddress ? 'Updating Address...' : 'Adding Address...'}
                                                     </>
                                                 ) : (
@@ -775,7 +784,7 @@ export default function SettingsPage() {
                                                     setIsFormVisible(false);
                                                     addressForm.reset(defaultAddressFormValues);
                                                 }}
-                                                className="rounded-lg"
+                                                className="rounded-lg text-sm sm:text-base py-2.5 sm:py-3 w-full sm:w-auto"
                                             >
                                                 {editingAddress ? 'Cancel Edit' : 'Cancel Add'}
                                             </Button>
@@ -787,25 +796,25 @@ export default function SettingsPage() {
                     </div>
 
                     {/* Account Actions */}
-                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
-                        <h2 className="text-2xl font-bold text-gray-900 mb-6">Account Actions</h2>
-                        <div className="space-y-4">
-                            <div className="flex items-center justify-between p-4 border border-gray-200 rounded-xl">
-                                <div>
-                                    <h3 className="font-medium text-gray-800">Export Account Data</h3>
-                                    <p className="text-sm text-gray-600">Download a copy of your account data</p>
+                    <div className="bg-white rounded-xl sm:rounded-lg shadow-sm border border-gray-200 p-4 sm:p-8">
+                        <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4 sm:mb-6">Account Actions</h2>
+                        <div className="space-y-3 sm:space-y-4">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 p-3 sm:p-4 border border-gray-200 rounded-lg sm:rounded-xl hover:border-gray-300 transition-colors">
+                                <div className="min-w-0">
+                                    <h3 className="font-medium text-gray-800 text-sm sm:text-base">Export Account Data</h3>
+                                    <p className="text-xs sm:text-sm text-gray-600">Download a copy of your account data</p>
                                 </div>
-                                <Button variant="outline" className="rounded-xl">
+                                <Button variant="outline" className="rounded-lg text-xs sm:text-sm h-9 sm:h-10 w-full sm:w-auto flex-shrink-0">
                                     Export Data
                                 </Button>
                             </div>
 
-                            <div className="flex items-center justify-between p-4 border border-red-200 bg-red-50 rounded-xl">
-                                <div>
-                                    <h3 className="font-medium text-red-800">Delete Account</h3>
-                                    <p className="text-sm text-red-600">Permanently delete your account and all data</p>
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 p-3 sm:p-4 border border-red-200 bg-red-50 rounded-lg sm:rounded-xl hover:border-red-300 transition-colors">
+                                <div className="min-w-0">
+                                    <h3 className="font-medium text-red-800 text-sm sm:text-base">Delete Account</h3>
+                                    <p className="text-xs sm:text-sm text-red-600">Permanently delete your account and all data</p>
                                 </div>
-                                <Button variant="outline" className="border-red-300 text-red-600 hover:bg-red-50 rounded-xl">
+                                <Button variant="outline" className="border-red-300 text-red-600 hover:bg-red-50 rounded-lg text-xs sm:text-sm h-9 sm:h-10 w-full sm:w-auto flex-shrink-0">
                                     Delete Account
                                 </Button>
                             </div>
