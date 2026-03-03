@@ -171,7 +171,12 @@ export default function CheckoutPage() {
             console.log('Order Data being sent:', orderData);
 
             const orderResponse = await createOrderMutation.mutateAsync(orderData);
-            const createdOrderId = orderResponse?.data?._id || orderResponse?.order?._id || orderResponse?._id;
+            console.log('Order response:', orderResponse);
+            const createdOrderId =
+                orderResponse?.data?.orderId ||
+                orderResponse?.data?._id ||
+                orderResponse?.order?._id ||
+                orderResponse?._id;
 
             if (!createdOrderId) {
                 toast.error("Failed to create order. Please try again.");
@@ -210,12 +215,33 @@ export default function CheckoutPage() {
                 }
             };
 
-            const paymentResponse = await initializePaymentMutation.mutateAsync(paymentPayload);
+            console.log('Payment payload being sent:', paymentPayload);
+            try {
+                const paymentResponse = await initializePaymentMutation.mutateAsync(paymentPayload);
+                console.log('Payment init response:', paymentResponse);
 
-            if (paymentResponse?.data?.link || paymentResponse?.link) {
-                window.location.href = paymentResponse.data?.link || paymentResponse.link;
-            } else {
-                toast.error("Unable to generate payment link.");
+                if (paymentResponse?.data?.link || paymentResponse?.link || paymentResponse?.paymentUrl || paymentResponse?.data?.paymentUrl) {
+                    const redirectUrl = paymentResponse.data?.link || paymentResponse.link || paymentResponse.paymentUrl || paymentResponse.data?.paymentUrl;
+                    window.location.href = redirectUrl;
+                    return;
+                }
+
+                // If backend returned success:false with message
+                const backendMessage = paymentResponse?.data?.message || paymentResponse?.message;
+                if (backendMessage) {
+                    toast.error(backendMessage);
+                } else {
+                    toast.error('Unable to generate payment link.');
+                }
+            } catch (err: any) {
+                console.error('Initialize payment error:', err);
+                const status = err?.response?.status;
+                const data = err?.response?.data;
+                // Surface detailed backend message if available
+                const message = data?.message || data?.error || err.message || 'Failed to initialize payment';
+                toast.error(`${message}${status ? ` (${status})` : ''}`);
+                setIsProcessingPayment(false);
+                return;
             }
 
         } catch (error: any) {
