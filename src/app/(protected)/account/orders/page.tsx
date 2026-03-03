@@ -1,23 +1,58 @@
-/* eslint-disable @next/next/no-img-element */
-/* eslint-disable @typescript-eslint/no-unused-vars */
 'use client';
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useMyOrders, useConfirmOrderReceipt, useRateProduct, useRateMarketer, useCancelOrder } from '@/hooks/useOrders';
-import { Loader2, Package, Calendar, DollarSign, ArrowLeft, ShoppingBag, Eye, Truck, CheckCircle, Star, User, MessageSquare } from 'lucide-react';
+import {
+    useMyOrders,
+    useConfirmOrderReceipt,
+    useRateProduct,
+    useRateMarketer,
+    useCancelOrder,
+} from '@/hooks/useOrders';
+import {
+    Loader2,
+    Package,
+    Calendar,
+    DollarSign,
+    ArrowLeft,
+    ShoppingBag,
+    Eye,
+    Truck,
+    CheckCircle,
+    Star,
+    MapPin,
+    CreditCard,
+    X,
+} from 'lucide-react';
 import { Card } from '@/Components/ui/card';
 import { Button } from '@/Components/ui/button';
 import { Label } from '@/Components/ui/label';
-import Link from 'next/link';
-import { Order, OrderItem } from '@/types/order';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/Components/ui/dialog';
+import { toast } from 'sonner';
 
 export default function MyOrdersPage() {
     const router = useRouter();
     const { data: ordersData, isLoading: loadingOrders, error } = useMyOrders();
+
     const [activeTab, setActiveTab] = useState<'orders' | 'track'>('orders');
-    const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-    const [ratingModal, setRatingModal] = useState<{ type: 'product' | 'marketer', orderId: string, productId?: string } | null>(null);
+    const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
+    const [showOrderModal, setShowOrderModal] = useState(false);
+
+    const [showCancelDialog, setShowCancelDialog] = useState(false);
+    const [pendingCancelOrderId, setPendingCancelOrderId] = useState<string | null>(null);
+
+    const [ratingModal, setRatingModal] = useState<{
+        type: 'product' | 'marketer';
+        orderId: string;
+        productId?: string;
+    } | null>(null);
     const [rating, setRating] = useState(5);
     const [review, setReview] = useState('');
 
@@ -26,82 +61,76 @@ export default function MyOrdersPage() {
     const rateMarketerMutation = useRateMarketer();
     const cancelOrderMutation = useCancelOrder();
 
-    // Add global animations
+    // Toast feedback
     useEffect(() => {
-        const styleSheet = document.createElement('style');
-        styleSheet.textContent = `
-            @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-            @keyframes scaleIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-            @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-            @keyframes bounceIn { from { transform: scale(0.3); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        if (confirmReceiptMutation.isSuccess) {
+            toast.success('Receipt confirmed successfully');
+            setShowOrderModal(false);
+            confirmReceiptMutation.reset();
+        }
+        if (confirmReceiptMutation.isError) {
+            toast.error('Failed to confirm receipt');
+            confirmReceiptMutation.reset();
+        }
 
-            .animate-fadeIn { animation: fadeIn 0.5s ease-out; }
-            .animate-scaleIn { animation: scaleIn 0.3s ease-out; }
-            .animate-slideUp { animation: slideUp 0.4s ease-out; }
-            .animate-bounceIn { animation: bounceIn 0.6s ease-out; }
+        if (cancelOrderMutation.isSuccess) {
+            toast.success('Order cancelled successfully');
+            setShowCancelDialog(false);
+            setPendingCancelOrderId(null);
+            cancelOrderMutation.reset();
+        }
+        if (cancelOrderMutation.isError) {
+            toast.error('Failed to cancel order');
+            cancelOrderMutation.reset();
+        }
 
-            * { cursor: default; }
-            button, a, input, textarea, select { cursor: pointer; }
+        if (rateProductMutation.isSuccess || rateMarketerMutation.isSuccess) {
+            toast.success('Rating submitted successfully');
+            setRatingModal(null);
+            setRating(5);
+            setReview('');
+            rateProductMutation.reset();
+            rateMarketerMutation.reset();
+        }
+        if (rateProductMutation.isError || rateMarketerMutation.isError) {
+            toast.error('Failed to submit rating');
+            rateProductMutation.reset();
+            rateMarketerMutation.reset();
+        }
+    }, [
+        confirmReceiptMutation.isSuccess,
+        confirmReceiptMutation.isError,
+        cancelOrderMutation.isSuccess,
+        cancelOrderMutation.isError,
+        rateProductMutation.isSuccess,
+        rateProductMutation.isError,
+        rateMarketerMutation.isSuccess,
+        rateMarketerMutation.isError,
+    ]);
 
-            .scroll-smooth { scroll-behavior: smooth; }
-            .transition-all { transition: all 0.3s ease; }
-            .hover-lift { transition: transform 0.2s ease; }
-            .hover-lift:hover { transform: translateY(-2px); }
-        `;
-        document.head.appendChild(styleSheet);
-
-        // Add smooth scrolling to body
-        document.body.classList.add('scroll-smooth');
-
-        return () => {
-            document.head.removeChild(styleSheet);
-            document.body.classList.remove('scroll-smooth');
-        };
-    }, []);
-
-    // The loading check now only depends on loadingOrders
-    if (loadingOrders) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
-                <div className="text-center">
-                    <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto mb-4" />
-                    <p className="text-lg text-gray-700">Loading your orders...</p>
-                </div>
-            </div>
-        );
-    }
-
-    // Removed the !user redirection check:
-    // if (!user) {
-    //     router.push('/login');
-    //     return null;
-    // }
-
-    // If an error occurs (which might include a 401/403 unauthenticated error from the API),
-    // it will be displayed. You might want to enhance this to redirect on a specific 401 error.
-    if (error) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-100">
-                <p className="text-red-600 text-xl">
-                    {/* The error message will now show for authentication failures too, if the hook returns an error */}
-                    {error instanceof Error ? error.message : 'Failed to load orders. You may need to log in.'}
-                </p>
-            </div>
-        );
-    }
-
-    const orders = ordersData?.orders || [];
-
-    const handleConfirmReceipt = (orderId: string) => {
-        // PUT /api/orders/:id - Update order status (confirm receipt)
-        confirmReceiptMutation.mutate(orderId);
+    const openOrderDetails = (order: any) => {
+        setSelectedOrder(order);
+        setShowOrderModal(true);
     };
 
-    const handleCancelOrder = (orderId: string) => {
-        if (window.confirm('Are you sure you want to cancel this order?')) {
-            // DELETE /api/orders/:id - Cancel order
-            cancelOrderMutation.mutate(orderId);
+    const closeOrderDetails = () => {
+        setShowOrderModal(false);
+        setTimeout(() => setSelectedOrder(null), 300);
+    };
+
+    const requestCancelOrder = (orderId: string) => {
+        setPendingCancelOrderId(orderId);
+        setShowCancelDialog(true);
+    };
+
+    const confirmCancel = () => {
+        if (pendingCancelOrderId) {
+            cancelOrderMutation.mutate(pendingCancelOrderId);
         }
+    };
+
+    const handleConfirmReceipt = (orderId: string) => {
+        confirmReceiptMutation.mutate(orderId);
     };
 
     const handleRateProduct = (orderId: string, productId: string) => {
@@ -116,47 +145,230 @@ export default function MyOrdersPage() {
         setReview('');
     };
 
-    const trackableOrders = orders.filter((order: Order) => order.status.toLowerCase() === 'delivered' || order.status.toLowerCase() === 'shipped');
-
     const submitRating = () => {
         if (!ratingModal) return;
 
         if (ratingModal.type === 'product') {
-            // POST /api/orders/:orderId/products/:productId/rate - Rate a product from an order
             rateProductMutation.mutate({
                 orderId: ratingModal.orderId,
                 productId: ratingModal.productId!,
                 rating,
-                review
+                review,
             });
         } else {
-            // Rate marketer (assuming this is handled via order rating)
             rateMarketerMutation.mutate({
                 orderId: ratingModal.orderId,
                 rating,
-                review
+                review,
             });
         }
-
-        setRatingModal(null);
     };
 
+    if (loadingOrders) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
+                <div className="text-center">
+                    <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto mb-4" />
+                    <p className="text-lg text-gray-700">Loading your orders...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-100">
+                <p className="text-red-600 text-xl">
+                    {error instanceof Error ? error.message : 'Failed to load orders. Please log in.'}
+                </p>
+            </div>
+        );
+    }
+
+    const orders = ordersData?.data || [];
+
+    const trackableOrders = orders.filter(
+        (order: any) =>
+            order.status?.toLowerCase() === 'delivered' ||
+            order.status?.toLowerCase() === 'shipped'
+    );
+
     return (
-        <div className="app-content min-h-screen bg-gray-50 pb-20 md:pb-0">
+        <div className="min-h-screen bg-gray-50 pb-20 md:pb-0 relative">
+            {/* Order Details Modal */}
+            <Dialog open={showOrderModal} onOpenChange={setShowOrderModal}>
+                <DialogContent className="max-w-2xl max-h-[92vh] overflow-y-auto p-0 gap-0 rounded-2xl">
+                    {selectedOrder && (
+                        <>
+                            <DialogHeader className="sticky top-0 bg-white z-10 border-b px-6 py-5 flex flex-row items-center justify-between">
+                                <DialogTitle className="text-xl font-bold">
+                                    Order #{selectedOrder.orderNumber}
+                                </DialogTitle>
+                                <button
+                                    onClick={closeOrderDetails}
+                                    className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+                                >
+                                    <X className="h-6 w-6 text-gray-600" />
+                                </button>
+                            </DialogHeader>
+
+                            <div className="p-6 space-y-6">
+                                {/* Status & Date */}
+                                <div className="flex justify-between items-center">
+                                    <div>
+                                        <p className="text-sm text-gray-500">Placed on</p>
+                                        <p className="font-medium">
+                                            {new Date(selectedOrder.createdAt).toLocaleDateString('en-US', {
+                                                weekday: 'long',
+                                                year: 'numeric',
+                                                month: 'long',
+                                                day: 'numeric',
+                                            })}
+                                        </p>
+                                    </div>
+                                    <span
+                                        className={`px-4 py-1.5 rounded-full text-sm font-medium ${selectedOrder.status?.toLowerCase() === 'delivered'
+                                                ? 'bg-green-100 text-green-800'
+                                                : selectedOrder.status?.toLowerCase() === 'pending'
+                                                    ? 'bg-yellow-100 text-yellow-800'
+                                                    : 'bg-gray-100 text-gray-800'
+                                            }`}
+                                    >
+                                        {selectedOrder.status?.charAt(0).toUpperCase() + selectedOrder.status?.slice(1)}
+                                    </span>
+                                </div>
+
+                                {/* Shipping Address */}
+                                {selectedOrder.shippingAddress && (
+                                    <div className="bg-gray-50 p-4 rounded-xl">
+                                        <div className="flex items-start gap-3">
+                                            <MapPin className="h-5 w-5 text-blue-600 mt-0.5" />
+                                            <div>
+                                                <p className="font-medium text-gray-800">Delivery Address</p>
+                                                <p className="text-gray-600 mt-1">
+                                                    {selectedOrder.shippingAddress.address}
+                                                    <br />
+                                                    {selectedOrder.shippingAddress.city}, {selectedOrder.shippingAddress.state}
+                                                    <br />
+                                                    {selectedOrder.shippingAddress.country}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Items */}
+                                <div>
+                                    <h3 className="font-semibold text-lg mb-3">Items</h3>
+                                    <div className="space-y-4">
+                                        {selectedOrder.items.map((item: any, idx: number) => (
+                                            <div
+                                                key={idx}
+                                                className="flex gap-4 bg-gray-50/70 p-4 rounded-xl"
+                                            >
+                                                <img
+                                                    src={item.product.image || '/placeholder-product.jpg'}
+                                                    alt={item.product.name}
+                                                    className="w-20 h-20 object-cover rounded-lg border"
+                                                />
+                                                <div className="flex-1">
+                                                    <p className="font-medium text-gray-900">{item.product.name}</p>
+                                                    <p className="text-sm text-gray-600 mt-1">
+                                                        Qty: {item.quantity} × ₦{item.product.price.toLocaleString()}
+                                                    </p>
+                                                </div>
+                                                <p className="font-bold text-gray-900 whitespace-nowrap">
+                                                    ₦{(item.product.price * item.quantity).toLocaleString()}
+                                                </p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Totals */}
+                                <div className="bg-gray-50 p-4 rounded-xl space-y-3">
+                                    <div className="flex justify-between text-gray-600">
+                                        <span>Subtotal</span>
+                                        <span>₦{selectedOrder.totalAmount.toLocaleString()}</span>
+                                    </div>
+                                    <div className="flex justify-between font-bold text-lg pt-3 border-t">
+                                        <span>Total</span>
+                                        <span>₦{selectedOrder.totalAmount.toLocaleString()}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-sm text-gray-600 mt-2">
+                                        <CreditCard className="h-4 w-4" />
+                                        <span>Paid via {selectedOrder.paymentMethod}</span>
+                                    </div>
+                                </div>
+
+                                {/* Actions */}
+                                <div className="flex flex-wrap gap-3 pt-4">
+                                    {selectedOrder.status?.toLowerCase() === 'pending' && (
+                                        <Button
+                                            variant="destructive"
+                                            className="flex-1"
+                                            onClick={() => requestCancelOrder(selectedOrder.orderId)}
+                                            disabled={cancelOrderMutation.isPending}
+                                        >
+                                            {cancelOrderMutation.isPending ? 'Cancelling...' : 'Cancel Order'}
+                                        </Button>
+                                    )}
+
+                                    {selectedOrder.status?.toLowerCase() === 'delivered' && (
+                                        <Button
+                                            className="flex-1 bg-green-600 hover:bg-green-700"
+                                            onClick={() => handleConfirmReceipt(selectedOrder.orderId)}
+                                            disabled={confirmReceiptMutation.isPending}
+                                        >
+                                            {confirmReceiptMutation.isPending ? 'Confirming...' : 'Confirm Receipt'}
+                                        </Button>
+                                    )}
+                                </div>
+                            </div>
+                        </>
+                    )}
+                </DialogContent>
+            </Dialog>
+
+            {/* Cancel Confirmation Dialog */}
+            <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Cancel Order</DialogTitle>
+                        <DialogDescription>
+                            Are you sure you want to cancel this order? This action cannot be undone.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="gap-3 sm:gap-0">
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowCancelDialog(false)}
+                            className="flex-1 sm:flex-none"
+                        >
+                            No, keep order
+                        </Button>
+                        <Button
+                            variant="destructive"
+                            onClick={confirmCancel}
+                            disabled={cancelOrderMutation.isPending}
+                            className="flex-1 sm:flex-none"
+                        >
+                            {cancelOrderMutation.isPending ? 'Cancelling...' : 'Yes, cancel order'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
             {/* Rating Modal */}
             {ratingModal && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-fadeIn">
-                    <div className="bg-white rounded-lg p-6 w-full max-w-md animate-scaleIn">
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-lg font-semibold">
-                                Rate {ratingModal?.type === 'product' ? 'Product' : 'Marketer'}
-                            </h3>
-                            <Button variant="ghost" size="sm" onClick={() => setRatingModal(null)} className="cursor-pointer">
-                                ×
-                            </Button>
-                        </div>
-
-                        <div className="space-y-4">
+                <Dialog open={!!ratingModal} onOpenChange={() => setRatingModal(null)}>
+                    <DialogContent className="sm:max-w-md">
+                        <DialogHeader>
+                            <DialogTitle>
+                                Rate {ratingModal.type === 'product' ? 'Product' : 'Marketer'}
+                            </DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-6 py-4">
                             <div>
                                 <Label className="text-sm font-medium">Rating</Label>
                                 <div className="flex gap-1 mt-2">
@@ -164,14 +376,13 @@ export default function MyOrdersPage() {
                                         <button
                                             key={star}
                                             onClick={() => setRating(star)}
-                                            className="focus:outline-none cursor-pointer transition-transform hover:scale-110"
+                                            className="focus:outline-none transition-transform hover:scale-110"
                                         >
                                             <Star
-                                                className={`w-8 h-8 transition-colors ${
-                                                    star <= rating
-                                                        ? 'text-yellow-400 fill-current'
+                                                className={`w-8 h-8 ${star <= rating
+                                                        ? 'text-yellow-400 fill-yellow-400'
                                                         : 'text-gray-300 hover:text-yellow-300'
-                                                }`}
+                                                    }`}
                                             />
                                         </button>
                                     ))}
@@ -179,68 +390,63 @@ export default function MyOrdersPage() {
                             </div>
 
                             <div>
-                                <Label htmlFor="review" className="text-sm font-medium">Review (Optional)</Label>
+                                <Label htmlFor="review" className="text-sm font-medium">
+                                    Review (Optional)
+                                </Label>
                                 <textarea
                                     id="review"
                                     value={review}
                                     onChange={(e) => setReview(e.target.value)}
                                     placeholder="Share your experience..."
-                                    className="w-full mt-1 p-3 border border-gray-300 rounded-md resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                    className="w-full mt-1 p-3 border border-gray-300 rounded-md resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                     rows={3}
                                 />
                             </div>
-
-                            <div className="flex gap-3">
-                                <Button
-                                    onClick={() => setRatingModal(null)}
-                                    variant="outline"
-                                    className="flex-1 cursor-pointer hover:bg-gray-50 transition-colors"
-                                >
-                                    Cancel
-                                </Button>
-                                <Button
-                                    onClick={submitRating}
-                                    className="flex-1 bg-blue-600 hover:bg-blue-700 cursor-pointer transition-all hover:scale-105"
-                                    disabled={rateProductMutation.isPending || rateMarketerMutation.isPending}
-                                >
-                                    {rateProductMutation.isPending || rateMarketerMutation.isPending ? 'Submitting...' : 'Submit Rating'}
-                                </Button>
-                            </div>
                         </div>
-                    </div>
-                </div>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setRatingModal(null)}>
+                                Cancel
+                            </Button>
+                            <Button
+                                onClick={submitRating}
+                                disabled={rateProductMutation.isPending || rateMarketerMutation.isPending}
+                            >
+                                {rateProductMutation.isPending || rateMarketerMutation.isPending
+                                    ? 'Submitting...'
+                                    : 'Submit Rating'}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
             )}
 
+            {/* Main Content */}
             <div className="container mx-auto px-4 py-12 max-w-7xl">
-                {/* Header */}
-                <div className="flex items-center justify-between mb-8 animate-slideUp">
+                <div className="flex items-center justify-between mb-8">
                     <Button
                         variant="outline"
                         onClick={() => router.push('/account')}
-                        className="flex items-center gap-2 cursor-pointer hover-lift transition-all"
+                        className="flex items-center gap-2"
                     >
                         <ArrowLeft className="h-4 w-4" />
                         Back to Account
                     </Button>
                     <div className="text-center">
-                        <h1 className="text-4xl font-bold text-gray-900 animate-bounceIn">
-                            My Orders
-                        </h1>
-                        <p className="text-gray-600 mt-2 animate-fadeIn animation-delay-300">Track your purchase history</p>
+                        <h1 className="text-4xl font-bold text-gray-900">My Orders</h1>
+                        <p className="text-gray-600 mt-2">Track your purchase history</p>
                     </div>
-                    <div></div> {/* Spacer for centering */}
+                    <div />
                 </div>
 
                 {/* Tabs */}
-                <div className="flex gap-1 mb-8 bg-gray-100 p-1 rounded-lg w-fit mx-auto animate-fadeIn animation-delay-500">
+                <div className="flex gap-1 mb-8 bg-gray-100 p-1 rounded-lg w-fit mx-auto">
                     <Button
                         variant={activeTab === 'orders' ? 'default' : 'ghost'}
                         onClick={() => setActiveTab('orders')}
-                        className={`flex items-center gap-2 px-6 py-2 rounded-md transition-all cursor-pointer hover-lift ${
-                            activeTab === 'orders'
+                        className={`flex items-center gap-2 px-6 py-2 rounded-md ${activeTab === 'orders'
                                 ? 'bg-blue-600 text-white shadow-md'
                                 : 'text-gray-600 hover:bg-white'
-                        }`}
+                            }`}
                     >
                         <Package className="w-4 h-4" />
                         My Orders
@@ -248,150 +454,132 @@ export default function MyOrdersPage() {
                     <Button
                         variant={activeTab === 'track' ? 'default' : 'ghost'}
                         onClick={() => setActiveTab('track')}
-                        className={`flex items-center gap-2 px-6 py-2 rounded-md transition-all cursor-pointer hover-lift ${
-                            activeTab === 'track'
+                        className={`flex items-center gap-2 px-6 py-2 rounded-md ${activeTab === 'track'
                                 ? 'bg-blue-600 text-white shadow-md'
                                 : 'text-gray-600 hover:bg-white'
-                        }`}
+                            }`}
                     >
                         <Truck className="w-4 h-4" />
                         Track Orders
                     </Button>
                 </div>
 
-                {/* Stats Overview - Only show on orders tab */}
+                {/* Stats */}
                 {activeTab === 'orders' && orders.length > 0 && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-8 animate-fadeIn animation-delay-700">
-                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 text-center hover-lift cursor-pointer">
-                            <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-4 animate-pulse">
-                                <ShoppingBag className="w-6 h-6 text-blue-600" />
-                            </div>
-                            <h3 className="text-2xl font-bold text-gray-900 animate-countUp">{orders.length}</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                        <Card className="p-6 text-center">
+                            <ShoppingBag className="w-12 h-12 text-blue-600 mx-auto mb-4" />
+                            <h3 className="text-2xl font-bold">{orders.length}</h3>
                             <p className="text-gray-600">Total Orders</p>
-                        </div>
-
-                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 text-center hover-lift cursor-pointer">
-                            <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-4 animate-bounce">
-                                <DollarSign className="w-6 h-6 text-green-600" />
-                            </div>
-                            <h3 className="text-2xl font-bold text-gray-900 animate-countUp">
-                                ₦{orders.reduce((sum: number, order: Order) => sum + order.total, 0).toLocaleString()}
+                        </Card>
+                        <Card className="p-6 text-center">
+                            <DollarSign className="w-12 h-12 text-green-600 mx-auto mb-4" />
+                            <h3 className="text-2xl font-bold">
+                                ₦
+                                {orders
+                                    .reduce((sum: number, order: any) => sum + order.totalAmount, 0)
+                                    .toLocaleString()}
                             </h3>
                             <p className="text-gray-600">Total Spent</p>
-                        </div>
-
-                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 text-center hover-lift cursor-pointer">
-                            <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-4 animate-pulse">
-                                <Truck className="w-6 h-6 text-purple-600" />
-                            </div>
-                            <h3 className="text-2xl font-bold text-gray-900 animate-countUp">
-                                {orders.filter((order: Order) => order.status.toLowerCase() === 'delivered').length}
+                        </Card>
+                        <Card className="p-6 text-center">
+                            <Truck className="w-12 h-12 text-purple-600 mx-auto mb-4" />
+                            <h3 className="text-2xl font-bold">
+                                {orders.filter((o: any) => o.status?.toLowerCase() === 'delivered').length}
                             </h3>
                             <p className="text-gray-600">Delivered Orders</p>
-                        </div>
+                        </Card>
                     </div>
                 )}
 
-                {/* Content based on active tab */}
+                {/* Main content */}
                 {activeTab === 'orders' ? (
-                    /* Orders List */
                     orders.length === 0 ? (
-                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
-                            <div className="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-6">
-                                <Package className="w-10 h-10 text-gray-400" />
-                            </div>
-                            <h3 className="text-2xl font-bold text-gray-900 mb-3">No orders yet</h3>
+                        <div className="bg-white rounded-lg shadow p-12 text-center">
+                            <Package className="w-20 h-20 text-gray-400 mx-auto mb-6" />
+                            <h3 className="text-2xl font-bold mb-3">No orders yet</h3>
                             <p className="text-gray-600 mb-8 max-w-md mx-auto">
                                 Your order history will appear here once you make your first purchase.
                             </p>
-                            <Button
-                                onClick={() => router.push('/products')}
-                                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg shadow-md hover:shadow-lg transition-colors cursor-pointer"
-                            >
+                            <Button onClick={() => router.push('/products')} className="bg-blue-600">
                                 Start Shopping
                             </Button>
                         </div>
                     ) : (
                         <div className="space-y-6">
-                            {orders.map((order: Order, index: number) => (
-                                <Card key={order.id} className={`bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all duration-300 hover-lift cursor-pointer animate-fadeIn`} style={{ animationDelay: `${index * 100}ms` }}>
+                            {orders.map((order: any) => (
+                                <Card key={order.orderId} className="overflow-hidden">
                                     <div className="p-6">
-                                        <div className="flex items-center justify-between mb-6">
+                                        <div className="flex justify-between items-start mb-6">
                                             <div>
-                                                <h3 className="text-xl font-bold text-gray-900">Order #{order.id}</h3>
-                                                <p className="text-gray-600 flex items-center gap-2 mt-1">
+                                                <h3 className="text-xl font-bold">Order #{order.orderNumber}</h3>
+                                                <p className="text-gray-600 mt-1 flex items-center gap-2">
                                                     <Calendar className="w-4 h-4" />
                                                     {new Date(order.createdAt).toLocaleDateString('en-US', {
                                                         year: 'numeric',
                                                         month: 'long',
-                                                        day: 'numeric'
+                                                        day: 'numeric',
                                                     })}
                                                 </p>
                                             </div>
                                             <div className="text-right">
-                                                <div className="text-2xl font-bold text-gray-900 mb-1">
-                                                    ₦{order.total.toLocaleString()}
+                                                <div className="text-2xl font-bold mb-1">
+                                                    ₦{order.totalAmount.toLocaleString()}
                                                 </div>
-                                                <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                                                    order.status.toLowerCase() === 'delivered'
-                                                        ? 'bg-green-100 text-green-800'
-                                                        : order.status.toLowerCase() === 'processing'
-                                                        ? 'bg-yellow-100 text-yellow-800'
-                                                        : 'bg-gray-100 text-gray-800'
-                                                }`}>
-                                                    {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                                                <span
+                                                    className={`inline-flex px-3 py-1 rounded-full text-sm font-medium ${order.status?.toLowerCase() === 'delivered'
+                                                            ? 'bg-green-100 text-green-800'
+                                                            : order.status?.toLowerCase() === 'processing'
+                                                                ? 'bg-yellow-100 text-yellow-800'
+                                                                : 'bg-gray-100 text-gray-800'
+                                                        }`}
+                                                >
+                                                    {order.status?.charAt(0).toUpperCase() + order.status?.slice(1)}
                                                 </span>
                                             </div>
                                         </div>
 
                                         <div className="space-y-4">
-                                            {order.items.map((item: OrderItem, index: number) => (
-                                                <div key={item.productId.id} className="flex items-center gap-4 p-4 bg-gray-50/50 rounded-xl">
+                                            {order.items.map((item: any, idx: number) => (
+                                                <div
+                                                    key={idx}
+                                                    className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl"
+                                                >
                                                     <img
-                                                        src={item.productId.image}
-                                                        alt={item.productId.name}
+                                                        src={item.product.image || '/placeholder-product.jpg'}
+                                                        alt={item.product.name}
                                                         className="w-16 h-16 object-cover rounded-lg"
                                                     />
                                                     <div className="flex-1">
-                                                        <h4 className="font-semibold text-gray-800">{item.productId.name}</h4>
-                                                        <p className="text-gray-600 text-sm">Quantity: {item.quantity}</p>
+                                                        <h4 className="font-semibold">{item.product.name}</h4>
+                                                        <p className="text-sm text-gray-600">
+                                                            Quantity: {item.quantity}
+                                                        </p>
                                                     </div>
                                                     <div className="text-right">
-                                                        <p className="font-bold text-gray-800">
-                                                            ₦{(item.productId.price * item.quantity).toLocaleString()}
+                                                        <p className="font-bold">
+                                                            ₦{(item.product.price * item.quantity).toLocaleString()}
                                                         </p>
                                                         <p className="text-sm text-gray-600">
-                                                            ₦{item.productId.price.toLocaleString()} each
+                                                            ₦{item.product.price.toLocaleString()} each
                                                         </p>
                                                     </div>
                                                 </div>
                                             ))}
                                         </div>
 
-                                        <div className="flex items-center justify-between mt-6 pt-6 border-t border-gray-100">
-                                            <div className="flex gap-3">
-                                                <Button variant="outline" size="sm" className="flex items-center gap-2 cursor-pointer">
-                                                    <Eye className="w-4 h-4" />
-                                                    View Details
-                                                </Button>
-                                                <Button variant="outline" size="sm" className="cursor-pointer">
-                                                    Track Order
-                                                </Button>
-                                                {order.status.toLowerCase() === 'pending' && (
-                                                    <Button
-                                                        variant="destructive"
-                                                        size="sm"
-                                                        onClick={() => handleCancelOrder(order.id)}
-                                                        disabled={cancelOrderMutation.isPending}
-                                                        className="cursor-pointer"
-                                                    >
-                                                        {cancelOrderMutation.isPending ? 'Cancelling...' : 'Cancel Order'}
-                                                    </Button>
-                                                )}
-                                            </div>
-                                            {order.status.toLowerCase() === 'delivered' && (
-                                                <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white cursor-pointer">
-                                                    Buy Again
+                                        <div className="flex flex-wrap gap-3 mt-6 pt-6 border-t">
+                                            <Button variant="outline" onClick={() => openOrderDetails(order)}>
+                                                <Eye className="w-4 h-4 mr-2" />
+                                                View Details
+                                            </Button>
+
+                                            {order.status?.toLowerCase() === 'pending' && (
+                                                <Button
+                                                    variant="destructive"
+                                                    onClick={() => requestCancelOrder(order.orderId)}
+                                                >
+                                                    Cancel Order
                                                 </Button>
                                             )}
                                         </div>
@@ -400,162 +588,85 @@ export default function MyOrdersPage() {
                             ))}
                         </div>
                     )
+                ) : trackableOrders.length === 0 ? (
+                    <div className="bg-white rounded-lg shadow p-12 text-center">
+                        <Truck className="w-20 h-20 text-gray-400 mx-auto mb-6" />
+                        <h3 className="text-2xl font-bold mb-3">No orders to track</h3>
+                        <p className="text-gray-600 max-w-md mx-auto">
+                            Orders that are shipped or delivered will appear here for tracking and confirmation.
+                        </p>
+                    </div>
                 ) : (
-                    /* Track Orders Tab */
-                    trackableOrders.length === 0 ? (
-                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
-                            <div className="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-6">
-                                <Truck className="w-10 h-10 text-gray-400" />
-                            </div>
-                            <h3 className="text-2xl font-bold text-gray-900 mb-3">No orders to track</h3>
-                            <p className="text-gray-600 mb-8 max-w-md mx-auto">
-                                Orders that are shipped or delivered will appear here for tracking and confirmation.
-                            </p>
-                        </div>
-                    ) : (
-                        <div className="space-y-6">
-                            {trackableOrders.map((order: Order, index: number) => (
-                                <Card key={order.id} className={`bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all duration-300 hover-lift cursor-pointer animate-fadeIn`} style={{ animationDelay: `${index * 150}ms` }}>
-                                    <div className="p-6">
-                                        <div className="flex items-center justify-between mb-6">
-                                            <div>
-                                                <h3 className="text-xl font-bold text-gray-900">Order #{order.id}</h3>
-                                                <p className="text-gray-600 flex items-center gap-2 mt-1">
-                                                    <Calendar className="w-4 h-4" />
-                                                    {new Date(order.createdAt).toLocaleDateString('en-US', {
-                                                        year: 'numeric',
-                                                        month: 'long',
-                                                        day: 'numeric'
-                                                    })}
-                                                </p>
-                                                {order.marketerId && (
-                                                    <p className="text-gray-600 flex items-center gap-2 mt-1">
-                                                        <User className="w-4 h-4" />
-                                                        Delivered by: Marketer #{order.marketerId}
-                                                    </p>
-                                                )}
+                    <div className="space-y-6">
+                        {trackableOrders.map((order: any) => (
+                            <Card key={order.orderId} className="overflow-hidden">
+                                <div className="p-6">
+                                    <div className="flex justify-between mb-6">
+                                        <div>
+                                            <h3 className="text-xl font-bold">Order #{order.orderNumber}</h3>
+                                            <p className="text-gray-600 mt-1 flex items-center gap-2">
+                                                <Calendar className="w-4 h-4" />
+                                                {new Date(order.createdAt).toLocaleDateString('en-US', {
+                                                    year: 'numeric',
+                                                    month: 'long',
+                                                    day: 'numeric',
+                                                })}
+                                            </p>
+                                        </div>
+                                        <div className="text-right">
+                                            <div className="text-2xl font-bold mb-1">
+                                                ₦{order.totalAmount.toLocaleString()}
                                             </div>
-                                            <div className="text-right">
-                                                <div className="text-2xl font-bold text-gray-900 mb-1">
-                                                    ₦{order.total.toLocaleString()}
-                                                </div>
-                                                <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                                                    order.status.toLowerCase() === 'delivered'
+                                            <span
+                                                className={`inline-flex px-3 py-1 rounded-full text-sm font-medium ${order.status?.toLowerCase() === 'delivered'
                                                         ? 'bg-green-100 text-green-800'
                                                         : 'bg-blue-100 text-blue-800'
-                                                }`}>
-                                                    {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-                                                </span>
-                                                {order.deliveryConfirmed && (
-                                                    <div className="flex items-center gap-1 mt-2 text-green-600">
-                                                        <CheckCircle className="w-4 h-4" />
-                                                        <span className="text-sm font-medium">Receipt Confirmed</span>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        <div className="space-y-4">
-                                            {order.items.map((item: OrderItem, index: number) => {
-                                                const productRating = order.productRatings?.find(r => r.productId === item.productId.id);
-                                                return (
-                                                    <div key={item.productId.id} className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 bg-gray-50/50 rounded-xl">
-                                                        <img
-                                                            src={item.productId.image}
-                                                            alt={item.productId.name}
-                                                            className="w-16 h-16 object-cover rounded-lg flex-shrink-0"
-                                                        />
-                                                        <div className="flex-1 min-w-0">
-                                                            <h4 className="font-semibold text-gray-800 truncate">{item.productId.name}</h4>
-                                                            <p className="text-gray-600 text-sm">Quantity: {item.quantity}</p>
-                                                            {productRating && (
-                                                                <div className="flex items-center gap-1 mt-1">
-                                                                    <div className="flex">
-                                                                        {[...Array(5)].map((_, i) => (
-                                                                            <Star
-                                                                                key={i}
-                                                                                className={`w-3 h-3 ${i < productRating.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
-                                                                            />
-                                                                        ))}
-                                                                    </div>
-                                                                    <span className="text-xs text-gray-600 ml-1">Rated</span>
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                        <div className="text-right flex flex-col gap-2 flex-shrink-0">
-                                                            <div>
-                                                                <p className="font-bold text-gray-800 text-sm sm:text-base">
-                                                                    ₦{(item.productId.price * item.quantity).toLocaleString()}
-                                                                </p>
-                                                                <p className="text-xs sm:text-sm text-gray-600">
-                                                                    ₦{item.productId.price.toLocaleString()} each
-                                                                </p>
-                                                            </div>
-                                                            {order.deliveryConfirmed && !productRating && (
-                                                                <Button
-                                                                    size="sm"
-                                                                    variant="outline"
-                                                                    onClick={() => handleRateProduct(order.id, item.productId.id || item.productId._id || '')}
-                                                                    className="text-xs cursor-pointer hover-lift transition-all"
-                                                                >
-                                                                    <Star className="w-3 h-3 mr-1" />
-                                                                    Rate Product
-                                                                </Button>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-
-                                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mt-6 pt-6 border-t border-gray-100 gap-4">
-                                            <div className="flex flex-wrap gap-2 sm:gap-3">
-                                                {order.status.toLowerCase() === 'delivered' && !order.deliveryConfirmed && (
-                                                    <Button
-                                                        size="sm"
-                                                        onClick={() => handleConfirmReceipt(order.id)}
-                                                        className="bg-green-600 hover:bg-green-700 text-white cursor-pointer hover-lift transition-all"
-                                                        disabled={confirmReceiptMutation.isPending}
-                                                    >
-                                                        <CheckCircle className="w-4 h-4 mr-1" />
-                                                        <span className="hidden sm:inline">{confirmReceiptMutation.isPending ? 'Confirming...' : 'Confirm Receipt'}</span>
-                                                        <span className="sm:hidden">Confirm</span>
-                                                    </Button>
-                                                )}
-                                                {order.deliveryConfirmed && order.marketerId && !order.marketerRating?.rating && (
-                                                    <Button
-                                                        size="sm"
-                                                        variant="outline"
-                                                        onClick={() => handleRateMarketer(order.id)}
-                                                        className="flex items-center gap-2 cursor-pointer hover-lift transition-all"
-                                                    >
-                                                        <User className="w-4 h-4" />
-                                                        <span className="hidden sm:inline">Rate Marketer</span>
-                                                        <span className="sm:hidden">Rate</span>
-                                                    </Button>
-                                                )}
-                                                {order.marketerRating?.rating && (
-                                                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                                                        <User className="w-4 h-4" />
-                                                        <div className="flex">
-                                                            {[...Array(5)].map((_, i) => (
-                                                                <Star
-                                                                    key={i}
-                                                                    className={`w-3 h-3 ${i < order.marketerRating!.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
-                                                                />
-                                                            ))}
-                                                        </div>
-                                                        <span className="hidden sm:inline">Marketer Rated</span>
-                                                        <span className="sm:hidden">Rated</span>
-                                                    </div>
-                                                )}
-                                            </div>
+                                                    }`}
+                                            >
+                                                {order.status?.charAt(0).toUpperCase() + order.status?.slice(1)}
+                                            </span>
                                         </div>
                                     </div>
-                                </Card>
-                            ))}
-                        </div>
-                    )
+
+                                    <div className="space-y-4">
+                                        {order.items.map((item: any, idx: number) => (
+                                            <div key={idx} className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
+                                                <img
+                                                    src={item.product.image || '/placeholder-product.jpg'}
+                                                    alt={item.product.name}
+                                                    className="w-16 h-16 object-cover rounded-lg"
+                                                />
+                                                <div className="flex-1">
+                                                    <h4 className="font-semibold">{item.product.name}</h4>
+                                                    <p className="text-sm text-gray-600">Quantity: {item.quantity}</p>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="font-bold">
+                                                        ₦{(item.product.price * item.quantity).toLocaleString()}
+                                                    </p>
+                                                    <p className="text-sm text-gray-600">
+                                                        ₦{item.product.price.toLocaleString()} each
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    {order.status?.toLowerCase() === 'delivered' && (
+                                        <div className="mt-6 pt-6 border-t">
+                                            <Button
+                                                className="bg-green-600 hover:bg-green-700"
+                                                onClick={() => handleConfirmReceipt(order.orderId)}
+                                                disabled={confirmReceiptMutation.isPending}
+                                            >
+                                                {confirmReceiptMutation.isPending ? 'Confirming...' : 'Confirm Receipt'}
+                                            </Button>
+                                        </div>
+                                    )}
+                                </div>
+                            </Card>
+                        ))}
+                    </div>
                 )}
             </div>
         </div>
