@@ -14,13 +14,13 @@ export default function ProductsLayout({
 }) {
     return (
         <SearchProvider>
-            <div className="flex flex-col min-h-screen">
+            <div className="app-content flex flex-col min-h-screen">
                 <div className="flex flex-1">
                     <Suspense fallback={<div>Loading sidebar...</div>}>
                         <ClientSidebarWrapper />
                     </Suspense>
 
-                    <main className="flex-1 lg:ml-64">
+                    <main className="app-content flex-1 lg:ml-64 overflow-y-auto">
                         <Suspense fallback={<div>Loading header...</div>}>
                             <Header />
                         </Suspense>

@@ -7,6 +7,8 @@ import User from './models/User.js';
 import { validateConfig, getConfigStatus } from './config/validation.js';
 import { requestLogger } from './middleware/errorHandler.js';
 import supportRoutes from './routes/support.js';
+import paymentRoutes from './routes/payment.js';
+import emailService from './services/emailService.js';
 
 
 
@@ -20,38 +22,20 @@ const PORT = config.PORT;
 
 // CORS Configuration
 const allowedOrigins = [
-    'http://localhost:3000',
+    'https://epilux-backend.vercel.app',
     'http://192.168.1.100:3002',
     'http://192.168.1.100:3000',
+    'https://epilux-backend.vercel.app',
     'https://epilux48.vercel.app',
     'https://epilux48.vercel.app:3000',
-    'https://epilux48.vercel.app:443'
+    'https://epilux48.vercel.app:443',
+    'https://epilux.com.ng',
+    'https://www.epilux.com.ng'
 ];
 
 // Middleware - Dynamic CORS handling
 app.use(cors({
-    origin: function (origin, callback) {
-        // Allow requests with no origin (like mobile apps, curl, etc)
-        if (!origin) return callback(null, true);
-        
-        // Check if the origin is in the allowed list
-        if (allowedOrigins.includes(origin)) {
-            return callback(null, true);
-        }
-        
-        // For development, allow any localhost with any port
-        if (process.env.NODE_ENV === 'development' && /^https?:\/\/localhost(:\d+)?$/.test(origin)) {
-            return callback(null, true);
-        }
-        
-        // For production, allow any subdomain of vercel.app
-        if (process.env.NODE_ENV === 'production' && /^https?:\/\/([a-zA-Z0-9-]+\.)*vercel\.app$/.test(origin)) {
-            return callback(null, true);
-        }
-        
-        console.log('CORS blocked origin:', origin);
-        return callback(new Error('Not allowed by CORS'));
-    },
+    origin: true, // Allow all origins
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-CSRF-Token', 'Accept', 'Accept-Version', 'Content-Length', 'X-Api-Version', 'X-Response-Time'],
@@ -69,7 +53,7 @@ app.use((req, res, next) => {
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-app.use(requestLogger);
+// app.use(requestLogger);
 // Validate configuration
 const configErrors = validateConfig();
 if (configErrors.length > 0) {
@@ -103,6 +87,13 @@ import orderRoutes from './routes/orders.js';
 import affiliateRoutes from './routes/affiliate.js';
 import adminRoutes from './routes/admin.js';
 import userRoutes from './routes/user.js';
+import commissionRoutes from './routes/commissions.js';
+import deliveryRoutes from './routes/delivery.js';
+import marketerRoutes from './routes/marketers.js';
+import uploadRoutes from './routes/uploads.js';
+import walletRoutes from './routes/wallet.js';
+import cartRoutes from './routes/cart.js';
+import * as adminController from './controllers/adminController.js';
 
 // Use routes
 app.use('/api/auth', authRoutes);
@@ -111,7 +102,90 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/affiliate', affiliateRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/support', supportRoutes);
-app.use('/api/users', userRoutes);
+app.use('/api/payment', paymentRoutes);
+app.use('/api/user', userRoutes);
+app.use('/api/commission/admin/commissions', commissionRoutes);
+app.use('/api/delivery', deliveryRoutes);
+app.use('/api/marketers', marketerRoutes);
+app.use('/api/uploads', uploadRoutes);
+app.use('/api/wallet', walletRoutes);
+app.use('/api/cart', cartRoutes);
+
+// Commission settings routes
+app.get('/api/commission/admin/settings', async (req, res) => {
+    try {
+        const settings = {
+            commissionRate: 12,
+            excludedRoles: ['admin', 'marketer'],
+            withdrawalWindow: {
+                endDay: 30,
+                startDay: 26
+            },
+            updatedAt: '2025-11-17T09:41:00.770Z'
+        };
+
+        res.json({
+            success: true,
+            data: settings
+        });
+    } catch (error) {
+        console.error('Error fetching settings:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching settings'
+        });
+    }
+});
+
+app.put('/api/commission/admin/settings', async (req, res) => {
+    try {
+        const { rate, excludedRoles, withdrawalWindow } = req.body;
+
+        // Validate input
+        if (rate !== undefined && (typeof rate !== 'number' || rate < 0 || rate > 100)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Commission rate must be a number between 0 and 100'
+            });
+        }
+
+        if (excludedRoles !== undefined && !Array.isArray(excludedRoles)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Excluded roles must be an array'
+            });
+        }
+
+        if (withdrawalWindow !== undefined) {
+            if (typeof withdrawalWindow !== 'object' || !withdrawalWindow.startDay || !withdrawalWindow.endDay) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Withdrawal window must be an object with startDay and endDay'
+                });
+            }
+        }
+
+        // Update settings (in a real app, save to database)
+        const updatedSettings = {
+            commissionRate: rate !== undefined ? rate : 12,
+            excludedRoles: excludedRoles !== undefined ? excludedRoles : ['admin', 'marketer'],
+            withdrawalWindow: withdrawalWindow !== undefined ? withdrawalWindow : { endDay: 30, startDay: 26 },
+            updatedAt: new Date().toISOString()
+        };
+
+        res.json({
+            success: true,
+            data: updatedSettings,
+            message: 'Settings updated successfully'
+        });
+    } catch (error) {
+        console.error('Error updating settings:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error updating settings'
+        });
+    }
+});
 
 // Temporary admin route to list all users (remove in production)
 app.get('/api/admin/users', async (req, res) => {
@@ -153,6 +227,52 @@ app.get('/health', (req, res) => {
         timestamp: new Date().toISOString(),
         uptime: process.uptime()
     });
+});
+
+// Contact form submission (public route)
+app.post('/api/contact', async (req, res) => {
+    try {
+        const { name, email, phone, subject, message, inquiryType } = req.body;
+
+        // Basic validation
+        if (!name || !email || !subject || !message) {
+            return res.status(400).json({
+                success: false,
+                message: 'Name, email, subject, and message are required'
+            });
+        }
+
+        // Email validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Please provide a valid email address'
+            });
+        }
+
+        // Send email
+        await emailService.sendContactEmail({
+            name,
+            email,
+            phone,
+            subject,
+            message,
+            inquiryType
+        });
+
+        res.json({
+            success: true,
+            message: 'Thank you for your message! We\'ll get back to you within 24 hours.'
+        });
+
+    } catch (error) {
+        console.error('Contact form submission error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to send message. Please try again later.'
+        });
+    }
 });
 
 // 404 handler for undefined routes

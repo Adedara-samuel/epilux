@@ -338,7 +338,7 @@ const getDashboardStats = async (req, res) => {
 const getUser = async (req, res) => {
   try {
     const user = await User.findById(req.params.id).select('-password');
-    
+
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -348,7 +348,10 @@ const getUser = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      data: user
+      data: {
+        ...user.toObject(),
+        suspended: user.isActive === false
+      }
     });
   } catch (error) {
     console.error('Error getting user:', error);
@@ -387,11 +390,17 @@ const getUsers = async (req, res) => {
       .skip((page - 1) * limit)
       .lean();
 
+    // Add suspended field to each user
+    const usersWithSuspended = users.map(user => ({
+      ...user,
+      suspended: user.isActive === false
+    }));
+
     const count = await User.countDocuments(query);
 
     res.status(200).json({
       success: true,
-      data: users,
+      data: usersWithSuspended,
       pagination: {
         total: count,
         page: Number(page),
@@ -447,6 +456,64 @@ const updateUser = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error updating user',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Suspend user
+ */
+const suspendUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { suspended } = req.body;
+
+    // Validate suspended status
+    if (typeof suspended !== 'boolean') {
+      return res.status(400).json({
+        success: false,
+        message: 'Suspended status is required and must be a boolean'
+      });
+    }
+
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Prevent suspension of admin users
+    if (user.role === 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Cannot suspend admin users'
+      });
+    }
+
+    // Set suspension status
+    user.isActive = !suspended;
+    await user.save();
+
+    // Remove password from response
+    const userResponse = user.toObject();
+    delete userResponse.password;
+
+    res.status(200).json({
+      success: true,
+      message: `User ${suspended ? 'suspended' : 'unsuspended'} successfully`,
+      data: {
+        ...userResponse,
+        suspended
+      }
+    });
+  } catch (error) {
+    console.error('Error suspending user:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error suspending user',
       error: error.message
     });
   }
@@ -816,13 +883,15 @@ const updateWithdrawalStatus = async (req, res) => {
 
 const getSettings = async (req, res) => {
   try {
-    // In a real app, you would get these from a settings model or config
+    // Commission settings data - updated with latest values
     const settings = {
-      commissionRate: 0.1, // 10% default commission
-      minWithdrawal: 50,
-      paymentMethods: ['bank_transfer', 'paypal', 'crypto'],
-      currency: 'USD',
-      // Add more settings as needed
+      commissionRate: 12, // 12% commission rate
+      excludedRoles: ['admin', 'marketer'],
+      withdrawalWindow: {
+        endDay: 30,
+        startDay: 26
+      },
+      updatedAt: '2025-11-17T09:41:00.770Z'
     };
 
     res.json({
@@ -841,7 +910,7 @@ const getSettings = async (req, res) => {
 const updateSettings = async (req, res) => {
   try {
     const { commissionRate, minWithdrawal, paymentMethods, currency } = req.body;
-    
+
     // In a real app, you would save these to a settings model or config
     const updatedSettings = {
       commissionRate: commissionRate || 0.1,
@@ -868,12 +937,137 @@ const updateSettings = async (req, res) => {
   }
 };
 
+// Get all commission records with filtering, pagination, and statistics
+const getAllCommissions = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    // Build filter object
+    const filter = {};
+
+    // Status filter
+    if (req.query.status && req.query.status !== 'all') {
+      filter.status = req.query.status;
+    }
+
+    // Type filter
+    if (req.query.type && req.query.type !== 'all') {
+      filter.type = req.query.type;
+    }
+
+    // Date range filter
+    if (req.query.startDate || req.query.endDate) {
+      filter.createdAt = {};
+      if (req.query.startDate) {
+        filter.createdAt.$gte = new Date(req.query.startDate);
+      }
+      if (req.query.endDate) {
+        filter.createdAt.$lte = new Date(req.query.endDate);
+      }
+    }
+
+    // Affiliate filter
+    if (req.query.affiliateId) {
+      filter.affiliate = req.query.affiliateId;
+    }
+
+    // Amount range filter
+    if (req.query.minAmount || req.query.maxAmount) {
+      filter.amount = {};
+      if (req.query.minAmount) {
+        filter.amount.$gte = parseFloat(req.query.minAmount);
+      }
+      if (req.query.maxAmount) {
+        filter.amount.$lte = parseFloat(req.query.maxAmount);
+      }
+    }
+
+    // Get commissions with pagination
+    const [commissions, total] = await Promise.all([
+      AffiliateCommission.find(filter)
+        .populate('affiliate', 'firstName lastName email')
+        .populate('referredUser', 'firstName lastName email')
+        .populate('order', 'orderNumber totalAmount')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      AffiliateCommission.countDocuments(filter)
+    ]);
+
+    // Calculate summary statistics
+    const stats = await AffiliateCommission.aggregate([
+      { $match: filter },
+      {
+        $group: {
+          _id: null,
+          totalCommissions: { $sum: 1 },
+          totalAmount: { $sum: '$amount' },
+          averageAmount: { $avg: '$amount' },
+          pendingCount: {
+            $sum: { $cond: [{ $eq: ['$status', 'pending'] }, 1, 0] }
+          },
+          availableCount: {
+            $sum: { $cond: [{ $eq: ['$status', 'available'] }, 1, 0] }
+          },
+          withdrawnCount: {
+            $sum: { $cond: [{ $eq: ['$status', 'withdrawn'] }, 1, 0] }
+          },
+          rejectedCount: {
+            $sum: { $cond: [{ $eq: ['$status', 'rejected'] }, 1, 0] }
+          }
+        }
+      }
+    ]);
+
+    const summaryStats = stats[0] || {
+      totalCommissions: 0,
+      totalAmount: 0,
+      averageAmount: 0,
+      pendingCount: 0,
+      availableCount: 0,
+      withdrawnCount: 0,
+      rejectedCount: 0
+    };
+
+    res.json({
+      success: true,
+      commissions,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit)
+      },
+      statistics: {
+        totalCommissions: summaryStats.totalCommissions,
+        totalAmount: summaryStats.totalAmount,
+        averageAmount: summaryStats.averageAmount || 0,
+        byStatus: {
+          pending: summaryStats.pendingCount,
+          available: summaryStats.availableCount,
+          withdrawn: summaryStats.withdrawnCount,
+          rejected: summaryStats.rejectedCount
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching all commissions:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching commission records'
+    });
+  }
+};
+
 // Export all controller functions
 export {
   getDashboardStats,
   getUsers,
   getUser,
   updateUser,
+  suspendUser,
   deleteUser,
   getRecentAffiliateActivity,
   getRecentSignups,
@@ -891,5 +1085,6 @@ export {
   getWithdrawals,
   updateWithdrawalStatus,
   getSettings,
-  updateSettings
+  updateSettings,
+  getAllCommissions
 };

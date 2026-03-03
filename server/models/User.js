@@ -30,6 +30,10 @@ const userSchema = new Schema({
         enum: ['user', 'admin', 'affiliate'],
         default: 'user'
     },
+    isActive: {
+        type: Boolean,
+        default: true
+    },
     emailVerified: {
         type: Boolean,
         default: true

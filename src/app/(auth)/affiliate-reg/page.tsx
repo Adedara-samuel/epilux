@@ -6,7 +6,7 @@ import React, { useState } from 'react';
 import { Truck, DollarSign, Award, Users, Zap, BookOpen } from 'lucide-react';
 import Footer from '@/Components/layout/footer';
 import AffiliateHeader from '@/Components/layout/affiliate-header';
-import RegistrationModal from '@/Components/register-affiliate-modal';
+import { useRouter } from 'next/navigation';
 
 const AFFILIATE_SUCCESS_IMAGE = "https://images.unsplash.com/photo-1552664730-d307ca884978?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&ixlib=rb-4.0.3&q=80&w=1080";
 
@@ -16,14 +16,14 @@ const coreFeatures = [
     {
         icon: DollarSign,
         title: "High Commissions & Rewards",
-        value: "₦50 Per Bag",
-        description: "Earn a fixed commission of ₦50 per bag sold. Redeem your earnings as cash (monthly payout) or product for extra profit.",
+        value: "12% Commission",
+        description: "Earn a 12% commission on every bag sold. Redeem your earnings as cash (monthly payout) or product for extra profit.",
     },
     {
         icon: Users,
         title: "Extended Referral Bonus",
-        value: "₦15 Per Bag",
-        description: "Recruit other marketers and earn a ₦15 bonus per bag on their sales for their first 3 months. Build a passive income stream.",
+        value: "50% of Referred's Commission",
+        description: "Recruit other marketers and earn 50% of the commission they earn on their sales for their first 3 months. Build a passive income stream.",
     },
     {
         icon: Truck,
@@ -55,13 +55,13 @@ const supportingFeatures = [
 ];
 
 export default function AffiliateWelcomePage() {
-    const [isModalOpen, setIsModalOpen] = useState(false);
+    const router = useRouter();
 
     return (
         <div className="min-h-screen flex flex-col bg-gray-50 font-sans">
-            <AffiliateHeader onRegisterClick={() => setIsModalOpen(true)} />
-            
-            <main className="flex-grow">
+            <AffiliateHeader onRegisterClick={() => router.push('/register')} />
+
+            <main className="app-content flex-grow">
                 {/* 1. Modern Hero Section */}
                 <section className="bg-gradient-to-br from-blue-600 to-blue-800 text-white py-24 md:py-36 shadow-xl">
                     <div className="container mx-auto px-6 text-center">
@@ -75,7 +75,7 @@ export default function AffiliateWelcomePage() {
                             Partner with Epilux and tap into a system where **BUYERS, DISTRIBUTORS, and MARKETERS** all earn commissions for every bag of premium water sold.
                         </p>
                         <button
-                            onClick={() => setIsModalOpen(true)}
+                            onClick={() => router.push('/register')}
                             className="bg-yellow-400 text-gray-900 font-bold py-4 px-12 rounded-xl text-lg shadow-2xl hover:bg-yellow-300 transition-all transform hover:scale-105"
                         >
                             Start Earning Today!
@@ -105,7 +105,7 @@ export default function AffiliateWelcomePage() {
                         </div>
                     </div>
                 </section>
-                
+
                 {/* 3. Why Epilux? (Document-Driven Features + Image) */}
                 <section className="py-20 bg-blue-50">
                     <div className="container mx-auto px-6">
@@ -154,17 +154,16 @@ export default function AffiliateWelcomePage() {
                             Join the Epilux Partner Program today. It's simple, free, and instantly rewarding.
                         </p>
                         <button
-                            onClick={() => setIsModalOpen(true)}
+                            onClick={() => router.push('/register')}
                             className="bg-yellow-400 text-gray-900 font-bold py-4 px-12 rounded-xl text-xl shadow-2xl hover:bg-yellow-300 transition-all transform hover:scale-105"
                         >
                             Register in 60 Seconds
                         </button>
                     </div>
                 </section>
+                <Footer />
             </main>
 
-            <Footer />
-            <RegistrationModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
         </div>
     );
 }
