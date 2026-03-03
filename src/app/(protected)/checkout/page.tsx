@@ -149,14 +149,14 @@ export default function CheckoutPage() {
                 shipping: Number(shipping),
                 totalAmount: Number(totalAmount),
                 shippingAddress: {
-                    street: deliveryInfo.address,
+                    address: deliveryInfo.address,
                     city: deliveryInfo.city,
                     state: deliveryInfo.state,
                     country: 'Nigeria',
                     zipCode: deliveryInfo.zipCode || 'N/A'
                 },
                 billingAddress: {
-                    street: deliveryInfo.address,
+                    address: deliveryInfo.address,
                     city: deliveryInfo.city,
                     state: deliveryInfo.state,
                     country: 'Nigeria',
