@@ -5,16 +5,16 @@ import React from 'react';
 
 const HeroSection: React.FC = () => {
     return (
-        <section className="relative bg-blue-600 text-white py-24 md:py-32 overflow-hidden shadow-lg">
-            <div className="container mx-auto px-6 relative z-10 text-center">
-                <h1 className="text-4xl md:text-6xl font-extrabold mb-6 animate-fade-in-down">
+        <section className="relative bg-blue-600 text-white flex items-center justify-center min-h-screen overflow-hidden shadow-lg">
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
+                <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold mb-4 md:mb-6 animate-fade-in-down leading-tight">
                     Premium Quality Water Delivered to You
                 </h1>
-                <p className="text-lg md:text-xl mb-10 max-w-3xl mx-auto opacity-90 animate-fade-in-up">
+                <p className="text-lg sm:text-xl md:text-2xl mb-6 md:mb-10 max-w-3xl mx-auto opacity-90 animate-fade-in-up px-4">
                     Epilux Water provides the purest drinking water with convenient delivery options and exciting affiliate opportunities.
                 </p>
-                <Button asChild variant="secondary" className="bg-white text-blue-700 hover:bg-gray-100 px-8 py-3 text-lg rounded-full shadow-lg transition-transform transform hover:scale-105 animate-fade-in-up delay-200">
-                    <Link href="/login?redirect=/products">Shop Now</Link>
+                <Button asChild variant="secondary" className="bg-white text-blue-700 hover:bg-gray-100 px-6 sm:px-8 py-3 text-base sm:text-lg rounded-full shadow-lg transition-transform transform hover:scale-105 animate-fade-in-up delay-200">
+                    <Link href="/products">Shop Now</Link>
                 </Button>
             </div>
             {/* Optional: Add background shapes/patterns for more visual interest */}

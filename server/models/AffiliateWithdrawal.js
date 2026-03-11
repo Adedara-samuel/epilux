@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 const { Schema, model } = mongoose;
 
 const AffiliateWithdrawalSchema = new Schema({
-    user: {
+    affiliateId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
         required: true
@@ -12,32 +12,31 @@ const AffiliateWithdrawalSchema = new Schema({
         required: true,
         min: 0
     },
-    paymentMethod: {
+    bankName: {
         type: String,
-        required: true,
-        enum: ['bank_transfer', 'paypal', 'crypto', 'other']
+        required: true
     },
-    accountDetails: {
-        type: Object,
+    accountNumber: {
+        type: String,
+        required: true
+    },
+    accountName: {
+        type: String,
         required: true
     },
     status: {
         type: String,
-        enum: ['pending', 'processing', 'completed', 'rejected', 'cancelled'],
+        enum: ['pending', 'approved', 'rejected', 'processed'],
         default: 'pending'
+    },
+    requestedAt: {
+        type: Date,
+        default: Date.now
     },
     processedAt: {
         type: Date
     },
-    processedBy: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
-    },
-    notes: {
-        type: String,
-        trim: true
-    },
-    rejectionReason: {
+    adminNote: {
         type: String,
         trim: true
     },
@@ -52,9 +51,9 @@ const AffiliateWithdrawalSchema = new Schema({
 });
 
 // Indexes for better query performance
-AffiliateWithdrawalSchema.index({ user: 1, status: 1 });
+AffiliateWithdrawalSchema.index({ affiliateId: 1, status: 1 });
 AffiliateWithdrawalSchema.index({ status: 1 });
-AffiliateWithdrawalSchema.index({ createdAt: -1 });
+AffiliateWithdrawalSchema.index({ requestedAt: -1 });
 
 // Pre-save hook to round amount to 2 decimal places
 AffiliateWithdrawalSchema.pre('save', function(next) {
@@ -64,13 +63,13 @@ AffiliateWithdrawalSchema.pre('save', function(next) {
     next();
 });
 
-// Static method to get total withdrawn by user
-AffiliateWithdrawalSchema.statics.getTotalWithdrawn = async function(userId) {
+// Static method to get total withdrawn by affiliate
+AffiliateWithdrawalSchema.statics.getTotalWithdrawn = async function(affiliateId) {
     const result = await this.aggregate([
         {
-            $match: { 
-                user: userId,
-                status: 'completed'
+            $match: {
+                affiliateId: affiliateId,
+                status: { $in: ['approved', 'processed'] }
             }
         },
         {
@@ -87,8 +86,8 @@ AffiliateWithdrawalSchema.statics.getTotalWithdrawn = async function(userId) {
 // Static method to get pending withdrawals
 AffiliateWithdrawalSchema.statics.getPendingWithdrawals = async function() {
     return this.find({ status: 'pending' })
-        .populate('user', 'firstName lastName email')
-        .sort({ createdAt: 1 });
+        .populate('affiliateId', 'name email')
+        .sort({ requestedAt: 1 });
 };
 
 // Virtual for formatted amount
@@ -110,7 +109,7 @@ AffiliateWithdrawalSchema.virtual('statusBadgeClass').get(function() {
 
 // Virtual for formatted date
 AffiliateWithdrawalSchema.virtual('formattedDate').get(function() {
-    return this.createdAt.toLocaleDateString('en-US', {
+    return this.requestedAt.toLocaleDateString('en-US', {
         month: 'short',
         day: 'numeric'
     });

@@ -1,77 +1,147 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react/no-unescaped-entities */
 // app/account/inbox/page.tsx
 'use client';
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/app/context/auth-context';
+// NOTE: Ensure this import is available in your environment
+import { useQueryClient } from '@tanstack/react-query'; 
+import { useAuth } from '@/hooks/useAuth';
+import { useMessages } from '@/hooks/useSupport';
 import { Loader2, Mail, ArrowLeft, Inbox, MessageSquare, Bell, X } from 'lucide-react';
-import { Card } from '@/Components/ui/card';
 import { Button } from '@/Components/ui/button';
 import { toast } from 'sonner';
 
+import { useMarkMessageAsRead } from '@/hooks/useSupport';
+
+// --- BACKEND TYPE DEFINITIONS ---
+interface BackendSenderRecipient {
+    _id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+}
+
+interface BackendMessage {
+    _id: string;
+    sender: BackendSenderRecipient;
+    recipient: BackendSenderRecipient;
+    subject: string;
+    content: string;
+    isRead: boolean;
+    isAdminReply: boolean;
+    createdAt: string;
+    updatedAt: string;
+}
+
+interface BackendResponse {
+    success: boolean;
+    data: {
+        messages: BackendMessage[];
+        totalMessages: number;
+        totalPages: number;
+        currentPage: number;
+    }
+}
+// --- END BACKEND TYPES ---
+
+
+// Frontend Message interface, simplified
 interface Message {
     id: string;
     subject: string;
     message: string;
     date: string;
     read: boolean;
+    type: 'support' | 'admin';
+    senderName: string; 
 }
 
+// Define the query key for cache updates
+const MESSAGE_QUERY_KEY = ['supportTickets']; 
+
+
 export default function MyInboxPage() {
-    const { user, loading: authLoading } = useAuth();
+    const { user } = useAuth();
     const router = useRouter();
-    const [loadingMessages, setLoadingMessages] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const queryClient = useQueryClient();
+    const markAsReadMutation = useMarkMessageAsRead();
+
     const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
     const [showModal, setShowModal] = useState(false);
-    const [messages, setMessages] = useState<Message[]>([]);
 
-    // Initialize messages
+    // Fetch data, using optional chaining for safe access
+    const { data: responseData, isLoading: loadingMessages } = useMessages() as { data: any, isLoading: boolean };
+    
+    const backendMessages: any[] = responseData?.data?.messages || [];
+
+    // --- DATA MAPPING: ALL MESSAGES ARE PULLED FROM THE BACKEND RESPONSE ---
+    
+    const allMessages: Message[] = backendMessages.map((msg) => {
+        // Determine the sender name
+        const senderName = msg.isAdminReply 
+            ? 'Epilux Water Support'
+            : `${msg.sender.firstName} ${msg.sender.lastName}`;
+
+        return {
+            id: msg._id,
+            subject: msg.subject,
+            message: msg.content,
+            date: msg.createdAt, 
+            read: msg.isRead,
+            type: msg.isAdminReply ? 'admin' : 'support',
+            senderName: senderName
+        } as Message; 
+    }).sort((a, b) => 
+        new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+    // --- END DATA MAPPING ---
+
+
     useEffect(() => {
-        setMessages([
-            {
-                id: '1',
-                subject: 'Welcome to Epilux Water!',
-                message: 'Thank you for joining us. Your account has been successfully created. We\'re excited to have you as part of our community!\n\nHere\'s what you can expect:\n• Premium quality water products\n• Fast and reliable delivery\n• 24/7 customer support\n• Exclusive member discounts\n\nIf you have any questions, feel free to reach out to our support team.',
-                date: new Date().toISOString(),
-                read: false,
-            },
-            {
-                id: '2',
-                subject: 'Order Confirmation',
-                message: 'Your order has been confirmed and is being processed. We\'ll send you another notification once your order ships.\n\nOrder Details:\n• Order ID: EPX-2024-001\n• Estimated delivery: 2-3 business days\n• Tracking information will be available soon\n\nThank you for choosing Epilux Water!',
-                date: new Date(Date.now() - 86400000).toISOString(),
-                read: true,
-            },
-        ]);
-    }, []);
-
-    useEffect(() => {
-        if (authLoading) {
-            return;
-        }
-
         if (!user) {
             router.push('/login');
             return;
         }
+    }, [user, router]);
 
-        // Simulate API call
-        setTimeout(() => {
-            setLoadingMessages(false);
-        }, 1000);
-    }, [user, authLoading, router]);
 
     const handleViewDetails = (message: Message) => {
         setSelectedMessage(message);
         setShowModal(true);
-        // Mark as read
+        
+        // --- LOGIC TO MARK AS READ WHEN VIEWED AND OPTIMISTICALLY UPDATE COUNTS ---
         if (!message.read) {
-            setMessages(prev => prev.map(m =>
-                m.id === message.id ? { ...m, read: true } : m
-            ));
+            markAsReadMutation.mutate(message.id, {
+                onSuccess: () => {
+                    // 1. Optimistically update the React Query cache (updates component data)
+                    queryClient.setQueryData(MESSAGE_QUERY_KEY, (oldData: BackendResponse | undefined) => {
+                        if (!oldData) return oldData;
+
+                        const updatedMessages = oldData.data.messages.map(msg => 
+                            msg._id === message.id ? { ...msg, isRead: true } : msg
+                        );
+                        
+                        return {
+                            ...oldData,
+                            data: {
+                                ...oldData.data,
+                                messages: updatedMessages,
+                            }
+                        };
+                    });
+
+                    // 2. Update the currently selected message state (updates the modal status)
+                    setSelectedMessage(prev => prev ? { ...prev, read: true } : null);
+
+                    toast.success("Message marked as read.");
+                },
+                onError: (error: any) => {
+                    const errorMessage = error?.response?.data?.message || "Failed to mark as read.";
+                    toast.error(errorMessage);
+                },
+            });
         }
     };
 
@@ -80,20 +150,11 @@ export default function MyInboxPage() {
         setSelectedMessage(null);
     };
 
-
-    if (authLoading || loadingMessages) {
+    if (loadingMessages) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-100">
                 <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
                 <p className="ml-3 text-lg text-gray-700">Loading inbox...</p>
-            </div>
-        );
-    }
-
-    if (error) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-100">
-                <p className="text-red-600 text-xl">{error}</p>
             </div>
         );
     }
@@ -103,13 +164,12 @@ export default function MyInboxPage() {
             <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 p-4">
                 <h2 className="text-2xl font-bold text-gray-800 mb-4">Access Denied</h2>
                 <p className="text-lg text-gray-700 text-center">Please log in to view your inbox and messages.</p>
-                {/* Optional: Add a login button */}
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="app-content min-h-screen bg-gray-50">
             <div className="container mx-auto px-4 py-12">
                 {/* Header */}
                 <div className="flex items-center justify-between mb-8">
@@ -130,13 +190,13 @@ export default function MyInboxPage() {
                     <div></div> {/* Spacer for centering */}
                 </div>
 
-                {/* Stats Cards */}
+                {/* Stats Cards - Counts now update automatically due to Query Cache change */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 text-center">
                         <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-4">
                             <Inbox className="w-6 h-6 text-blue-600" />
                         </div>
-                        <h3 className="text-2xl font-bold text-gray-900">{messages.length}</h3>
+                        <h3 className="text-2xl font-bold text-gray-900">{allMessages.length}</h3>
                         <p className="text-gray-600">Total Messages</p>
                     </div>
 
@@ -145,7 +205,8 @@ export default function MyInboxPage() {
                             <Bell className="w-6 h-6 text-orange-600" />
                         </div>
                         <h3 className="text-2xl font-bold text-gray-900">
-                            {messages.filter((m: Message) => !m.read).length}
+                            {/* Uses the recalculated allMessages array */}
+                            {allMessages.filter((m: Message) => !m.read).length}
                         </h3>
                         <p className="text-gray-600">Unread Messages</p>
                     </div>
@@ -155,7 +216,8 @@ export default function MyInboxPage() {
                             <MessageSquare className="w-6 h-6 text-green-600" />
                         </div>
                         <h3 className="text-2xl font-bold text-gray-900">
-                            {messages.filter((m: Message) => m.read).length}
+                            {/* Uses the recalculated allMessages array */}
+                            {allMessages.filter((m: Message) => m.read).length}
                         </h3>
                         <p className="text-gray-600">Read Messages</p>
                     </div>
@@ -170,9 +232,11 @@ export default function MyInboxPage() {
                         </div>
 
                         <div className="divide-y divide-gray-100">
-                            {messages.map((message: Message) => (
+                            {allMessages.map((message: Message) => (
                                 <div
                                     key={message.id}
+                                    // Use onMouseDown to prevent the click from firing twice if focusing on the button
+                                    onClick={() => handleViewDetails(message)} 
                                     className={`p-6 hover:bg-gray-50/50 transition-colors cursor-pointer ${
                                         !message.read ? 'bg-blue-50/30 border-l-4 border-blue-500' : ''
                                     }`}
@@ -195,7 +259,7 @@ export default function MyInboxPage() {
                                             <div className="flex items-center gap-4 text-sm text-gray-500">
                                                 <span className="flex items-center gap-1">
                                                     <Mail className="w-4 h-4" />
-                                                    Epilux Water
+                                                    {message.senderName} 
                                                 </span>
                                                 <span className="flex items-center gap-1">
                                                     <Bell className="w-4 h-4" />
@@ -214,7 +278,6 @@ export default function MyInboxPage() {
                                             <Button
                                                 variant="ghost"
                                                 size="sm"
-                                                onClick={() => handleViewDetails(message)}
                                                 className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 cursor-pointer"
                                             >
                                                 View Details →
@@ -225,7 +288,7 @@ export default function MyInboxPage() {
                             ))}
                         </div>
 
-                        {messages.length === 0 && (
+                        {allMessages.length === 0 && (
                             <div className="p-12 text-center">
                                 <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-4">
                                     <Inbox className="w-8 h-8 text-gray-400" />
@@ -250,7 +313,10 @@ export default function MyInboxPage() {
                                     </div>
                                     <div>
                                         <h3 className="text-xl font-bold text-gray-800">{selectedMessage.subject}</h3>
-                                        <p className="text-gray-600 text-sm">From Epilux Water</p>
+                                        <p className="text-gray-600 text-sm">From {selectedMessage.senderName}</p> 
+                                        {selectedMessage.read && (
+                                            <span className="text-xs text-green-600 font-medium"> • Read</span>
+                                        )}
                                     </div>
                                 </div>
                                 <Button

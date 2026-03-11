@@ -22,10 +22,10 @@ const config = {
     ADMIN_PASSWORD: process.env.ADMIN_PASSWORD || 'De-asa-7470',
     
     // CORS configuration
-    CORS_ORIGIN: process.env.CORS_ORIGIN || 'http://localhost:3000' || 'http://127.0.0.1:3000' || 'http://10.243.66.17:3000' || 'http://192.168.1.101:3000' || 'http://192.168.1.101:3001',
-    
+    CORS_ORIGIN: process.env.CORS_ORIGIN || 'https://epilux-backend.vercel.app' || 'http://127.0.0.1:3000' || 'http://10.243.66.17:3000' || 'http://192.168.1.101:3000' || 'http://192.168.1.101:3001',
+
     // Frontend URL for password reset links
-    FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:3000',
+    FRONTEND_URL: process.env.FRONTEND_URL || 'https://epilux-backend.vercel.app',
     
     // App configuration
     APP_NAME: process.env.APP_NAME || 'Epilux',
@@ -49,6 +49,11 @@ const config = {
     // File upload configuration
     MAX_FILE_SIZE: process.env.MAX_FILE_SIZE || 5 * 1024 * 1024, // 5MB
     UPLOAD_PATH: process.env.UPLOAD_PATH || 'uploads/',
+
+    // Cloudinary configuration
+    CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME || '',
+    CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY || '',
+    CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET || '',
     
     // Payment configuration (for future payment integration)
     PAYSTACK_PUBLIC_KEY: process.env.PAYSTACK_PUBLIC_KEY || '',

@@ -4,14 +4,16 @@ import { Card } from '../ui/card';
 import { Users, Gift, ArrowRight } from 'lucide-react';
 import { Button } from '../ui/button';
 import { useRouter } from 'next/navigation';
+import type { Referral } from '@/services/affiliate';
 
-interface Referral {
-  name: string;
-  joinDate: string;
-  status: string;
-  sales: number;
-  commission: number;
-}
+
+// interface Referral {
+//   name: string;
+//   joinDate: string;
+//   status: string;
+//   sales: number;
+//   commission: number;
+// }
 
 const getStatusBadge = (status: string) => {
     switch (status) {

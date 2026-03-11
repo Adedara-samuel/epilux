@@ -17,6 +17,7 @@ import {
 } from '@/Components/ui/form';
 import { useCreateProduct } from '@/hooks/useProducts';
 import { toast } from 'sonner';
+import { ImageUploadField } from '@/Components/ui/image-upload-field';
 
 interface ProductFormData {
     name: string;
@@ -25,7 +26,7 @@ interface ProductFormData {
     category: string;
     brand: string;
     stock: number;
-    images: string[];
+    images: { url: string; alt: string; isPrimary: boolean; file?: File }[];
 }
 
 export default function AddProductPage() {
@@ -49,9 +50,42 @@ export default function AddProductPage() {
     const onSubmit = async (data: ProductFormData) => {
         setIsSubmitting(true);
         try {
-            await createProduct.mutateAsync(data);
-            toast.success('Product created successfully');
-            router.push('/admin/products');
+            // Create FormData for multipart upload
+            const formData = new FormData();
+
+            // Add product data
+            formData.append('name', data.name);
+            formData.append('description', data.description);
+            formData.append('price', data.price.toString());
+            formData.append('stock', data.stock.toString());
+            formData.append('category', data.category);
+            if (data.brand) {
+                formData.append('brand', data.brand);
+            }
+
+            // Add image files
+            data.images.forEach(img => {
+                if (img.file) {
+                    formData.append('images', img.file);
+                }
+            });
+
+            // Upload via API
+            const response = await fetch('https://epilux-backend.vercel.app/api/admin/products', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+                },
+                body: formData
+            });
+
+            if (response.ok) {
+                toast.success('Product created successfully');
+                router.push('/admin/products');
+            } else {
+                const errorData = await response.json();
+                toast.error(errorData.message || 'Failed to create product');
+            }
         } catch (error) {
             toast.error('Failed to create product');
             console.error('Create product error:', error);
@@ -202,54 +236,10 @@ export default function AddProductPage() {
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Product Images</FormLabel>
-                                        <div className="space-y-4">
-                                            <div>
-                                                <label className="text-sm font-medium">Image Input Type</label>
-                                                <select
-                                                    value={imageInputType}
-                                                    onChange={(e) => setImageInputType(e.target.value as 'url' | 'file')}
-                                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                                                >
-                                                    <option value="url">Enter URLs</option>
-                                                    <option value="file">Upload Files</option>
-                                                </select>
-                                            </div>
-                                            {imageInputType === 'url' ? (
-                                                <FormControl>
-                                                    <Textarea
-                                                        placeholder="Enter image URLs, one per line"
-                                                        className="min-h-[80px]"
-                                                        value={field.value?.join('\n') || ''}
-                                                        onChange={(e) => {
-                                                            const urls = e.target.value.split('\n').filter(url => url.trim());
-                                                            field.onChange(urls);
-                                                        }}
-                                                    />
-                                                </FormControl>
-                                            ) : (
-                                                <FormControl>
-                                                    <Input
-                                                        type="file"
-                                                        multiple
-                                                        accept="image/*"
-                                                        onChange={async (e) => {
-                                                            const files = Array.from(e.target.files || []);
-                                                            const dataUrls: string[] = [];
-                                                            for (const file of files) {
-                                                                const reader = new FileReader();
-                                                                reader.onload = () => {
-                                                                    dataUrls.push(reader.result as string);
-                                                                    if (dataUrls.length === files.length) {
-                                                                        field.onChange(dataUrls);
-                                                                    }
-                                                                };
-                                                                reader.readAsDataURL(file);
-                                                            }
-                                                        }}
-                                                    />
-                                                </FormControl>
-                                            )}
-                                        </div>
+                                        <ImageUploadField
+                                            value={field.value || []}
+                                            onChange={field.onChange}
+                                        />
                                         <FormMessage />
                                     </FormItem>
                                 )}

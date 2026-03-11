@@ -110,26 +110,26 @@ const sendErrorProd = (err, res) => {
 };
 
 // Global error handling middleware
-const globalErrorHandler = (err, req, res) => {
+const globalErrorHandler = (err, req, res, next) => {
     err.statusCode = err.statusCode || 500;
     err.status = err.status || 'error';
-    
+
     // Handle specific error types
     let error = { ...err };
     error.message = err.message;
-    
+
     if (error.name === 'ValidationError' || error.name === 'CastError' || error.code === 11000) {
         error = handleMongooseError(error);
     }
-    
+
     if (error.name === 'JsonWebTokenError') {
         error = handleJWTError();
     }
-    
+
     if (error.name === 'TokenExpiredError') {
         error = handleJWTExpiredError();
     }
-    
+
     // Send error response based on environment
     if (process.env.NODE_ENV === 'development') {
         sendErrorDev(error, res);
