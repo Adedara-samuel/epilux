@@ -1,510 +1,633 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/hooks/useAuth';
-import { useAdminUsers, useCreateAdminUser, useUpdateAdminUser, useDeleteAdminUser, useSuspendUser } from '@/hooks/useAdmin';
+import { useState, useEffect } from 'react';
+import {
+    MapPin,
+    Package,
+    Truck,
+    CheckCircle,
+    Clock,
+    Navigation,
+    Phone,
+    MessageSquare,
+    RefreshCw,
+    TrendingUp,
+    User,
+    Eye,
+    EyeOff,
+    Key,
+    LogOut,
+} from 'lucide-react';
 import { Button } from '@/Components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/Components/ui/card';
+import { Badge } from '@/Components/ui/badge';
 import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/Components/ui/dialog';
-import { Card, CardContent, CardHeader, CardTitle } from '@/Components/ui/card';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/Components/ui/dropdown-menu';
-import { Badge } from '@/Components/ui/badge';
-import { ArrowLeft, Plus, Edit, Trash2, Users, Mail, Phone, Calendar, Eye, EyeOff, Ban, MoreHorizontal, Search, Filter, Star, TrendingUp, UserCheck, UserX, DollarSign, Activity } from 'lucide-react';
-import { toast } from 'sonner';
+import { useAuth } from '@/hooks/useAuth';
+import { useMarketerOrders, useMarketerStats, useUpdateOrderStatus } from '@/hooks/useMarketer';
+import { Order } from '@/services/marketer';
 
-export default function MarketersManagementPage() {
-    const { user } = useAuth();
-    const router = useRouter();
-    const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-    const [editingMarketer, setEditingMarketer] = useState<any>(null);
-    const [selectedMarketer, setSelectedMarketer] = useState<any>(null);
+export default function MarketerPage() {
+    const { user, logout } = useAuth();
+    const currentUser = user;
+
+    const [activeTab, setActiveTab] = useState<'dashboard' | 'orders' | 'profile'>('dashboard');
+    const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+    const [selectedOrderMap, setSelectedOrderMap] = useState<Order | null>(null);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [statusFilter, setStatusFilter] = useState<string>('all');
+    const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'amount'>('newest');
     const [showPassword, setShowPassword] = useState(false);
-    const [showSuspendDialog, setShowSuspendDialog] = useState(false);
-    const [searchQuery, setSearchQuery] = useState('');
-    const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive' | 'suspended'>('all');
-    const [formData, setFormData] = useState({
-        firstName: '',
-        lastName: '',
-        email: '',
-        phone: '',
-        password: ''
+    const [isRefreshing, setIsRefreshing] = useState(false);
+    const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+    const [isMobileNavVisible, setIsMobileNavVisible] = useState(true);
+    const [lastActivity, setLastActivity] = useState(Date.now());
+    const [isLoaded, setIsLoaded] = useState(false);
+
+    const [profileForm, setProfileForm] = useState({
+        firstName: currentUser?.firstName || '',
+        lastName: currentUser?.lastName || '',
+        phone: currentUser?.phone || '',
     });
 
-    const { data: usersData, isLoading } = useAdminUsers();
-    const allMarketers = usersData ? usersData.data.filter((user: any) => user.role === 'marketer') : [];
-
-    // Filter marketers based on search and status
-    const filteredMarketers = allMarketers.filter((marketer: any) => {
-        const matchesSearch = searchQuery === '' ||
-            `${marketer.firstName} ${marketer.lastName}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            marketer.email.toLowerCase().includes(searchQuery.toLowerCase());
-
-        const matchesStatus =
-            statusFilter === 'all' ||
-            (statusFilter === 'active' && marketer.isActive && !marketer.suspended) ||
-            (statusFilter === 'inactive' && !marketer.isActive) ||
-            (statusFilter === 'suspended' && marketer.suspended);
-
-        return matchesSearch && matchesStatus;
+    const [passwordForm, setPasswordForm] = useState({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: '',
     });
 
-    const marketersData = { data: filteredMarketers };
-    const createMutation = useCreateAdminUser();
-    const updateMutation = useUpdateAdminUser();
-    const deleteMutation = useDeleteAdminUser();
-    const suspendMutation = useSuspendUser();
+    // ── Data fetching ────────────────────────────────────────────────────────
+    const { data: statsData, isLoading: statsLoading } = useMarketerStats();
 
-    const handleCreate = async () => {
-        if (!formData.firstName || !formData.lastName || !formData.email || !formData.password) {
-            toast.error('Please fill in all required fields');
+    const {
+        data: ordersResponse,
+        isLoading: ordersLoading,
+        isFetching: ordersFetching,
+        refetch,
+    } = useMarketerOrders({
+        search: searchTerm || undefined,
+        status: statusFilter !== 'all' ? statusFilter : undefined,
+    });
+
+    const updateStatusMutation = useUpdateOrderStatus();
+
+    const orders: Order[] = ordersResponse?.orders || [];
+    const isLoadingData = statsLoading || ordersLoading;
+
+    useEffect(() => {
+        if (!isLoadingData) {
+            setLastUpdated(new Date());
+        }
+    }, [isLoadingData]);
+
+    useEffect(() => {
+        setIsLoaded(true);
+    }, []);
+
+    // Mobile nav auto-hide
+    useEffect(() => {
+        const checkInactivity = () => {
+            if (Date.now() - lastActivity > 120_000 && isMobileNavVisible) {
+                setIsMobileNavVisible(false);
+            }
+        };
+        const id = setInterval(checkInactivity, 10_000);
+        return () => clearInterval(id);
+    }, [lastActivity, isMobileNavVisible]);
+
+    useEffect(() => {
+        const handler = () => {
+            setIsMobileNavVisible(true);
+            setLastActivity(Date.now());
+        };
+        const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
+        events.forEach((ev) => document.addEventListener(ev, handler, true));
+        return () => events.forEach((ev) => document.removeEventListener(ev, handler, true));
+    }, []);
+
+    const handleRefresh = () => {
+        setIsRefreshing(true);
+        refetch().finally(() => setIsRefreshing(false));
+    };
+
+    const handleLogout = async () => {
+        try {
+            const token = localStorage.getItem('auth_token');
+            if (token) {
+                await fetch('https://epilux-backend.vercel.app/api/auth/logout', {
+                    method: 'POST',
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                });
+            }
+        } catch (err) {
+            console.error('Logout failed', err);
+        } finally {
+            localStorage.removeItem('auth_token');
+            localStorage.removeItem('user');
+            localStorage.removeItem('tokenTimestamp');
+            document.cookie = 'authToken=; path=/; max-age=0; samesite=strict';
+            window.location.href = '/login';
+        }
+    };
+
+    const handleStartDelivery = (id: string) => {
+        updateStatusMutation.mutate({ id, status: 'in_transit' });
+    };
+
+    const handleMarkDelivered = (id: string) => {
+        updateStatusMutation.mutate({ id, status: 'delivered' });
+    };
+
+    const getStatusBadge = (status: Order['status']) => {
+        switch (status) {
+            case 'pending':
+                return <Badge variant="outline" className="text-yellow-600 border-yellow-600">Pending</Badge>;
+            case 'in_transit':
+                return <Badge className="bg-blue-100 text-blue-800">In Transit</Badge>;
+            case 'delivered':
+                return <Badge className="bg-green-100 text-green-800">Delivered</Badge>;
+            default:
+                return <Badge variant="outline">Unknown</Badge>;
+        }
+    };
+
+    const getStatusIcon = (status: Order['status']) => {
+        switch (status) {
+            case 'pending':
+                return <Clock className="w-4 h-4 text-yellow-600" />;
+            case 'in_transit':
+                return <Truck className="w-4 h-4 text-blue-600" />;
+            case 'delivered':
+                return <CheckCircle className="w-4 h-4 text-green-600" />;
+            default:
+                return <Package className="w-4 h-4 text-gray-600" />;
+        }
+    };
+
+    const handleUpdateProfile = () => {
+        console.log('Update profile →', profileForm);
+        // TODO: real mutation here later
+    };
+
+    const handleChangePassword = () => {
+        if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+            alert("Passwords don't match");
             return;
         }
-
-        try {
-            await createMutation.mutateAsync({ ...formData, role: 'marketer' });
-            setIsCreateDialogOpen(false);
-            setFormData({ firstName: '', lastName: '', email: '', phone: '', password: '' });
-            toast.success('Marketer created successfully');
-        } catch (error: any) {
-            toast.error(error.response?.data?.message || 'Failed to create marketer');
-        }
+        console.log('Change password →', passwordForm);
+        // TODO: real mutation here later
     };
 
-    const handleUpdate = async () => {
-        if (!editingMarketer) return;
-
-        try {
-            await updateMutation.mutateAsync({
-                id: editingMarketer._id,
-                data: {
-                    firstName: formData.firstName,
-                    lastName: formData.lastName,
-                    email: formData.email,
-                    isActive: editingMarketer.isActive
-                }
-            });
-            setEditingMarketer(null);
-            setFormData({ firstName: '', lastName: '', email: '', phone: '', password: '' });
-            toast.success('Marketer updated successfully');
-        } catch (error: any) {
-            toast.error(error.response?.data?.message || 'Failed to update marketer');
-        }
-    };
-
-    const handleDelete = async (id: string) => {
-        if (!confirm('Are you sure you want to delete this marketer?')) return;
-
-        try {
-            await deleteMutation.mutateAsync(id);
-            toast.success('Marketer deleted successfully');
-        } catch (error: any) {
-            toast.error(error.response?.data?.message || 'Failed to delete marketer');
-        }
-    };
-
-    const handleSuspend = async () => {
-        if (!selectedMarketer) return;
-
-        try {
-            await suspendMutation.mutateAsync({
-                id: selectedMarketer._id,
-                suspended: !selectedMarketer.suspended
-            });
-            setShowSuspendDialog(false);
-            setSelectedMarketer(null);
-            toast.success(`Marketer ${selectedMarketer.suspended ? 'unsuspended' : 'suspended'} successfully`);
-        } catch (error: any) {
-            toast.error(error.response?.data?.message || 'Failed to update marketer status');
-        }
-    };
-
-    const openSuspendDialog = (marketer: any) => {
-        setSelectedMarketer(marketer);
-        setShowSuspendDialog(true);
-    };
-
-    const openEditDialog = (marketer: any) => {
-        setEditingMarketer(marketer);
-        setFormData({
-            firstName: marketer.firstName,
-            lastName: marketer.lastName,
-            email: marketer.email,
-            phone: marketer.profile?.phone || '',
-            password: ''
-        });
-    };
-
-    if (!user || user.role !== 'admin') {
-        router.push('/login');
-        return null;
+    if (!user || user.role !== 'marketer') {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+                <div className="text-center p-8">
+                    <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6 text-4xl">
+                        🚫
+                    </div>
+                    <h2 className="text-3xl font-bold text-gray-900 mb-3">Access Denied</h2>
+                    <p className="text-lg text-gray-600">You need marketer access to view this page.</p>
+                </div>
+            </div>
+        );
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-            {/* App-like Header */}
-            <div className="sticky top-16 lg:top-0 z-30 bg-white/80 backdrop-blur-md border-b border-gray-200 shadow-sm">
-                <div className="px-4 lg:px-6 py-4">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => router.push('/admin')}
-                                className="lg:hidden rounded-full hover:bg-gray-100"
-                            >
-                                <ArrowLeft className="h-5 w-5" />
-                            </Button>
-                            <div>
-                                <h1 className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                                    Marketers
-                                </h1>
-                                <p className="text-sm text-gray-600 hidden sm:block">Manage your affiliate team</p>
-                            </div>
+        <div
+            className={`min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 transition-all duration-700 ease-out overflow-hidden ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+                }`}
+        >
+            {/* ── Fixed Header ───────────────────────────────────────────────────── */}
+            <div className="bg-white/70 backdrop-blur-xl border-b border-white/20 fixed top-0 lg:left-64 left-0 right-0 z-40 shadow-sm">
+                <div className="flex items-center justify-between px-6 py-4">
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+                            <Package className="w-6 h-6 text-white" />
                         </div>
+                        <div>
+                            <h1 className="text-xl font-bold text-slate-800">
+                                {activeTab === 'dashboard' && 'Dashboard Overview'}
+                                {activeTab === 'orders' && 'Order Management'}
+                                {activeTab === 'profile' && 'Account Profile'}
+                            </h1>
+                            <p className="text-sm text-slate-600">
+                                {activeTab === 'dashboard' && 'Monitor your delivery operations'}
+                                {activeTab === 'orders' && 'Track and manage all deliveries'}
+                                {activeTab === 'profile' && 'Manage your account settings'}
+                            </p>
+                        </div>
+                    </div>
 
-                        {/* Desktop Add Button */}
+                    <div className="flex items-center gap-3">
+                        <div className="text-xs text-slate-500 hidden md:block">
+                            Last updated: {lastUpdated ? lastUpdated.toLocaleTimeString() : '—'}
+                        </div>
                         <Button
-                            onClick={() => setIsCreateDialogOpen(true)}
-                            className="hidden lg:flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg"
+                            onClick={handleRefresh}
+                            disabled={isRefreshing || ordersFetching}
+                            size="sm"
+                            variant="outline"
                         >
-                            <Plus className="h-4 w-4" />
-                            Add Marketer
+                            <RefreshCw className={`w-4 h-4 ${isRefreshing || ordersFetching ? 'animate-spin' : ''}`} />
                         </Button>
                     </div>
-
-                    {/* Search and Filter Bar */}
-                    <div className="mt-4 flex flex-col sm:flex-row gap-3">
-                        <div className="relative flex-1">
-                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                            <Input
-                                placeholder="Search marketers..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="pl-10 rounded-full border-gray-200 focus:border-blue-500 focus:ring-blue-500"
-                            />
-                        </div>
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="outline" className="rounded-full border-gray-200">
-                                    <Filter className="h-4 w-4 mr-2" />
-                                    {statusFilter === 'all' ? 'All Status' :
-                                     statusFilter === 'active' ? 'Active' :
-                                     statusFilter === 'inactive' ? 'Inactive' : 'Suspended'}
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="rounded-xl">
-                                <DropdownMenuItem onClick={() => setStatusFilter('all')} className="rounded-lg">
-                                    All Status
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => setStatusFilter('active')} className="rounded-lg">
-                                    Active
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => setStatusFilter('inactive')} className="rounded-lg">
-                                    Inactive
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => setStatusFilter('suspended')} className="rounded-lg">
-                                    Suspended
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    </div>
-            </div>
-            <div className="container mx-auto px-4 lg:px-6 py-6">
-                {/* Enhanced Stats Cards */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                    <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300">
-                        <CardContent className="p-4">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-blue-100 text-sm font-medium">Total</p>
-                                    <p className="text-2xl font-bold">{allMarketers.length}</p>
-                                </div>
-                                <Users className="h-8 w-8 text-blue-200" />
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300">
-                        <CardContent className="p-4">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-green-100 text-sm font-medium">Active</p>
-                                    <p className="text-2xl font-bold">{allMarketers.filter((m: any) => m.isActive && !m.suspended).length}</p>
-                                </div>
-                                <UserCheck className="h-8 w-8 text-green-200" />
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="bg-gradient-to-br from-yellow-500 to-orange-500 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300">
-                        <CardContent className="p-4">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-yellow-100 text-sm font-medium">Inactive</p>
-                                    <p className="text-2xl font-bold">{allMarketers.filter((m: any) => !m.isActive).length}</p>
-                                </div>
-                                <UserX className="h-8 w-8 text-yellow-200" />
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300">
-                        <CardContent className="p-4">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-purple-100 text-sm font-medium">Suspended</p>
-                                    <p className="text-2xl font-bold">{allMarketers.filter((m: any) => m.suspended).length}</p>
-                                </div>
-                                <Ban className="h-8 w-8 text-purple-200" />
-                            </div>
-                        </CardContent>
-                    </Card>
                 </div>
+            </div>
 
-                {/* Marketers Grid/List */}
-                {isLoading ? (
-                    <div className="flex items-center justify-center py-20">
-                        <div className="text-center">
-                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                            <p className="text-gray-600">Loading marketers...</p>
-                        </div>
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                        {marketersData.data.map((marketer: any) => (
-                            <Card
-                                key={marketer._id}
-                                className="bg-white border border-gray-200 shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer group"
-                                onClick={() => setSelectedMarketer(marketer)}
+            {/* ── Mobile Bottom Nav ──────────────────────────────────────────────── */}
+            <div
+                className={`fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl border-t border-slate-200 z-40 lg:hidden transition-all duration-500 ease-out ${isMobileNavVisible ? 'translate-y-0 opacity-100 scale-100' : 'translate-y-full opacity-0 scale-95'
+                    }`}
+            >
+                <div className="flex items-center justify-around py-2">
+                    {[
+                        { id: 'dashboard', label: 'Dashboard', icon: TrendingUp },
+                        { id: 'orders', label: 'Orders', icon: Package },
+                        { id: 'profile', label: 'Profile', icon: User },
+                        { id: 'logout', label: 'Logout', icon: LogOut },
+                    ].map((item) =>
+                        item.id === 'logout' ? (
+                            <button
+                                key={item.id}
+                                onClick={handleLogout}
+                                className="flex flex-col items-center gap-1 px-4 py-3 rounded-xl transition-all duration-200 text-red-600 hover:bg-red-50"
                             >
+                                <item.icon className="w-5 h-5" />
+                                <span className="text-xs font-medium">{item.label}</span>
+                            </button>
+                        ) : (
+                            <button
+                                key={item.id}
+                                onClick={() => {
+                                    setActiveTab(item.id as any);
+                                    setIsMobileNavVisible(true);
+                                    setLastActivity(Date.now());
+                                }}
+                                className={`flex flex-col items-center gap-1 px-4 py-3 rounded-xl transition-all duration-200 ${activeTab === item.id
+                                        ? 'bg-gradient-to-t from-blue-500 to-indigo-600 text-white shadow-lg'
+                                        : 'text-slate-600 hover:bg-slate-100'
+                                    }`}
+                            >
+                                <item.icon className="w-5 h-5" />
+                                <span className="text-xs font-medium">{item.label}</span>
+                            </button>
+                        ),
+                    )}
+                </div>
+            </div>
+
+            {/* ── Main Content ───────────────────────────────────────────────────── */}
+            <div className="pt-20 pb-24 lg:pb-0 lg:pl-64 min-h-screen">
+                {/* ── DASHBOARD TAB ──────────────────────────────────────────────── */}
+                {activeTab === 'dashboard' && (
+                    <div className="p-6 max-w-6xl mx-auto space-y-8">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                            <Card className="bg-gradient-to-br from-blue-500 to-indigo-600 text-white">
                                 <CardContent className="p-6">
-                                    <div className="flex items-start justify-between mb-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-                                                <span className="text-white font-bold text-lg">
-                                                    {marketer.firstName?.charAt(0)?.toUpperCase()}
-                                                </span>
-                                            </div>
-                                            <div>
-                                                <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
-                                                    {marketer.firstName} {marketer.lastName}
-                                                </h3>
-                                                <p className="text-sm text-gray-500">{marketer.email}</p>
-                                            </div>
-                                        </div>
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8"
-                                                    onClick={(e) => e.stopPropagation()}
-                                                >
-                                                    <MoreHorizontal className="h-4 w-4" />
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end" className="rounded-xl">
-                                                <DropdownMenuItem
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        openEditDialog(marketer);
-                                                    }}
-                                                    className="rounded-lg cursor-pointer"
-                                                >
-                                                    <Edit className="w-4 h-4 mr-2" />
-                                                    Edit
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        openSuspendDialog(marketer);
-                                                    }}
-                                                    className="rounded-lg cursor-pointer"
-                                                >
-                                                    <Ban className="w-4 h-4 mr-2" />
-                                                    {marketer.suspended ? 'Unsuspend' : 'Suspend'}
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleDelete(marketer._id);
-                                                    }}
-                                                    className="text-red-600 rounded-lg cursor-pointer"
-                                                >
-                                                    <Trash2 className="w-4 h-4 mr-2" />
-                                                    Delete
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </div>
+                                    <div className="text-sm opacity-90 mb-1">Pending Orders</div>
+                                    <div className="text-4xl font-bold">{statsData?.pending || 0}</div>
+                                </CardContent>
+                            </Card>
 
-                                    <div className="space-y-3">
-                                        <div className="flex items-center justify-between text-sm">
-                                            <span className="text-gray-600">Status</span>
-                                            <Badge
-                                                variant={marketer.suspended ? 'destructive' : marketer.isActive ? 'default' : 'secondary'}
-                                                className="rounded-full"
-                                            >
-                                                {marketer.suspended ? 'Suspended' : marketer.isActive ? 'Active' : 'Inactive'}
-                                            </Badge>
-                                        </div>
+                            <Card className="bg-gradient-to-br from-green-500 to-emerald-600 text-white">
+                                <CardContent className="p-6">
+                                    <div className="text-sm opacity-90 mb-1">In Transit</div>
+                                    <div className="text-4xl font-bold">{statsData?.inTransit || 0}</div>
+                                </CardContent>
+                            </Card>
 
-                                        {marketer.profile?.phone && (
-                                            <div className="flex items-center gap-2 text-sm text-gray-600">
-                                                <Phone className="w-4 h-4" />
-                                                {marketer.profile.phone}
-                                            </div>
-                                        )}
+                            <Card className="bg-gradient-to-br from-purple-500 to-violet-600 text-white">
+                                <CardContent className="p-6">
+                                    <div className="text-sm opacity-90 mb-1">Delivered Today</div>
+                                    <div className="text-4xl font-bold">{statsData?.deliveredToday || 0}</div>
+                                </CardContent>
+                            </Card>
 
-                                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                                            <Calendar className="w-4 h-4" />
-                                            Joined {new Date(marketer.createdAt).toLocaleDateString()}
-                                        </div>
-
-                                        <div className="pt-3 border-t border-gray-100">
-                                            <div className="grid grid-cols-2 gap-4 text-center">
-                                                <div>
-                                                    <p className="text-lg font-semibold text-blue-600">
-                                                        {marketer.stats?.totalReferrals || 0}
-                                                    </p>
-                                                    <p className="text-xs text-gray-500">Referrals</p>
-                                                </div>
-                                                <div>
-                                                    <p className="text-lg font-semibold text-green-600">
-                                                        ₦{(marketer.stats?.totalCommissionEarned || 0).toLocaleString()}
-                                                    </p>
-                                                    <p className="text-xs text-gray-500">Commission</p>
-                                                </div>
-                                            </div>
-                                        </div>
+                            <Card className="bg-gradient-to-br from-amber-500 to-orange-600 text-white">
+                                <CardContent className="p-6">
+                                    <div className="text-sm opacity-90 mb-1">Total Earnings</div>
+                                    <div className="text-4xl font-bold">
+                                        ₦{(statsData?.totalEarnings || 0).toLocaleString()}
                                     </div>
                                 </CardContent>
                             </Card>
-                        ))}
+                        </div>
+
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Recent Activity</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="space-y-4">
+                                    {orders.slice(0, 5).map((order: Order) => (
+                                        <div key={order._id} className="flex items-center justify-between border-b pb-3 last:border-0">
+                                            <div>
+                                                <p className="font-medium">{order.customerName}</p>
+                                                <p className="text-sm text-slate-500">{order.address}</p>
+                                            </div>
+                                            <div className="text-right">
+                                                <div className="font-medium">₦{order.totalAmount.toLocaleString()}</div>
+                                                {getStatusBadge(order.status)}
+                                            </div>
+                                        </div>
+                                    ))}
+                                    {orders.length === 0 && !isLoadingData && (
+                                        <p className="text-center text-slate-500 py-8">No recent orders</p>
+                                    )}
+                                </div>
+                            </CardContent>
+                        </Card>
                     </div>
                 )}
 
-                {marketersData.data.length === 0 && !isLoading && (
-                    <div className="text-center py-20">
-                        <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <Users className="w-10 h-10 text-gray-400" />
-                        </div>
-                        <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                            {searchQuery || statusFilter !== 'all' ? 'No marketers found' : 'No marketers yet'}
-                        </h3>
-                        <p className="text-gray-600 mb-6">
-                            {searchQuery || statusFilter !== 'all'
-                                ? 'Try adjusting your search or filter criteria'
-                                : 'Get started by adding your first affiliate marketer'
-                            }
-                        </p>
-                        {(!searchQuery && statusFilter === 'all') && (
-                            <Button
-                                onClick={() => setIsCreateDialogOpen(true)}
-                                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                {/* ── ORDERS TAB ─────────────────────────────────────────────────── */}
+                {activeTab === 'orders' && (
+                    <div className="p-6 max-w-6xl mx-auto space-y-8">
+                        {/* Filters */}
+                        <div className="flex flex-col sm:flex-row gap-4">
+                            <Input
+                                placeholder="Search by name, order # or address..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="max-w-md"
+                            />
+                            <select
+                                value={statusFilter}
+                                onChange={(e) => setStatusFilter(e.target.value)}
+                                className="border rounded-md px-3 py-2 bg-white"
                             >
-                                <Plus className="h-4 w-4 mr-2" />
-                                Add First Marketer
-                            </Button>
+                                <option value="all">All Status</option>
+                                <option value="pending">Pending</option>
+                                <option value="in_transit">In Transit</option>
+                                <option value="delivered">Delivered</option>
+                            </select>
+                            <select
+                                value={sortBy}
+                                onChange={(e) => setSortBy(e.target.value as any)}
+                                className="border rounded-md px-3 py-2 bg-white"
+                            >
+                                <option value="newest">Newest first</option>
+                                <option value="oldest">Oldest first</option>
+                                <option value="amount">Highest amount</option>
+                            </select>
+                        </div>
+
+                        {/* Orders List */}
+                        {isLoadingData ? (
+                            <div className="text-center py-12">
+                                <RefreshCw className="w-10 h-10 animate-spin mx-auto text-blue-500" />
+                                <p className="mt-4 text-slate-600">Loading orders...</p>
+                            </div>
+                        ) : orders.length === 0 ? (
+                            <div className="text-center py-12 text-slate-500">
+                                No orders found matching your filters
+                            </div>
+                        ) : (
+                            <div className="space-y-4">
+                                {orders.map((order: Order) => (
+                                    <Card key={order._id} className="overflow-hidden">
+                                        <CardContent className="p-0">
+                                            <div className="p-6">
+                                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                                    <div>
+                                                        <div className="font-semibold text-lg">
+                                                            #{order.orderNumber} • {order.customerName}
+                                                        </div>
+                                                        <div className="text-sm text-slate-600 mt-1 flex items-center gap-2">
+                                                            {getStatusIcon(order.status)}
+                                                            {getStatusBadge(order.status)}
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="text-right">
+                                                        <div className="font-bold text-xl">₦{order.totalAmount.toLocaleString()}</div>
+                                                        <div className="text-sm text-slate-500">
+                                                            {new Date(order.createdAt).toLocaleDateString()}
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div className="mt-4 text-sm text-slate-600">
+                                                    <div className="flex items-start gap-2">
+                                                        <MapPin className="w-4 h-4 mt-1 flex-shrink-0" />
+                                                        <span>{order.address}</span>
+                                                    </div>
+                                                </div>
+
+                                                <div className="mt-5 flex flex-wrap gap-3">
+                                                    {order.status === 'pending' && (
+                                                        <Button
+                                                            size="sm"
+                                                            className="bg-blue-600 hover:bg-blue-700"
+                                                            onClick={() => handleStartDelivery(order._id)}
+                                                        >
+                                                            <Truck className="w-4 h-4 mr-2" />
+                                                            Start Delivery
+                                                        </Button>
+                                                    )}
+
+                                                    {order.status === 'in_transit' && (
+                                                        <Button
+                                                            size="sm"
+                                                            className="bg-green-600 hover:bg-green-700"
+                                                            onClick={() => handleMarkDelivered(order._id)}
+                                                        >
+                                                            <CheckCircle className="w-4 h-4 mr-2" />
+                                                            Mark Delivered
+                                                        </Button>
+                                                    )}
+
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => window.open(`tel:${order.customerPhone}`)}
+                                                    >
+                                                        <Phone className="w-4 h-4 mr-2" />
+                                                        Call
+                                                    </Button>
+
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() =>
+                                                            window.open(`https://wa.me/${order.customerPhone.replace(/\D/g, '')}`)
+                                                        }
+                                                    >
+                                                        <MessageSquare className="w-4 h-4 mr-2" />
+                                                        WhatsApp
+                                                    </Button>
+
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => setSelectedOrderMap(order)}
+                                                    >
+                                                        <Navigation className="w-4 h-4 mr-2" />
+                                                        View on Map
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                ))}
+                            </div>
                         )}
                     </div>
                 )}
 
-                {/* Floating Action Button for Mobile */}
-                <Button
-                    onClick={() => setIsCreateDialogOpen(true)}
-                    className="fixed bottom-24 right-6 lg:hidden w-14 h-14 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-2xl hover:shadow-3xl transition-all duration-300 z-40"
-                    size="icon"
-                >
-                    <Plus className="h-6 w-6" />
-                </Button>
-
-                {/* Create Dialog */}
-                <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-                    <DialogContent className="sm:max-w-md rounded-2xl">
-                        <DialogHeader>
-                            <DialogTitle className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                                Add New Marketer
-                            </DialogTitle>
-                        </DialogHeader>
-                        <div className="space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <Label htmlFor="firstName">First Name *</Label>
-                                        <Input
-                                            id="firstName"
-                                            value={formData.firstName}
-                                            onChange={(e) => setFormData(prev => ({ ...prev, firstName: e.target.value }))}
-                                            placeholder="John"
-                                        />
-                                    </div>
-                                    <div>
-                                        <Label htmlFor="lastName">Last Name *</Label>
-                                        <Input
-                                            id="lastName"
-                                            value={formData.lastName}
-                                            onChange={(e) => setFormData(prev => ({ ...prev, lastName: e.target.value }))}
-                                            placeholder="Doe"
-                                        />
-                                    </div>
-                                </div>
-                                <div>
-                                    <Label htmlFor="email">Email *</Label>
-                                    <Input
-                                        id="email"
-                                        type="email"
-                                        value={formData.email}
-                                        onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                                        placeholder="john.doe@example.com"
-                                        autoComplete="off"
-                                    />
-                                </div>
-                                <div>
-                                    <Label htmlFor="phone">Phone</Label>
-                                    <Input
-                                        id="phone"
-                                        value={formData.phone}
-                                        onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                                        placeholder="+1234567890"
-                                        autoComplete="off"
-                                    />
-                                </div>
-                                <div>
-                                    <Label htmlFor="password">Password *</Label>
+                {/* ── PROFILE TAB ────────────────────────────────────────────────── */}
+                {activeTab === 'profile' && (
+                    <div className="p-6 max-w-5xl mx-auto space-y-8">
+                        {/* Profile header */}
+                        <Card className="bg-gradient-to-br from-slate-800 via-blue-800 to-indigo-800 text-white border-0 shadow-2xl">
+                            <CardContent className="p-8">
+                                <div className="flex flex-col sm:flex-row items-center gap-8">
                                     <div className="relative">
+                                        <div className="w-24 h-24 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center text-4xl font-bold shadow-2xl">
+                                            {currentUser?.firstName?.charAt(0)?.toUpperCase() || 'M'}
+                                        </div>
+                                    </div>
+                                    <div className="flex-1">
+                                        <h2 className="text-3xl font-bold">
+                                            {currentUser?.firstName} {currentUser?.lastName}
+                                        </h2>
+                                        <p className="text-blue-100 mt-1">Delivery Marketer</p>
+                                        <p className="text-blue-200 text-sm">{currentUser?.email}</p>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Forms */}
+                        <div className="grid md:grid-cols-2 gap-8">
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Personal Information</CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-6">
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <Label>First Name</Label>
+                                            <Input
+                                                value={profileForm.firstName}
+                                                onChange={(e) => setProfileForm((p) => ({ ...p, firstName: e.target.value }))}
+                                                className="mt-1"
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label>Last Name</Label>
+                                            <Input
+                                                value={profileForm.lastName}
+                                                onChange={(e) => setProfileForm((p) => ({ ...p, lastName: e.target.value }))}
+                                                className="mt-1"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <Label>Phone Number</Label>
                                         <Input
-                                            id="password"
-                                            type={showPassword ? "text" : "password"}
-                                            value={formData.password}
-                                            onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-                                            placeholder="Enter password"
-                                            autoComplete="new-password"
-                                            className="pr-10"
+                                            value={profileForm.phone}
+                                            onChange={(e) => setProfileForm((p) => ({ ...p, phone: e.target.value }))}
+                                            className="mt-1"
+                                        />
+                                    </div>
+                                    <Button onClick={handleUpdateProfile} className="w-full">
+                                        Save Changes
+                                    </Button>
+                                </CardContent>
+                            </Card>
+
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Change Password</CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-6">
+                                    <div className="relative">
+                                        <Label>Current Password</Label>
+                                        <Input
+                                            type={showPassword ? 'text' : 'password'}
+                                            value={passwordForm.currentPassword}
+                                            onChange={(e) =>
+                                                setPasswordForm((p) => ({ ...p, currentPassword: e.target.value }))
+                                            }
+                                            className="mt-1 pr-10"
                                         />
                                         <button
                                             type="button"
+                                            className="absolute right-3 top-10"
                                             onClick={() => setShowPassword(!showPassword)}
-                                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
                                         >
-                                            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                                         </button>
                                     </div>
+
+                                    <div>
+                                        <Label>New Password</Label>
+                                        <Input
+                                            type="password"
+                                            value={passwordForm.newPassword}
+                                            onChange={(e) =>
+                                                setPasswordForm((p) => ({ ...p, newPassword: e.target.value }))
+                                            }
+                                            className="mt-1"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <Label>Confirm New Password</Label>
+                                        <Input
+                                            type="password"
+                                            value={passwordForm.confirmPassword}
+                                            onChange={(e) =>
+                                                setPasswordForm((p) => ({ ...p, confirmPassword: e.target.value }))
+                                            }
+                                            className="mt-1"
+                                        />
+                                    </div>
+
+                                    <Button onClick={handleChangePassword} className="w-full" variant="destructive">
+                                        Update Password
+                                    </Button>
+                                </CardContent>
+                            </Card>
+                        </div>
+
+                        <div className="flex justify-center">
+                            <Button variant="outline" className="border-red-300 text-red-600 hover:bg-red-50" onClick={handleLogout}>
+                                <LogOut className="w-4 h-4 mr-2" />
+                                Sign Out
+                            </Button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Map modal placeholder - add real GoogleMap component when ready */}
+                {selectedOrderMap && (
+                    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-xl max-w-3xl w-full max-h-[90vh] overflow-auto">
+                            <div className="p-6">
+                                <div className="flex justify-between items-center mb-6">
+                                    <h3 className="text-xl font-bold">Delivery Location</h3>
+                                    <Button variant="ghost" onClick={() => setSelectedOrderMap(null)}>
+                                        ×
+                                    </Button>
                                 </div>
-                                <div className="flex justify-end gap-2">
-                                    <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-                                        Cancel
-                                    </Button>
-                                    <Button onClick={handleCreate} disabled={createMutation.isPending}>
-                                        {createMutation.isPending ? 'Creating...' : 'Create'}
-                                    </Button>
+                                <div className="h-96 bg-slate-100 rounded-lg flex items-center justify-center">
+                                    <div className="text-center text-slate-500">
+                                        <MapPin className="w-12 h-12 mx-auto mb-4" />
+                                        <p>Map view for {selectedOrderMap.address}</p>
+                                        <p className="text-sm mt-2">
+                                            Lat: {selectedOrderMap.coordinates.lat} • Lng: {selectedOrderMap.coordinates.lng}
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
-                        </DialogContent>
-                    </Dialog>
-                </div>
-
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
