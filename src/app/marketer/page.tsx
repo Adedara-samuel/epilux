@@ -13,13 +13,13 @@ import GoogleMap from '@/Components/GoogleMap';
 import { Order } from '@/services/marketer';
 
 export default function MarketerPage() {
-    const { user, logout } = useAuth();
-    const currentUser = user;
+  const { user, logout } = useAuth();
+  const currentUser = user;
 
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [showMap, setShowMap] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('assigned');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [locationFilter, setLocationFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'amount'>('newest');
   const [showDirections, setShowDirections] = useState(false);
@@ -120,147 +120,14 @@ export default function MarketerPage() {
   }, []);
 
 
-  // Mock data for demonstration with diverse locations
-  const mockOrders: Order[] = [
+  // API hooks - only fetch orders when on orders tab
+  const { data: ordersData, isLoading: ordersLoading } = useMarketerOrders(
     {
-      _id: 'order-1',
-      orderNumber: 'ORD-2024-001',
-      customerName: 'Alice Johnson',
-      customerPhone: '+2348012345678',
-      address: '123 Victoria Island, Lagos',
-      status: 'pending',
-      totalAmount: 2500,
-      deliveryTime: new Date().toISOString(),
-      coordinates: { lat: 6.4358, lng: 3.4219 },
-      items: [
-        { name: 'Sachet Water (24 pack)', quantity: 1, price: 1200 },
-        { name: 'Bottled Water (6 pack)', quantity: 2, price: 600 }
-      ],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      search: searchTerm || undefined,
+      status: statusFilter !== 'all' ? statusFilter : undefined,
     },
-    {
-      _id: 'order-2',
-      orderNumber: 'ORD-2024-002',
-      customerName: 'Bob Smith',
-      customerPhone: '+2348023456789',
-      address: '456 Lekki Phase 1, Lagos',
-      status: 'in_transit',
-      totalAmount: 1800,
-      deliveryTime: new Date().toISOString(),
-      coordinates: { lat: 6.4698, lng: 3.5852 },
-      items: [
-        { name: 'Bottled Water (12 pack)', quantity: 1, price: 900 }
-      ],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    },
-    {
-      _id: 'order-3',
-      orderNumber: 'ORD-2024-003',
-      customerName: 'Carol Williams',
-      customerPhone: '+2348034567890',
-      address: '789 Ikeja GRA, Lagos',
-      status: 'delivered',
-      totalAmount: 3200,
-      deliveryTime: new Date().toISOString(),
-      coordinates: { lat: 6.6018, lng: 3.3515 },
-      items: [
-        { name: 'Bulk Dispenser Refill', quantity: 1, price: 2500 },
-        { name: 'Sachet Water (12 pack)', quantity: 1, price: 700 }
-      ],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    },
-    {
-      _id: 'order-4',
-      orderNumber: 'ORD-2024-004',
-      customerName: 'David Brown',
-      customerPhone: '+2348045678901',
-      address: '321 Wuse 2, Abuja',
-      status: 'pending',
-      totalAmount: 1500,
-      deliveryTime: new Date().toISOString(),
-      coordinates: { lat: 9.0765, lng: 7.3986 },
-      items: [
-        { name: 'Sachet Water (12 pack)', quantity: 1, price: 700 }
-      ],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    },
-    {
-      _id: 'order-5',
-      orderNumber: 'ORD-2024-005',
-      customerName: 'Emma Davis',
-      customerPhone: '+2348056789012',
-      address: '654 Maitama, Abuja',
-      status: 'in_transit',
-      totalAmount: 2800,
-      deliveryTime: new Date().toISOString(),
-      coordinates: { lat: 9.1044, lng: 7.4891 },
-      items: [
-        { name: 'Water Dispenser', quantity: 1, price: 2800 }
-      ],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    },
-    {
-      _id: 'order-6',
-      orderNumber: 'ORD-2024-006',
-      customerName: 'Frank Miller',
-      customerPhone: '+2348067890123',
-      address: '987 GRA Phase 2, Port Harcourt',
-      status: 'pending',
-      totalAmount: 4200,
-      deliveryTime: new Date().toISOString(),
-      coordinates: { lat: 4.8156, lng: 7.0498 },
-      items: [
-        { name: 'Premium Dispenser Set', quantity: 1, price: 3500 },
-        { name: 'Bottled Water (6 pack)', quantity: 2, price: 600 }
-      ],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    },
-    {
-      _id: 'order-7',
-      orderNumber: 'ORD-2024-007',
-      customerName: 'Grace Taylor',
-      customerPhone: '+2348078901234',
-      address: '147 Bodija, Ibadan',
-      status: 'delivered',
-      totalAmount: 1900,
-      deliveryTime: new Date().toISOString(),
-      coordinates: { lat: 7.3775, lng: 3.9470 },
-      items: [
-        { name: 'Family Water Pack', quantity: 1, price: 1900 }
-      ],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    },
-    {
-      _id: 'order-8',
-      orderNumber: 'ORD-2024-008',
-      customerName: 'Henry Wilson',
-      customerPhone: '+2348089012345',
-      address: '258 Challenge, Ibadan',
-      status: 'pending',
-      totalAmount: 3600,
-      deliveryTime: new Date().toISOString(),
-      coordinates: { lat: 7.3876, lng: 3.8794 },
-      items: [
-        { name: 'Office Water Supply', quantity: 1, price: 3600 }
-      ],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    }
-  ];
-
-
-  // API hooks
-  const { data: ordersData, isLoading: ordersLoading } = useMarketerOrders({
-    search: searchTerm || undefined,
-    status: statusFilter !== 'all' ? statusFilter : undefined,
-  });
+    activeTab === 'orders' // Only enable when on orders tab
+  );
   const { data: statsData } = useMarketerStats();
 
   // Real-time refresh function
@@ -277,17 +144,22 @@ export default function MarketerPage() {
     setLastUpdated(new Date());
   }, []);
 
-  // Get unique locations for filter dropdown
-  const uniqueLocations = Array.from(new Set(mockOrders.map(order => {
+  // Get unique locations for filter dropdown from API data
+  const apiOrders = ordersData || [];
+  const uniqueLocations: string[] = Array.from(new Set(apiOrders.map((order: Order) => {
     const parts = order.address.split(',');
     return parts[parts.length - 1].trim(); // Get city from address
   })));
 
   // Filter and sort orders based on search, status, location, and sort criteria
-  const filteredAndSortedOrders = mockOrders
-    .filter((order) => {
+  const filteredAndSortedOrders = (ordersData || [])
+    .filter((order: Order) => {
+      const customerName = order.customer?.firstName && order.customer?.lastName
+        ? `${order.customer.firstName} ${order.customer.lastName}`
+        : order.customerPhone || '';
+
       const matchesSearch = searchTerm === '' ||
-        order.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         order.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
         order.address.toLowerCase().includes(searchTerm.toLowerCase());
 
@@ -298,7 +170,7 @@ export default function MarketerPage() {
 
       return matchesSearch && matchesStatus && matchesLocation;
     })
-    .sort((a, b) => {
+    .sort((a: Order, b: Order) => {
       switch (sortBy) {
         case 'newest':
           return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
@@ -312,8 +184,9 @@ export default function MarketerPage() {
     });
 
   const orders = filteredAndSortedOrders;
-  const stats = dashboardData;
-  const isLoading = ordersLoading || dashboardLoading;
+  const stats = statsData;
+  // Only show loading for orders when on orders tab
+  const isLoading = activeTab === 'orders' ? ordersLoading : false || dashboardLoading;
 
   // Mock mutation functions with state updates
   const updateOrderStatusMutation = {
@@ -334,12 +207,18 @@ export default function MarketerPage() {
 
   const getStatusBadge = (status: Order['status']) => {
     switch (status) {
+      case 'assigned':
+        return <Badge variant="outline" className="text-purple-600 border-purple-600">Assigned</Badge>;
       case 'pending':
         return <Badge variant="outline" className="text-yellow-600 border-yellow-600">Pending</Badge>;
       case 'in_transit':
         return <Badge className="bg-blue-100 text-blue-800">In Transit</Badge>;
       case 'delivered':
         return <Badge className="bg-green-100 text-green-800">Delivered</Badge>;
+      case 'completed':
+        return <Badge className="bg-emerald-100 text-emerald-800">Completed</Badge>;
+      case 'cancelled':
+        return <Badge className="bg-red-100 text-red-800">Cancelled</Badge>;
       default:
         return <Badge variant="outline">Unknown</Badge>;
     }
@@ -347,12 +226,18 @@ export default function MarketerPage() {
 
   const getStatusIcon = (status: Order['status']) => {
     switch (status) {
+      case 'assigned':
+        return <Package className="w-4 h-4 text-purple-600" />;
       case 'pending':
         return <Clock className="w-4 h-4 text-yellow-600" />;
       case 'in_transit':
         return <Truck className="w-4 h-4 text-blue-600" />;
       case 'delivered':
         return <CheckCircle className="w-4 h-4 text-green-600" />;
+      case 'completed':
+        return <CheckCircle className="w-4 h-4 text-emerald-600" />;
+      case 'cancelled':
+        return <Package className="w-4 h-4 text-red-600" />;
       default:
         return <Package className="w-4 h-4 text-gray-600" />;
     }
@@ -362,7 +247,8 @@ export default function MarketerPage() {
   const inTransitOrders = orders.filter((order: Order) => order.status === 'in_transit');
   const deliveredOrders = orders.filter((order: Order) => order.status === 'delivered');
 
-  if (!user || user.role !== 'marketer') {
+  // Allow both marketer and affiliate roles to access this page
+  if (!user || (user.role !== 'marketer' && user.role !== 'affiliate')) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
         <div className="text-center">
@@ -370,7 +256,7 @@ export default function MarketerPage() {
             <span className="text-2xl">🚫</span>
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h2>
-          <p className="text-gray-600">You need marketer access to view this page.</p>
+          <p className="text-gray-600">You need marketer or affiliate access to view this page.</p>
         </div>
       </div>
     );
@@ -419,12 +305,11 @@ export default function MarketerPage() {
         </div>
 
         {/* Mobile Bottom Navigation */}
-        <div className={`fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl border-t border-slate-200 z-40 lg:hidden transition-all duration-500 ease-out ${
-          isMobileNavVisible
-            ? 'translate-y-0 opacity-100 scale-100'
-            : 'translate-y-full opacity-0 scale-95'
-        }`}>
-           <div className="flex items-center justify-around py-2">
+        <div className={`fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl border-t border-slate-200 z-40 lg:hidden transition-all duration-500 ease-out ${isMobileNavVisible
+          ? 'translate-y-0 opacity-100 scale-100'
+          : 'translate-y-full opacity-0 scale-95'
+          }`}>
+          <div className="flex items-center justify-around py-2">
             {[
               { id: 'dashboard', label: 'Dashboard', icon: TrendingUp },
               { id: 'orders', label: 'Orders', icon: Package },
@@ -448,8 +333,8 @@ export default function MarketerPage() {
                     handleUserActivity();
                   }}
                   className={`flex flex-col items-center gap-1 px-4 py-3 rounded-xl transition-all duration-200 ${activeTab === item.id
-                      ? 'bg-gradient-to-t from-blue-500 to-indigo-600 text-white shadow-lg'
-                      : 'text-slate-600 hover:bg-slate-100'
+                    ? 'bg-gradient-to-t from-blue-500 to-indigo-600 text-white shadow-lg'
+                    : 'text-slate-600 hover:bg-slate-100'
                     }`}
                 >
                   <item.icon className="w-5 h-5" />
@@ -509,8 +394,8 @@ export default function MarketerPage() {
                       handleUserActivity();
                     }}
                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${activeTab === item.id
-                        ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg'
-                        : 'text-slate-700 hover:bg-slate-100 hover:shadow-md'
+                      ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg'
+                      : 'text-slate-700 hover:bg-slate-100 hover:shadow-md'
                       }`}
                   >
                     <item.icon className={`w-5 h-5 ${activeTab === item.id ? 'text-white' : 'text-slate-500 group-hover:text-blue-600'
@@ -595,8 +480,12 @@ export default function MarketerPage() {
                       onChange={(e) => setStatusFilter(e.target.value)}
                     >
                       <option value="all">All Status</option>
+                      <option value="assigned">Assigned</option>
                       <option value="pending">Pending</option>
                       <option value="in_transit">In Transit</option>
+                      <option value="delivered">Delivered</option>
+                      <option value="completed">Completed</option>
+                      <option value="cancelled">Cancelled</option>
                       <option value="delivered">Delivered</option>
                     </select>
 
@@ -640,7 +529,7 @@ export default function MarketerPage() {
 
               {/* Orders Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {orders.map((order: Order, index) => (
+                {orders.map((order: Order, index: number) => (
                   <Card
                     key={order._id}
                     className={`bg-white/90 backdrop-blur-sm border-0 shadow-lg hover:shadow-xl transition-all duration-300 ease-out transform hover:-translate-y-1 hover:scale-[1.02] cursor-pointer animate-in slide-in-from-bottom-4 ${selectedOrder?._id === order._id ? 'ring-2 ring-blue-500 shadow-2xl' : ''
@@ -651,14 +540,22 @@ export default function MarketerPage() {
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex items-center gap-2">
-                          <div className={`p-1.5 rounded-md ${order.status === 'pending' ? 'bg-yellow-100' :
-                              order.status === 'in_transit' ? 'bg-blue-100' : 'bg-green-100'
+                          <div className={`p-1.5 rounded-md ${order.status === 'assigned' ? 'bg-purple-100' :
+                            order.status === 'pending' ? 'bg-yellow-100' :
+                              order.status === 'in_transit' ? 'bg-blue-100' :
+                                order.status === 'delivered' ? 'bg-green-100' :
+                                  order.status === 'completed' ? 'bg-emerald-100' :
+                                    order.status === 'cancelled' ? 'bg-red-100' : 'bg-gray-100'
                             }`}>
                             {getStatusIcon(order.status)}
                           </div>
                           <div>
                             <h4 className="font-semibold text-slate-800 text-sm">#{order.orderNumber}</h4>
-                            <p className="text-xs text-slate-600">{order.customerName}</p>
+                            <p className="text-xs text-slate-600">
+                              {order.customer?.firstName && order.customer?.lastName
+                                ? `${order.customer.firstName} ${order.customer.lastName}`
+                                : order.customerPhone || 'N/A'}
+                            </p>
                           </div>
                         </div>
                         {getStatusBadge(order.status)}
@@ -712,6 +609,20 @@ export default function MarketerPage() {
 
                       {/* Action Buttons */}
                       <div className="flex flex-wrap gap-1.5 mt-3">
+                        {order.status === 'assigned' && (
+                          <Button
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleStartDelivery(order._id);
+                            }}
+                            className="flex-1 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 shadow-sm transform hover:scale-105 hover:-translate-y-0.5 transition-all duration-200 ease-out text-xs py-1.5 h-7"
+                          >
+                            <Package className="w-3 h-3 mr-1" />
+                            Accept
+                          </Button>
+                        )}
+
                         {order.status === 'pending' && (
                           <Button
                             size="sm"
@@ -1013,14 +924,22 @@ export default function MarketerPage() {
                           <div className="flex items-start justify-between mb-4">
                             <div className="flex-1">
                               <div className="flex items-center gap-3 mb-3">
-                                <div className={`p-2 rounded-lg ${order.status === 'pending' ? 'bg-yellow-100' :
-                                    order.status === 'in_transit' ? 'bg-blue-100' : 'bg-green-100'
+                                <div className={`p-2 rounded-lg ${order.status === 'assigned' ? 'bg-purple-100' :
+                                  order.status === 'pending' ? 'bg-yellow-100' :
+                                    order.status === 'in_transit' ? 'bg-blue-100' :
+                                      order.status === 'delivered' ? 'bg-green-100' :
+                                        order.status === 'completed' ? 'bg-emerald-100' :
+                                          order.status === 'cancelled' ? 'bg-red-100' : 'bg-gray-100'
                                   }`}>
                                   {getStatusIcon(order.status)}
                                 </div>
                                 <div>
                                   <h4 className="font-semibold text-slate-800">Order #{order.orderNumber}</h4>
-                                  <p className="text-sm text-slate-600">{order.customerName}</p>
+                                  <p className="text-sm text-slate-600">
+                                    {order.customer?.firstName && order.customer?.lastName
+                                      ? `${order.customer.firstName} ${order.customer.lastName}`
+                                      : order.customerPhone || 'N/A'}
+                                  </p>
                                 </div>
                                 {getStatusBadge(order.status)}
                               </div>
@@ -1160,10 +1079,14 @@ export default function MarketerPage() {
                       <div className="bg-slate-50 rounded-xl p-4">
                         <div className="flex flex-col sm:flex-row items-center gap-3 mb-2">
                           <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-semibold">
-                            {selectedOrder.customerName.charAt(0).toUpperCase()}
+                            {selectedOrder.customer?.firstName ? selectedOrder.customer.firstName.charAt(0).toUpperCase() : (selectedOrder.customerPhone?.charAt(0).toUpperCase() || '#')}
                           </div>
                           <div>
-                            <p className="font-semibold text-slate-800">{selectedOrder.customerName}</p>
+                            <p className="font-semibold text-slate-800">
+                              {selectedOrder.customer?.firstName && selectedOrder.customer?.lastName
+                                ? `${selectedOrder.customer.firstName} ${selectedOrder.customer.lastName}`
+                                : selectedOrder.customerPhone || 'N/A'}
+                            </p>
                             <p className="text-sm text-slate-600">{selectedOrder.address.split(',')[0]}</p>
                           </div>
                         </div>
@@ -1181,7 +1104,7 @@ export default function MarketerPage() {
                         <Button
                           variant="outline"
                           className="w-full border-green-300 hover:bg-green-50 hover:border-green-400 transform hover:scale-[1.02] transition-all duration-200"
-                          onClick={() => window.open(`https://wa.me/${selectedOrder.customerPhone.replace(/\s+/g, '')}`)}
+                          onClick={() => selectedOrder.customerPhone && window.open(`https://wa.me/${selectedOrder.customerPhone.replace(/\s+/g, '')}`)}
                         >
                           <MessageSquare className="w-4 h-4 mr-3 text-green-600" />
                           WhatsApp Message
@@ -1203,7 +1126,11 @@ export default function MarketerPage() {
                         </div>
                         <div>
                           <h3 className="text-lg font-semibold text-slate-800">Navigate to Delivery</h3>
-                          <p className="text-sm text-slate-600">Order #{selectedOrderMap.orderNumber} - {selectedOrderMap.customerName}</p>
+                          <p className="text-sm text-slate-600">Order #{selectedOrderMap.orderNumber} -
+                            {selectedOrderMap.customer?.firstName && selectedOrderMap.customer?.lastName
+                              ? `${selectedOrderMap.customer.firstName} ${selectedOrderMap.customer.lastName}`
+                              : selectedOrderMap.customerPhone || 'N/A'}
+                          </p>
                         </div>
                       </div>
                       <Button variant="ghost" size="sm" onClick={() => setSelectedOrderMap(null)} className="hover:bg-slate-100 rounded-full">
@@ -1221,7 +1148,11 @@ export default function MarketerPage() {
                               <div className="space-y-3">
                                 <div className="flex items-center gap-2 text-sm">
                                   <User className="w-4 h-4 text-slate-500" />
-                                  <span className="text-slate-700">{selectedOrderMap.customerName}</span>
+                                  <span className="text-slate-700">
+                                    {selectedOrderMap.customer?.firstName && selectedOrderMap.customer?.lastName
+                                      ? `${selectedOrderMap.customer.firstName} ${selectedOrderMap.customer.lastName}`
+                                      : selectedOrderMap.customerPhone || 'N/A'}
+                                  </span>
                                 </div>
                                 <div className="flex items-center gap-2 text-sm">
                                   <Phone className="w-4 h-4 text-slate-500" />
@@ -1244,8 +1175,12 @@ export default function MarketerPage() {
                               className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200"
                               onClick={() => {
                                 // Open in Google Maps with directions
-                                const destination = `${selectedOrderMap.coordinates.lat},${selectedOrderMap.coordinates.lng}`;
-                                window.open(`https://www.google.com/maps/dir/?api=1&destination=${destination}`, '_blank');
+                                const destination = selectedOrderMap.coordinates
+                                  ? `${selectedOrderMap.coordinates.lat},${selectedOrderMap.coordinates.lng}`
+                                  : '';
+                                if (destination) {
+                                  window.open(`https://www.google.com/maps/dir/?api=1&destination=${destination}`, '_blank');
+                                }
                               }}
                             >
                               <Navigation className="w-4 h-4 mr-2" />
@@ -1283,10 +1218,10 @@ export default function MarketerPage() {
                                 {/* Coordinates display */}
                                 <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 shadow-sm">
                                   <p className="text-xs text-slate-600">
-                                    Lat: {selectedOrderMap.coordinates.lat.toFixed(4)}
+                                    Lat: {selectedOrderMap.coordinates ? selectedOrderMap.coordinates.lat.toFixed(4) : 'N/A'}
                                   </p>
                                   <p className="text-xs text-slate-600">
-                                    Lng: {selectedOrderMap.coordinates.lng.toFixed(4)}
+                                    Lng: {selectedOrderMap.coordinates ? selectedOrderMap.coordinates.lng.toFixed(4) : 'N/A'}
                                   </p>
                                 </div>
                               </div>
@@ -1511,3 +1446,6 @@ export default function MarketerPage() {
     </div>
   );
 }
+
+
+

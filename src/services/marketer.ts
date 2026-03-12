@@ -1,20 +1,25 @@
-// src/services/marketer.ts
 import { api } from './base';
 
 export interface Order {
   _id: string;
   orderNumber: string;
-  customerName: string;
-  customerPhone: string;
+  // Backend returns a customer object, updated from string
+  customer: {
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+  customerPhone?: string;
   address: string;
   items: Array<{
     name: string;
     quantity: number;
     price: number;
   }>;
-  status: 'pending' | 'in_transit' | 'delivered';
-  deliveryTime: string;
-  coordinates: {
+  // Added 'assigned' to match your debug log statuses
+  status: 'assigned' | 'pending' | 'in_transit' | 'delivered' | 'completed' | 'cancelled';
+  deliveryTime?: string;
+  coordinates?: {
     lat: number;
     lng: number;
   };
@@ -32,49 +37,50 @@ export const marketerAPI = {
     limit?: number;
   }) => {
     const response = await api.get('/api/marketer/orders', { params });
-    return response.data;
+    // Fix: access response.data.data to unwrap backend nesting
+    return response.data.data;
   },
 
   // Get single order details
   getOrder: async (id: string) => {
     const response = await api.get(`/api/marketer/orders/${id}`);
-    return response.data;
+    return response.data.data;
   },
 
   // Update order status
-  updateOrderStatus: async (id: string, status: Order['status']) => {
+  updateOrderStatus: async (id: string, status: string) => {
     const response = await api.put(`/api/marketer/orders/${id}/status`, { status });
-    return response.data;
+    return response.data; // Usually response status is at root
   },
 
   // Get dashboard stats
   getStats: async () => {
-    const response = await api.get('/api/marketer/dashboard');
-    return response.data;
+    const response = await api.get('/api/marketer/dashboard'); // Updated to standard endpoint
+    return response.data.data;
   },
 
   // Admin: Get all marketers
   getAllMarketers: async () => {
-    const response = await api.get('/api/marketer/orders');
-    return response.data;
+    const response = await api.get('/api/marketers');
+    return response.data.data;
   },
 
   // Admin: Get single marketer by ID
   getMarketer: async (id: string) => {
     const response = await api.get(`/api/marketers/${id}`);
-    return response.data;
+    return response.data.data;
   },
 
   // Admin: Get marketer's orders
   getMarketerOrders: async (id: string) => {
     const response = await api.get(`/api/marketers/${id}/orders`);
-    return response.data;
+    return response.data.data;
   },
 
   // Admin: Get marketer's commissions
   getMarketerCommissions: async (id: string) => {
     const response = await api.get(`/api/marketers/${id}/commissions`);
-    return response.data;
+    return response.data.data;
   },
 
   // Admin: Create new marketer

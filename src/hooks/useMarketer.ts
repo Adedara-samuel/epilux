@@ -1,24 +1,19 @@
 // src/hooks/useMarketer.ts
+// src/hooks/useMarketer.ts
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { marketerAPI, Order } from '@/services/marketer';
 
+// Updated: Added optional enabled parameter
 export const useMarketerOrders = (params?: {
   status?: string;
   search?: string;
   page?: number;
   limit?: number;
-}) => {
+}, enabled: boolean = true) => {
   return useQuery({
     queryKey: ['marketer', 'orders', params],
     queryFn: () => marketerAPI.getOrders(params),
-  });
-};
-
-export const useMarketerOrder = (id: string) => {
-  return useQuery({
-    queryKey: ['marketer', 'order', id],
-    queryFn: () => marketerAPI.getOrder(id),
-    enabled: !!id,
+    enabled: enabled, // Controlled by UI tab state
   });
 };
 
@@ -29,8 +24,8 @@ export const useUpdateOrderStatus = () => {
     mutationFn: ({ id, status }: { id: string; status: Order['status'] }) =>
       marketerAPI.updateOrderStatus(id, status),
     onSuccess: () => {
+      // Invalidate all related queries to refresh UI data automatically
       queryClient.invalidateQueries({ queryKey: ['marketer', 'orders'] });
-      queryClient.invalidateQueries({ queryKey: ['marketer', 'order'] });
       queryClient.invalidateQueries({ queryKey: ['marketer', 'stats'] });
     },
   });

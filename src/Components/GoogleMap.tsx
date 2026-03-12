@@ -13,14 +13,26 @@ declare global {
 interface Order {
   _id: string;
   orderNumber: string;
-  customerName: string;
-  customerPhone: string;
+  customer?: {
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+  customerPhone?: string;
   address: string;
-  coordinates: {
+  coordinates?: {
     lat: number;
     lng: number;
   };
-  status: 'pending' | 'in_transit' | 'delivered';
+  status: 'assigned' | 'pending' | 'in_transit' | 'delivered' | 'completed' | 'cancelled';
+  items?: Array<{
+    name: string;
+    quantity: number;
+    price: number;
+  }>;
+  totalAmount?: number;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 interface GoogleMapProps {
@@ -136,7 +148,7 @@ export default function GoogleMap({
       const marker = new google.maps.Marker({
         position: order.coordinates,
         map: map,
-        title: `${order.customerName} - Order ${order.orderNumber}`,
+        title: `${order.customer?.firstName && order.customer?.lastName ? `${order.customer.firstName} ${order.customer.lastName}` : order.customerPhone || 'N/A'} - Order ${order.orderNumber}`,
         icon: getOrderIcon(order.status),
       });
 
@@ -145,7 +157,7 @@ export default function GoogleMap({
         content: `
           <div style="max-width: 200px;">
             <h3 style="font-weight: bold; margin-bottom: 8px;">Order ${order.orderNumber}</h3>
-            <p style="margin: 4px 0;"><strong>Customer:</strong> ${order.customerName}</p>
+            <p style="margin: 4px 0;"><strong>Customer:</strong> ${order.customer?.firstName && order.customer?.lastName ? `${order.customer.firstName} ${order.customer.lastName}` : order.customerPhone || 'N/A'}</p>
             <p style="margin: 4px 0;"><strong>Address:</strong> ${order.address}</p>
             <p style="margin: 4px 0;"><strong>Status:</strong> ${order.status.replace('_', ' ').toUpperCase()}</p>
           </div>
@@ -162,7 +174,11 @@ export default function GoogleMap({
     // Fit bounds to show all markers
     if (orders.length > 0) {
       const bounds = new google.maps.LatLngBounds();
-      orders.forEach(order => bounds.extend(order.coordinates));
+      orders.forEach(order => {
+        if (order.coordinates) {
+          bounds.extend(order.coordinates);
+        }
+      });
       if (currentLocation) bounds.extend(currentLocation);
       map.fitBounds(bounds);
 
@@ -186,7 +202,7 @@ export default function GoogleMap({
 
     const request: google.maps.DirectionsRequest = {
       origin: currentLocation,
-      destination: selectedOrder.coordinates,
+      destination: selectedOrder.coordinates || '',
       travelMode: google.maps.TravelMode.DRIVING,
     };
 
@@ -200,7 +216,7 @@ export default function GoogleMap({
   }, [map, directionsService, directionsRenderer, currentLocation, selectedOrder, showDirections]);
 
   const getOrderIcon = (status: Order['status']) => {
-    const icons = {
+    const icons: { [key: string]: { url: string; scaledSize: google.maps.Size } } = {
       pending: {
         url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -228,9 +244,36 @@ export default function GoogleMap({
         `),
         scaledSize: new google.maps.Size(24, 24),
       },
+      assigned: {
+        url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="8" fill="#8B5CF6" stroke="white" stroke-width="2"/>
+            <text x="12" y="16" text-anchor="middle" fill="white" font-size="10" font-weight="bold">A</text>
+          </svg>
+        `),
+        scaledSize: new google.maps.Size(24, 24),
+      },
+      completed: {
+        url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="8" fill="#10B981" stroke="white" stroke-width="2"/>
+            <text x="12" y="16" text-anchor="middle" fill="white" font-size="10" font-weight="bold">C</text>
+          </svg>
+        `),
+        scaledSize: new google.maps.Size(24, 24),
+      },
+      cancelled: {
+        url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="8" fill="#EF4444" stroke="white" stroke-width="2"/>
+            <text x="12" y="16" text-anchor="middle" fill="white" font-size="10" font-weight="bold">X</text>
+          </svg>
+        `),
+        scaledSize: new google.maps.Size(24, 24),
+      },
     };
 
-    return icons[status];
+    return icons[status] || icons.pending;
   };
 
   return (
