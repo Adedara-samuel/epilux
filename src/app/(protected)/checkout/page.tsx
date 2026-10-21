@@ -4,8 +4,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
 import { toast } from 'sonner';
+import { Checkbox } from '@/Components/ui/checkbox';
+import { RadioCard, RadioGroup } from '@/Components/ui/radio-group';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/ui/select';
 import { ArrowLeft, CreditCard, Lock, MapPin, ShieldCheck, ShoppingCart, Wallet } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useCartSummary, useClearCart } from '@/hooks/useCart';
@@ -211,9 +213,12 @@ export default function CheckoutPage() {
                             </div>
                             <div>
                                 <FieldLabel htmlFor="state">State</FieldLabel>
-                                <select id="state" value={form.state} onChange={set('state')} className="h-12 w-full rounded-xl border border-input bg-card px-3.5 text-sm shadow-xs outline-none focus:border-ring focus:ring-4 focus:ring-ring/20">
-                                    {NIGERIAN_STATES.map((s) => <option key={s} value={s}>{s}</option>)}
-                                </select>
+                                <Select value={form.state} onValueChange={(value) => setForm((f) => ({ ...f, state: value }))}>
+                                    <SelectTrigger id="state" className="h-12"><SelectValue placeholder="Choose your state" /></SelectTrigger>
+                                    <SelectContent>
+                                        {NIGERIAN_STATES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
                             </div>
                             <div className="sm:col-span-2">
                                 <FieldLabel htmlFor="landmark">Nearest landmark <span className="font-normal text-muted-foreground">(optional)</span></FieldLabel>
@@ -225,8 +230,8 @@ export default function CheckoutPage() {
                             </div>
                         </div>
 
-                        <label className="mt-5 flex cursor-pointer items-center gap-3 text-sm">
-                            <input type="checkbox" checked={saveAddress} onChange={(e) => setSaveAddress(e.target.checked)} className="size-4 rounded accent-[var(--primary)]" />
+                        <label htmlFor="save-address" className="mt-5 flex cursor-pointer items-center gap-3 text-sm">
+                            <Checkbox id="save-address" checked={saveAddress} onCheckedChange={(v) => setSaveAddress(v === true)} />
                             Save this address for next time
                         </label>
                     </Panel>
@@ -241,40 +246,25 @@ export default function CheckoutPage() {
                             </div>
                         </div>
 
-                        <div className="grid gap-3 sm:grid-cols-2" role="radiogroup" aria-label="Payment method">
+                        <RadioGroup value={payment} onValueChange={(v) => setPayment(v as PaymentChoice)} className="sm:grid-cols-2" aria-label="Payment method">
                             {([
                                 { value: 'flutterwave', icon: CreditCard, title: 'Card, transfer or USSD', text: 'Pay securely with Flutterwave', disabled: false },
                                 { value: 'wallet', icon: Wallet, title: 'Wallet balance', text: walletCovers ? `${formatNaira(walletBalance)} available` : `${formatNaira(walletBalance)} available · not enough`, disabled: !walletCovers },
                             ] as const).map((option) => {
-                                const active = payment === option.value;
                                 const Icon = option.icon;
                                 return (
-                                    <button
-                                        key={option.value}
-                                        type="button"
-                                        role="radio"
-                                        aria-checked={active}
-                                        disabled={option.disabled}
-                                        onClick={() => setPayment(option.value)}
-                                        className={cn(
-                                            'relative flex items-start gap-3 rounded-2xl border-2 p-4 text-left transition-[border-color,background-color,box-shadow] duration-200 disabled:cursor-not-allowed disabled:opacity-55',
-                                            active ? 'border-primary bg-accent/60 shadow-brand' : 'border-border hover:border-brand-500/40'
-                                        )}
-                                    >
-                                        <span className={cn('grid size-10 shrink-0 place-items-center rounded-xl', active ? 'bg-primary text-white' : 'bg-muted text-muted-foreground')}>
+                                    <RadioCard key={option.value} value={option.value} disabled={option.disabled}>
+                                        <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-muted text-muted-foreground transition-colors group-data-[state=checked]:bg-primary group-data-[state=checked]:text-white">
                                             <Icon className="size-5" />
                                         </span>
-                                        <span>
+                                        <span className="pr-6">
                                             <span className="block font-semibold">{option.title}</span>
                                             <span className="block text-sm text-muted-foreground">{option.text}</span>
                                         </span>
-                                        <span className={cn('absolute right-4 top-4 grid size-5 place-items-center rounded-full border-2', active ? 'border-primary' : 'border-border')}>
-                                            {active && <motion.span layoutId="pay-dot" className="size-2.5 rounded-full bg-primary" />}
-                                        </span>
-                                    </button>
+                                    </RadioCard>
                                 );
                             })}
-                        </div>
+                        </RadioGroup>
                     </Panel>
                 </div>
 

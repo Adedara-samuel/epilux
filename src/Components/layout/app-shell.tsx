@@ -3,8 +3,13 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { Suspense, useEffect, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Button } from '@/Components/ui/button';
+import { Sheet, SheetContent, SheetTitle } from '@/Components/ui/sheet';
+import {
+    DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
+} from '@/Components/ui/dropdown-menu';
 import {
     ChevronDown, Droplets, Eye, EyeOff, LayoutDashboard, LogOut, Menu, Package, Search,
     Settings, ShoppingBag, ShoppingCart, Truck, User, Users, Wallet, X, Headphones,

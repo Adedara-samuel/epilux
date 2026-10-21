@@ -14,6 +14,7 @@ import { Reveal } from '@/Components/motion';
 import { formatNaira } from '@/lib/format';
 import { FREE_DELIVERY_THRESHOLD } from '@/services/delivery';
 import { cn } from '@/lib/utils';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/ui/select';
 import type { Product } from '@/types/product';
 
 const SORTS = [
@@ -126,16 +127,15 @@ function ShopContent() {
                             {isLoading ? 'Loading…' : `${products.length} ${products.length === 1 ? 'product' : 'products'}`}
                         </p>
                     </div>
-                    <label className="flex items-center gap-2 text-sm text-muted-foreground">
-                        Sort
-                        <select
-                            value={sort}
-                            onChange={(e) => setParam('sort', e.target.value === 'newest' ? null : e.target.value)}
-                            className="h-10 rounded-xl border border-border bg-card px-3 text-sm font-medium text-foreground shadow-xs outline-none focus:border-ring focus:ring-4 focus:ring-ring/15"
-                        >
-                            {SORTS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
-                        </select>
-                    </label>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <span id="sort-label">Sort</span>
+                        <Select value={sort} onValueChange={(value) => setParam('sort', value === 'newest' ? null : value)}>
+                            <SelectTrigger aria-labelledby="sort-label" className="h-10 w-48 font-medium"><SelectValue /></SelectTrigger>
+                            <SelectContent align="end">
+                                {SORTS.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                    </div>
                 </div>
 
                 {/* Category chips */}

@@ -15,6 +15,7 @@ import { formatNaira } from '@/lib/format';
 import { handleImageError, resolveImageUrl } from '@/lib/images';
 import { MIN_ORDER_QUANTITY } from '@/lib/constants';
 import { CheckoutSteps } from '@/Components/orders/checkout-steps';
+import { Progress } from '@/Components/ui/progress';
 
 export default function CartPage() {
     const router = useRouter();
@@ -97,9 +98,7 @@ export default function CartPage() {
                                     : <span className="font-semibold text-success">You&apos;ve unlocked free delivery 🎉</span>}
                             </p>
                         </div>
-                        <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted">
-                            <motion.div className="h-full rounded-full bg-gradient-brand" initial={{ width: 0 }} animate={{ width: `${progress}%` }} transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }} />
-                        </div>
+                        <Progress value={progress} className="mt-3" aria-label="Progress towards free delivery" />
                     </Panel>
 
                     <AnimatePresence initial={false}>

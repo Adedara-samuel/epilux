@@ -12,7 +12,7 @@ import { formatDate, formatNaira } from '@/lib/format';
 import { handleImageError, productImageUrl } from '@/lib/images';
 import { ORDER_TIMELINE } from '@/lib/constants';
 import { canConfirm, canPay, customerReward, itemProduct, orderId, type CustomerOrder } from '@/Components/orders/order-helpers';
-import { cn } from '@/lib/utils';
+import { Tabs, TabsList, TabsTrigger } from '@/Components/ui/tabs';
 
 const TABS = [
     { key: 'all', label: 'All', match: () => true },
@@ -98,20 +98,18 @@ export default function OrdersPage() {
                 </Panel>
             )}
 
-            <div className="-mx-4 mb-5 overflow-x-auto px-4 no-scrollbar sm:mx-0 sm:px-0">
-                <div className="inline-flex gap-1 rounded-2xl bg-muted p-1">
+            <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)} className="-mx-4 mb-5 overflow-x-auto px-4 no-scrollbar sm:mx-0 sm:px-0">
+                <TabsList>
                     {TABS.map((t) => {
                         const count = orders.filter(t.match).length;
-                        const active = tab === t.key;
                         return (
-                            <button key={t.key} onClick={() => setTab(t.key)} className={cn('relative rounded-xl px-4 py-2 text-sm font-semibold transition-colors', active ? 'text-foreground' : 'text-muted-foreground hover:text-foreground')}>
-                                {active && <motion.span layoutId="orders-tab" className="absolute inset-0 rounded-xl bg-card shadow-soft" transition={{ type: 'spring', stiffness: 500, damping: 40 }} />}
-                                <span className="relative">{t.label}{count > 0 && <span className="ml-1.5 text-xs text-muted-foreground">{count}</span>}</span>
-                            </button>
+                            <TabsTrigger key={t.key} value={t.key}>
+                                {t.label}{count > 0 && <span className="text-xs text-muted-foreground">{count}</span>}
+                            </TabsTrigger>
                         );
                     })}
-                </div>
-            </div>
+                </TabsList>
+            </Tabs>
 
             {isError ? (
                 <ErrorState description="We couldn't load your orders." onRetry={() => refetch()} />
