@@ -1,365 +1,144 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable react/no-unescaped-entities */
-// app/account/inbox/page.tsx
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-// NOTE: Ensure this import is available in your environment
-import { useQueryClient } from '@tanstack/react-query'; 
+import { useMemo, useState } from 'react';
+import Link from 'next/link';
+import { AnimatePresence, motion } from 'framer-motion';
+import { ArrowLeft, Inbox, MessageSquare, PenSquare } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { useMessages } from '@/hooks/useSupport';
-import { Loader2, Mail, ArrowLeft, Inbox, MessageSquare, Bell, X } from 'lucide-react';
+import { useMarkMessageAsRead, useMessages } from '@/hooks/useSupport';
 import { Button } from '@/Components/ui/button';
-import { toast } from 'sonner';
+import { Tabs, TabsList, TabsTrigger } from '@/Components/ui/tabs';
+import { EmptyState, ErrorState, PageHeader, Panel, Pill } from '@/Components/ui/kit';
+import { cn } from '@/lib/utils';
+import { formatDate } from '@/lib/format';
 
-import { useMarkMessageAsRead } from '@/hooks/useSupport';
-
-// --- BACKEND TYPE DEFINITIONS ---
-interface BackendSenderRecipient {
+type Person = { _id: string; firstName?: string; lastName?: string };
+type Message = {
     _id: string;
-    email: string;
-    firstName: string;
-    lastName: string;
-}
-
-interface BackendMessage {
-    _id: string;
-    sender: BackendSenderRecipient;
-    recipient: BackendSenderRecipient;
-    subject: string;
+    subject?: string;
     content: string;
     isRead: boolean;
     isAdminReply: boolean;
     createdAt: string;
-    updatedAt: string;
-}
+    sender?: Person | null;
+    recipient?: Person | null;
+};
 
-interface BackendResponse {
-    success: boolean;
-    data: {
-        messages: BackendMessage[];
-        totalMessages: number;
-        totalPages: number;
-        currentPage: number;
-    }
-}
-// --- END BACKEND TYPES ---
+const timeLabel = (iso: string) => {
+    const d = new Date(iso);
+    return d.toDateString() === new Date().toDateString()
+        ? d.toLocaleTimeString('en-NG', { hour: 'numeric', minute: '2-digit' })
+        : formatDate(iso);
+};
 
-
-// Frontend Message interface, simplified
-interface Message {
-    id: string;
-    subject: string;
-    message: string;
-    date: string;
-    read: boolean;
-    type: 'support' | 'admin';
-    senderName: string; 
-}
-
-// Define the query key for cache updates
-const MESSAGE_QUERY_KEY = ['supportTickets']; 
-
-
-export default function MyInboxPage() {
+export default function InboxPage() {
     const { user } = useAuth();
-    const router = useRouter();
-    const queryClient = useQueryClient();
-    const markAsReadMutation = useMarkMessageAsRead();
+    const { data, isLoading, isError, refetch } = useMessages({ limit: 50 });
+    const markRead = useMarkMessageAsRead();
+    const [filter, setFilter] = useState<'all' | 'replies' | 'sent'>('all');
+    const [openId, setOpenId] = useState<string | null>(null);
 
-    const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
-    const [showModal, setShowModal] = useState(false);
+    const messages: Message[] = useMemo(() => data?.data?.messages || [], [data]);
+    const myId = user?._id || user?.id;
+    const isIncoming = (m: Message) => m.isAdminReply || (m.recipient?._id === myId && m.sender?._id !== myId);
+    const unread = messages.filter((m) => isIncoming(m) && !m.isRead).length;
 
-    // Fetch data, using optional chaining for safe access
-    const { data: responseData, isLoading: loadingMessages } = useMessages() as { data: any, isLoading: boolean };
-    
-    const backendMessages: any[] = responseData?.data?.messages || [];
+    const shown = messages.filter((m) => filter === 'all' || (filter === 'replies' ? isIncoming(m) : !isIncoming(m)));
+    const open = messages.find((m) => m._id === openId) || null;
 
-    // --- DATA MAPPING: ALL MESSAGES ARE PULLED FROM THE BACKEND RESPONSE ---
-    
-    const allMessages: Message[] = backendMessages.map((msg) => {
-        // Determine the sender name
-        const senderName = msg.isAdminReply 
-            ? 'Epilux Water Support'
-            : `${msg.sender.firstName} ${msg.sender.lastName}`;
-
-        return {
-            id: msg._id,
-            subject: msg.subject,
-            message: msg.content,
-            date: msg.createdAt, 
-            read: msg.isRead,
-            type: msg.isAdminReply ? 'admin' : 'support',
-            senderName: senderName
-        } as Message; 
-    }).sort((a, b) => 
-        new Date(b.date).getTime() - new Date(a.date).getTime()
-    );
-    // --- END DATA MAPPING ---
-
-
-    useEffect(() => {
-        if (!user) {
-            router.push('/login');
-            return;
-        }
-    }, [user, router]);
-
-
-    const handleViewDetails = (message: Message) => {
-        setSelectedMessage(message);
-        setShowModal(true);
-        
-        // --- LOGIC TO MARK AS READ WHEN VIEWED AND OPTIMISTICALLY UPDATE COUNTS ---
-        if (!message.read) {
-            markAsReadMutation.mutate(message.id, {
-                onSuccess: () => {
-                    // 1. Optimistically update the React Query cache (updates component data)
-                    queryClient.setQueryData(MESSAGE_QUERY_KEY, (oldData: BackendResponse | undefined) => {
-                        if (!oldData) return oldData;
-
-                        const updatedMessages = oldData.data.messages.map(msg => 
-                            msg._id === message.id ? { ...msg, isRead: true } : msg
-                        );
-                        
-                        return {
-                            ...oldData,
-                            data: {
-                                ...oldData.data,
-                                messages: updatedMessages,
-                            }
-                        };
-                    });
-
-                    // 2. Update the currently selected message state (updates the modal status)
-                    setSelectedMessage(prev => prev ? { ...prev, read: true } : null);
-
-                    toast.success("Message marked as read.");
-                },
-                onError: (error: any) => {
-                    const errorMessage = error?.response?.data?.message || "Failed to mark as read.";
-                    toast.error(errorMessage);
-                },
-            });
-        }
+    const openMessage = (m: Message) => {
+        setOpenId(m._id);
+        if (isIncoming(m) && !m.isRead) markRead.mutate(m._id);
     };
-
-    const closeModal = () => {
-        setShowModal(false);
-        setSelectedMessage(null);
-    };
-
-    if (loadingMessages) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-100">
-                <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
-                <p className="ml-3 text-lg text-gray-700">Loading inbox...</p>
-            </div>
-        );
-    }
-
-    if (!user) {
-        return (
-            <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 p-4">
-                <h2 className="text-2xl font-bold text-gray-800 mb-4">Access Denied</h2>
-                <p className="text-lg text-gray-700 text-center">Please log in to view your inbox and messages.</p>
-            </div>
-        );
-    }
 
     return (
-        <div className="app-content min-h-screen bg-gray-50">
-            <div className="container mx-auto px-4 py-12">
-                {/* Header */}
-                <div className="flex items-center justify-between mb-8">
-                    <Button
-                        variant="outline"
-                        onClick={() => router.push('/account')}
-                        className="flex items-center gap-2 bg-transparent border-none cursor-pointer hover:bg-gray-100"
-                    >
-                        <ArrowLeft className="h-4 w-4" />
-                        Back to profile
-                    </Button>
-                    <div className="text-center">
-                        <h1 className="text-4xl font-bold text-gray-900">
-                            My Inbox
-                        </h1>
-                        <p className="text-gray-600 mt-2">Messages, notifications & updates</p>
-                    </div>
-                    <div></div> {/* Spacer for centering */}
-                </div>
+        <div className="max-w-5xl">
+            <PageHeader
+                title="Inbox"
+                description={unread ? `You have ${unread} unread repl${unread === 1 ? 'y' : 'ies'}.` : 'Messages you send us and our replies.'}
+                actions={<Button asChild><Link href="/account/contact"><PenSquare /> New message</Link></Button>}
+            />
 
-                {/* Stats Cards - Counts now update automatically due to Query Cache change */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 text-center">
-                        <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-                            <Inbox className="w-6 h-6 text-blue-600" />
-                        </div>
-                        <h3 className="text-2xl font-bold text-gray-900">{allMessages.length}</h3>
-                        <p className="text-gray-600">Total Messages</p>
-                    </div>
-
-                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 text-center">
-                        <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-                            <Bell className="w-6 h-6 text-orange-600" />
-                        </div>
-                        <h3 className="text-2xl font-bold text-gray-900">
-                            {/* Uses the recalculated allMessages array */}
-                            {allMessages.filter((m: Message) => !m.read).length}
-                        </h3>
-                        <p className="text-gray-600">Unread Messages</p>
-                    </div>
-
-                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 text-center">
-                        <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-                            <MessageSquare className="w-6 h-6 text-green-600" />
-                        </div>
-                        <h3 className="text-2xl font-bold text-gray-900">
-                            {/* Uses the recalculated allMessages array */}
-                            {allMessages.filter((m: Message) => m.read).length}
-                        </h3>
-                        <p className="text-gray-600">Read Messages</p>
-                    </div>
-                </div>
-
-                {/* Messages List */}
-                <div className="max-w-4xl mx-auto">
-                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                        <div className="p-6 border-b border-gray-100">
-                            <h2 className="text-2xl font-bold text-gray-900">Recent Messages</h2>
-                            <p className="text-gray-600 mt-1">Stay updated with your account activity</p>
+            <Panel className="overflow-hidden">
+                <div className="grid min-h-[28rem] lg:grid-cols-[minmax(0,360px)_1fr]">
+                    {/* List */}
+                    <div className={cn('flex flex-col border-border/60 lg:border-r', open && 'hidden lg:flex')}>
+                        <div className="border-b border-border/60 p-3">
+                            <Tabs value={filter} onValueChange={(v) => setFilter(v as typeof filter)}>
+                                <TabsList className="w-full">
+                                    <TabsTrigger value="all" className="flex-1">All</TabsTrigger>
+                                    <TabsTrigger value="replies" className="flex-1">Replies{unread > 0 && <span className="ml-1 rounded-full bg-primary px-1.5 text-[10px] font-bold text-primary-foreground">{unread}</span>}</TabsTrigger>
+                                    <TabsTrigger value="sent" className="flex-1">Sent</TabsTrigger>
+                                </TabsList>
+                            </Tabs>
                         </div>
 
-                        <div className="divide-y divide-gray-100">
-                            {allMessages.map((message: Message) => (
-                                <div
-                                    key={message.id}
-                                    // Use onMouseDown to prevent the click from firing twice if focusing on the button
-                                    onClick={() => handleViewDetails(message)} 
-                                    className={`p-6 hover:bg-gray-50/50 transition-colors cursor-pointer ${
-                                        !message.read ? 'bg-blue-50/30 border-l-4 border-blue-500' : ''
-                                    }`}
-                                >
-                                    <div className="flex items-start justify-between">
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-3 mb-2">
-                                                <h3 className={`text-lg font-semibold truncate ${
-                                                    !message.read ? 'text-blue-800' : 'text-gray-800'
-                                                }`}>
-                                                    {message.subject}
-                                                </h3>
-                                                {!message.read && (
-                                                    <div className="w-3 h-3 bg-blue-600 rounded-full flex-shrink-0"></div>
-                                                )}
-                                            </div>
-
-                                            <p className="text-gray-600 mb-3 line-clamp-2">{message.message}</p>
-
-                                            <div className="flex items-center gap-4 text-sm text-gray-500">
-                                                <span className="flex items-center gap-1">
-                                                    <Mail className="w-4 h-4" />
-                                                    {message.senderName} 
-                                                </span>
-                                                <span className="flex items-center gap-1">
-                                                    <Bell className="w-4 h-4" />
-                                                    {new Date(message.date).toLocaleDateString('en-US', {
-                                                        year: 'numeric',
-                                                        month: 'short',
-                                                        day: 'numeric',
-                                                        hour: '2-digit',
-                                                        minute: '2-digit'
-                                                    })}
-                                                </span>
-                                            </div>
-                                        </div>
-
-                                        <div className="ml-4 flex-shrink-0">
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 cursor-pointer"
+                        {isLoading ? (
+                            <div className="space-y-2 p-3">{[0, 1, 2, 3].map((i) => <div key={i} className="skeleton-shimmer h-16 rounded-xl" />)}</div>
+                        ) : isError ? (
+                            <ErrorState onRetry={() => refetch()} />
+                        ) : shown.length === 0 ? (
+                            <EmptyState icon={Inbox} title={filter === 'sent' ? 'Nothing sent yet' : 'No messages yet'} description="When you contact us, the conversation shows up here." action={{ label: 'Contact us', href: '/account/contact' }} />
+                        ) : (
+                            <ul className="flex-1 divide-y divide-border/50 overflow-y-auto">
+                                {shown.map((m) => {
+                                    const incoming = isIncoming(m);
+                                    const isUnread = incoming && !m.isRead;
+                                    return (
+                                        <li key={m._id}>
+                                            <button
+                                                onClick={() => openMessage(m)}
+                                                className={cn('flex w-full items-start gap-3 px-4 py-3.5 text-left transition-colors hover:bg-muted/60', openId === m._id && 'bg-accent/60')}
                                             >
-                                                View Details →
-                                            </Button>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-
-                        {allMessages.length === 0 && (
-                            <div className="p-12 text-center">
-                                <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-                                    <Inbox className="w-8 h-8 text-gray-400" />
-                                </div>
-                                <h3 className="text-xl font-semibold text-gray-900 mb-2">No messages yet</h3>
-                                <p className="text-gray-600">Your inbox is empty. We'll notify you when you have new messages.</p>
-                            </div>
+                                                <span className={cn('grid size-10 shrink-0 place-items-center rounded-full text-sm font-bold', incoming ? 'bg-gradient-brand text-white' : 'bg-muted text-muted-foreground')}>
+                                                    {incoming ? 'E' : 'Y'}
+                                                </span>
+                                                <span className="min-w-0 flex-1">
+                                                    <span className="flex items-center gap-2">
+                                                        <span className={cn('truncate text-sm', isUnread ? 'font-bold' : 'font-semibold')}>{incoming ? 'Epilux support' : 'You'}</span>
+                                                        <span className="ml-auto shrink-0 text-xs text-muted-foreground">{timeLabel(m.createdAt)}</span>
+                                                    </span>
+                                                    <span className={cn('block truncate text-sm', isUnread ? 'font-semibold text-foreground' : 'text-foreground/80')}>{m.subject || 'No subject'}</span>
+                                                    <span className="block truncate text-xs text-muted-foreground">{m.content}</span>
+                                                </span>
+                                                {isUnread && <span className="mt-2 size-2 shrink-0 rounded-full bg-primary" aria-label="Unread" />}
+                                            </button>
+                                        </li>
+                                    );
+                                })}
+                            </ul>
                         )}
                     </div>
-                </div>
-            </div>
 
-            {/* Message Modal */}
-            {showModal && selectedMessage && (
-                <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
-                        <div className="p-6 border-b border-gray-100">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2 bg-blue-100 rounded-lg">
-                                        <Mail className="w-5 h-5 text-blue-600" />
+                    {/* Reader */}
+                    <div className={cn('flex-col', open ? 'flex' : 'hidden lg:flex')}>
+                        <AnimatePresence mode="wait">
+                            {open ? (
+                                <motion.article key={open._id} initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} className="flex flex-1 flex-col">
+                                    <div className="flex items-start gap-3 border-b border-border/60 px-5 py-4 sm:px-6">
+                                        <Button variant="ghost" size="icon-sm" className="-ml-2 lg:hidden" onClick={() => setOpenId(null)} aria-label="Back to messages"><ArrowLeft /></Button>
+                                        <div className="min-w-0 flex-1">
+                                            <h2 className="text-lg font-bold">{open.subject || 'No subject'}</h2>
+                                            <p className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                                                {isIncoming(open) ? 'From Epilux support' : 'Sent by you'} · {new Date(open.createdAt).toLocaleString('en-NG', { dateStyle: 'medium', timeStyle: 'short' })}
+                                                {isIncoming(open) ? <Pill tone="brand">Reply</Pill> : <Pill tone={open.isRead ? 'success' : 'neutral'}>{open.isRead ? 'Seen by our team' : 'Delivered'}</Pill>}
+                                            </p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <h3 className="text-xl font-bold text-gray-800">{selectedMessage.subject}</h3>
-                                        <p className="text-gray-600 text-sm">From {selectedMessage.senderName}</p> 
-                                        {selectedMessage.read && (
-                                            <span className="text-xs text-green-600 font-medium"> • Read</span>
-                                        )}
+                                    <div className="flex-1 whitespace-pre-wrap px-5 py-5 text-[15px] leading-relaxed sm:px-6">{open.content}</div>
+                                    <div className="border-t border-border/60 px-5 py-4 sm:px-6">
+                                        <Button asChild variant="outline"><Link href="/account/contact"><MessageSquare /> Send a follow-up</Link></Button>
                                     </div>
-                                </div>
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={closeModal}
-                                    className="text-gray-400 hover:text-gray-600"
-                                >
-                                    <X className="w-5 h-5" />
-                                </Button>
-                            </div>
-                        </div>
-
-                        <div className="p-6 max-h-96 overflow-y-auto">
-                            <div className="prose prose-gray max-w-none">
-                                {selectedMessage.message.split('\n').map((paragraph: string, index: number) => (
-                                    <p key={index} className="mb-4 text-gray-700 leading-relaxed">
-                                        {paragraph}
-                                    </p>
-                                ))}
-                            </div>
-                        </div>
-
-                        <div className="p-6 border-t border-gray-100 bg-gray-50">
-                            <div className="flex items-center justify-between">
-                                <div className="text-sm text-gray-500">
-                                    Received on {new Date(selectedMessage.date).toLocaleDateString('en-US', {
-                                        weekday: 'long',
-                                        year: 'numeric',
-                                        month: 'long',
-                                        day: 'numeric',
-                                        hour: '2-digit',
-                                        minute: '2-digit'
-                                    })}
-                                </div>
-                                <Button onClick={closeModal} className="bg-blue-600 hover:bg-blue-700">
-                                    Close
-                                </Button>
-                            </div>
-                        </div>
+                                </motion.article>
+                            ) : (
+                                <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-1 items-center justify-center">
+                                    <EmptyState icon={MessageSquare} title="Select a message" description="Choose a message on the left to read it." />
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
                     </div>
                 </div>
-            )}
+            </Panel>
         </div>
     );
 }

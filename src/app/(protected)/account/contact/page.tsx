@@ -1,245 +1,127 @@
-/* eslint-disable react/no-unescaped-entities */
-/* eslint-disable @typescript-eslint/no-unused-vars */
-// app/contact/page.tsx
 'use client';
 
-import React from 'react';
-import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
+import { Suspense, useState } from 'react';
+import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
+import { toast } from 'sonner';
+import { CheckCircle2, Clock, Inbox, Mail, MessageSquare, Phone, Send } from 'lucide-react';
+import { useSendMessage } from '@/hooks/useSupport';
+import { useOrders } from '@/hooks/useOrders';
+import { getErrorMessage } from '@/services/base';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
+import { Label } from '@/Components/ui/label';
 import { Textarea } from '@/Components/ui/textarea';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/Components/ui/form';
-import { Mail, Phone, MapPin, Loader2, ArrowLeft } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
-import { toast } from 'sonner';
-import { useSendMessage } from '@/hooks/useMessages';
-import { SendMessagePayload } from '@/services/messageService';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/ui/select';
+import { PageHeader, Panel, PanelHeader } from '@/Components/ui/kit';
+import { orderId, type CustomerOrder } from '@/Components/orders/order-helpers';
 
-const contactFormSchema = z.object({
-    name: z.string().min(2, 'Name is required').max(100, 'Name is too long'),
-    email: z.string().email('Invalid email address'),
-    subject: z.string().min(5, 'Subject is required').max(200, 'Subject is too long'),
-    message: z.string().min(10, 'Message must be at least 10 characters').max(1000, 'Message is too long'),
-});
+const TOPICS = ['Order or delivery', 'Payment', 'Wallet or withdrawal', 'Referrals', 'Account', 'Something else'];
+const NO_ORDER = 'none';
 
-export default function ContactPage() {
-    const { user, loading } = useAuth();
-    const router = useRouter();
-    // Initialize the mutation hook
-    const sendMessageMutation = useSendMessage(); 
+function ContactContent() {
+    const searchParams = useSearchParams();
+    const send = useSendMessage();
+    const { data: ordersData } = useOrders();
+    const orders: CustomerOrder[] = ordersData?.data || [];
 
-    const form = useForm<z.infer<typeof contactFormSchema>>({
-        resolver: zodResolver(contactFormSchema),
-        defaultValues: {
-            name: user ? `${user.firstName} ${user.lastName}` : '',
-            email: user?.email || '',
-            subject: '',
-            message: '',
-        },
-    });
+    const [topic, setTopic] = useState(searchParams.get('order') ? TOPICS[0] : '');
+    const [order, setOrder] = useState(searchParams.get('order') || NO_ORDER);
+    const [subject, setSubject] = useState('');
+    const [message, setMessage] = useState('');
+    const [sent, setSent] = useState(false);
 
-    // NOTE: Keeping the original redirect logic for structural consistency, though it may need review
-    // if the path '/account/contact' is the current page.
-    React.useEffect(() => {
-        if (!loading && !user) {
-            router.push('/login'); // Redirect to login if not authenticated
-        }
-    }, [user, loading, router]);
+    const selectedOrder = orders.find((o) => orderId(o) === order);
 
-    // Handle Loading State
-    if (loading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
-                <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
-            </div>
-        );
-    }
+    const submit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!topic) return toast.error('Please choose a topic');
+        if (subject.trim().length < 3) return toast.error('Please add a short subject');
+        if (message.trim().length < 10) return toast.error('Please tell us a bit more (at least 10 characters)');
 
-    if (!user) {
-        return null; // Will redirect via useEffect
-    }
-
-    // UPDATED onSubmit: Use the React Query mutation
-    const onSubmit = async (values: SendMessagePayload) => {
-        try {
-            // Call the mutation function
-            await sendMessageMutation.mutateAsync(values);
-            
-            // Reset form fields after successful submission
-            form.reset({
-                name: user ? `${user.firstName} ${user.lastName}` : '',
-                email: user?.email || '',
-                subject: '',
-                message: '',
-            });
-        } catch (error) {
-            // Errors handled by the onError callback in useSendMessage
-        }
+        const prefix = selectedOrder ? `[${topic} · ${selectedOrder.orderNumber}]` : `[${topic}]`;
+        send.mutate({ subject: `${prefix} ${subject.trim()}`, message: message.trim() }, {
+            onSuccess: () => { setSent(true); setSubject(''); setMessage(''); },
+            onError: (err) => toast.error(getErrorMessage(err, 'Could not send your message')),
+        });
     };
 
     return (
-        <div className="app-content min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-            <div className="container mx-auto px-4 py-12">
-                {/* Header */}
-                <div className="flex items-center justify-between mb-12">
-                    <Button
-                        variant="outline"
-                        onClick={() => router.push('/account')}
-                        className="flex items-center gap-2 bg-transparent border-none cursor-pointer hover:bg-gray-100"
-                    >
-                        <ArrowLeft className="h-4 w-4" />
-                        Back to profile
-                    </Button>
-                    <div className="text-center flex-1">
-                        <h1 className="text-5xl font-extrabold text-gray-900 tracking-tight">
-                            Contact Us
-                        </h1>
-                        <p className="text-gray-600 mt-2 text-lg">We're here to help! Send us a message.</p>
-                    </div>
-                    <div></div> {/* Spacer */}
-                </div>
+        <div className="max-w-5xl">
+            <PageHeader title="Contact us" description="Questions about an order, payment or your wallet? We're here to help." />
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-                    {/* Contact Form */}
-                    <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-8">
-                        <h2 className="text-3xl font-bold text-gray-900 mb-6">Send a Message</h2>
-                        <p className="text-gray-600 mb-8">Fill out the form and our support team will get back to you within 24 hours.</p>
-
-                        <Form {...form}>
-                            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                                <FormField
-                                    control={form.control}
-                                    name="name"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Your Name</FormLabel>
-                                            <FormControl>
-                                                <Input placeholder="John Doe" {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="email"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Your Email</FormLabel>
-                                            <FormControl>
-                                                <Input placeholder="john@epiluxwater.com" type="email" {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="subject"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Subject</FormLabel>
-                                            <FormControl>
-                                                <Input placeholder="Issue with my last order" {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="message"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Message</FormLabel>
-                                            <FormControl>
-                                                <Textarea 
-                                                    placeholder="Describe your issue or request in detail..." 
-                                                    rows={5} 
-                                                    {...field} 
-                                                />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-
-                                <Button
-                                    type="submit"
-                                    className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5"
-                                    disabled={sendMessageMutation.isPending} // Disable while submitting
-                                >
-                                    {sendMessageMutation.isPending ? (
-                                        <>
-                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                            Sending...
-                                        </>
-                                    ) : (
-                                        'Send Message'
-                                    )}
-                                </Button>
+            <div className="grid gap-6 lg:grid-cols-[1fr_320px] lg:items-start">
+                <Panel>
+                    {sent ? (
+                        <div className="animate-fade-in-scale flex flex-col items-center px-6 py-14 text-center">
+                            <span className="grid size-16 place-items-center rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10"><CheckCircle2 className="size-8" /></span>
+                            <h2 className="mt-5 text-xl font-bold">Message sent</h2>
+                            <p className="mt-1.5 max-w-sm text-sm text-muted-foreground">Thanks for reaching out. Our team usually replies within a day, and you&apos;ll find the reply in your inbox.</p>
+                            <div className="mt-6 flex flex-wrap justify-center gap-2">
+                                <Button asChild><Link href="/account/inbox"><Inbox /> Go to inbox</Link></Button>
+                                <Button variant="outline" onClick={() => setSent(false)}>Send another</Button>
+                            </div>
+                        </div>
+                    ) : (
+                        <>
+                            <PanelHeader title="Send a message" />
+                            <form onSubmit={submit} className="grid gap-4 p-5 sm:grid-cols-2 sm:p-6">
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="topic">Topic</Label>
+                                    <Select value={topic} onValueChange={setTopic}>
+                                        <SelectTrigger id="topic" className="h-12"><SelectValue placeholder="Choose a topic" /></SelectTrigger>
+                                        <SelectContent>{TOPICS.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="order">Related order (optional)</Label>
+                                    <Select value={order} onValueChange={setOrder}>
+                                        <SelectTrigger id="order" className="h-12"><SelectValue /></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value={NO_ORDER}>No specific order</SelectItem>
+                                            {orders.slice(0, 20).map((o) => <SelectItem key={orderId(o)} value={orderId(o)}>{o.orderNumber}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-1.5 sm:col-span-2">
+                                    <Label htmlFor="subject">Subject</Label>
+                                    <Input id="subject" className="h-12 rounded-xl" value={subject} onChange={(e) => setSubject(e.target.value)} maxLength={120} placeholder="What do you need help with?" />
+                                </div>
+                                <div className="space-y-1.5 sm:col-span-2">
+                                    <Label htmlFor="message">Message</Label>
+                                    <Textarea id="message" rows={6} className="rounded-xl" value={message} onChange={(e) => setMessage(e.target.value)} maxLength={2000} placeholder="Tell us what happened and how we can help." />
+                                    <p className="text-right text-xs text-muted-foreground tabular-nums">{message.length}/2000</p>
+                                </div>
+                                <div className="sm:col-span-2"><Button type="submit" loading={send.isPending}><Send /> Send message</Button></div>
                             </form>
-                        </Form>
-                    </div>
+                        </>
+                    )}
+                </Panel>
 
-                    {/* Contact Information and FAQ Section */}
-                    <div className="space-y-12">
-                        {/* Contact Information */}
-                        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-8">
-                            <h2 className="text-3xl font-bold text-gray-900 mb-6">Contact Information</h2>
-                            <div className="space-y-4">
-                                <div className="flex items-start space-x-4">
-                                    <Mail className="h-6 w-6 text-blue-600 flex-shrink-0 mt-1" />
-                                    <div>
-                                        <h4 className="font-semibold text-gray-800">Email Us</h4>
-                                        <p className="text-gray-600">support@epiluxwater.com</p>
-                                    </div>
-                                </div>
-                                <div className="flex items-start space-x-4">
-                                    <Phone className="h-6 w-6 text-blue-600 flex-shrink-0 mt-1" />
-                                    <div>
-                                        <h4 className="font-semibold text-gray-800">Call Us</h4>
-                                        <p className="text-gray-600">+1 (555) 123-4567</p>
-                                    </div>
-                                </div>
-                                <div className="flex items-start space-x-4">
-                                    <MapPin className="h-6 w-6 text-blue-600 flex-shrink-0 mt-1" />
-                                    <div>
-                                        <h4 className="font-semibold text-gray-800">Our Office</h4>
-                                        <p className="text-gray-600">123 Aqua Blvd, Water City, WA 98765</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        {/* FAQ Section */}
-                        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-8">
-                            <h2 className="text-3xl font-bold text-gray-900 mb-6">Quick FAQ</h2>
-                            <div className="space-y-4">
-                                <div className="p-4 border border-gray-100 rounded-xl">
-                                    <h4 className="font-semibold text-gray-800 mb-2">How long does delivery take?</h4>
-                                    <p className="text-gray-600 text-sm">Standard delivery takes 2-3 business days. Express delivery is available for same-day service.</p>
-                                </div>
-                                <div className="p-4 border border-gray-100 rounded-xl">
-                                    <h4 className="font-semibold text-gray-800 mb-2">What payment methods do you accept?</h4>
-                                    <p className="text-gray-600 text-sm">We accept all major credit cards, bank transfers, and cash on delivery.</p>
-                                </div>
-                                <div className="p-4 border border-gray-100 rounded-xl">
-                                    <h4 className="font-semibold text-gray-800 mb-2">Can I return products?</h4>
-                                    <p className="text-gray-600 text-sm">Yes, we offer a 30-day return policy for unopened products in their original packaging.</p>
-                                </div>
-                                <div className="p-4 border border-gray-100 rounded-xl">
-                                    <h4 className="font-semibold text-gray-800 mb-2">Do you offer bulk discounts?</h4>
-                                    <p className="text-gray-600 text-sm">Yes, we provide special pricing for bulk orders. Contact our sales team for a quote.</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                <div className="space-y-4">
+                    <Panel className="p-5">
+                        <p className="font-bold">Other ways to reach us</p>
+                        <ul className="mt-4 space-y-4 text-sm">
+                            <li className="flex items-start gap-3"><span className="grid size-9 shrink-0 place-items-center rounded-xl bg-accent text-primary"><Mail className="size-4" /></span><span><span className="block font-semibold">Email</span><a href="mailto:epiluxcompany@gmail.com" className="break-all text-muted-foreground hover:text-primary">epiluxcompany@gmail.com</a></span></li>
+                            <li className="flex items-start gap-3"><span className="grid size-9 shrink-0 place-items-center rounded-xl bg-accent text-primary"><Phone className="size-4" /></span><span><span className="block font-semibold">Your marketer</span><span className="text-muted-foreground">For a delivery in progress, call the number on your order page.</span></span></li>
+                            <li className="flex items-start gap-3"><span className="grid size-9 shrink-0 place-items-center rounded-xl bg-accent text-primary"><Clock className="size-4" /></span><span><span className="block font-semibold">Response time</span><span className="text-muted-foreground">Usually within 24 hours</span></span></li>
+                        </ul>
+                    </Panel>
+                    <Panel className="p-5">
+                        <p className="flex items-center gap-2 font-bold"><MessageSquare className="size-4 text-primary" /> Quick answers</p>
+                        <p className="mt-1 text-sm text-muted-foreground">Many questions are answered in the help centre.</p>
+                        <Button asChild variant="outline" size="sm" className="mt-4"><Link href="/account/help">Browse help</Link></Button>
+                    </Panel>
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function ContactPage() {
+    return (
+        <Suspense fallback={null}>
+            <ContactContent />
+        </Suspense>
     );
 }
