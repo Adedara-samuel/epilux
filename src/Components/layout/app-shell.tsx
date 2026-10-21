@@ -202,88 +202,49 @@ function WalletChip() {
 
 function UserMenu() {
     const { user, logout } = useAuth();
-    const [open, setOpen] = useState(false);
-    const pathname = usePathname();
-    const menuRef = useRef<HTMLDivElement>(null);
-
-    useEffect(() => setOpen(false), [pathname]);
-
-    // Close on outside click / Escape. (A fixed overlay won't work here: the
-    // header's backdrop-filter makes fixed children position relative to it.)
-    useEffect(() => {
-        if (!open) return;
-        const onPointer = (e: PointerEvent) => {
-            if (menuRef.current && !menuRef.current.contains(e.target as Node)) setOpen(false);
-        };
-        const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
-        document.addEventListener('pointerdown', onPointer);
-        document.addEventListener('keydown', onKey);
-        return () => {
-            document.removeEventListener('pointerdown', onPointer);
-            document.removeEventListener('keydown', onKey);
-        };
-    }, [open]);
 
     if (!user) {
         return (
-            <Link href="/login" className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-brand-700">
-                Sign in
-            </Link>
+            <Button asChild size="sm"><Link href="/login">Sign in</Link></Button>
         );
     }
 
+    const links = [
+        { href: '/account', label: 'My account', icon: User },
+        { href: '/account/orders', label: 'My orders', icon: Package },
+        { href: '/products/wallet', label: 'Wallet', icon: Wallet },
+        { href: '/settings', label: 'Settings', icon: Settings },
+        ...(user.role === 'admin' ? [{ href: '/admin/dashboard', label: 'Admin dashboard', icon: LayoutDashboard }] : []),
+        ...(user.role === 'marketer' ? [{ href: '/marketer', label: 'My deliveries', icon: Truck }] : []),
+    ];
+
     return (
-        <div className="relative" ref={menuRef}>
-            <button
-                onClick={() => setOpen((v) => !v)}
-                className="flex items-center gap-2 rounded-xl p-1 pr-2 transition-colors hover:bg-muted"
-                aria-haspopup="menu"
-                aria-expanded={open}
-            >
-                <span className="grid size-9 place-items-center rounded-lg bg-gradient-brand text-sm font-bold text-white">
-                    {initials(user.firstName, user.lastName, user.email)}
-                </span>
-                <ChevronDown className={cn('hidden size-4 text-muted-foreground transition-transform md:block', open && 'rotate-180')} />
-            </button>
-            <AnimatePresence>
-                {open && (
-                    <>
-                        <motion.div
-                            role="menu"
-                            initial={{ opacity: 0, y: -6, scale: 0.98 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: -6, scale: 0.98 }}
-                            transition={{ duration: 0.18 }}
-                            className="absolute right-0 z-50 mt-2 w-64 origin-top-right overflow-hidden rounded-2xl border border-border/70 bg-popover p-2 shadow-lift"
-                        >
-                            <div className="px-3 py-2.5">
-                                <p className="truncate font-semibold">{fullName(user)}</p>
-                                <p className="truncate text-xs text-muted-foreground">{user.email}</p>
-                            </div>
-                            <div className="my-1 h-px bg-border" />
-                            {[
-                                { href: '/account', label: 'My account', icon: User },
-                                { href: '/account/orders', label: 'My orders', icon: Package },
-                                { href: '/products/wallet', label: 'Wallet', icon: Wallet },
-                                { href: '/settings', label: 'Settings', icon: Settings },
-                                ...(user.role === 'admin' ? [{ href: '/admin/dashboard', label: 'Admin dashboard', icon: LayoutDashboard }] : []),
-                                ...(user.role === 'marketer' ? [{ href: '/marketer', label: 'My deliveries', icon: Truck }] : []),
-                            ].map(({ href, label, icon: Icon }) => (
-                                <Link key={href} href={href} role="menuitem" className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm hover:bg-muted">
-                                    <Icon className="size-4 text-muted-foreground" />
-                                    {label}
-                                </Link>
-                            ))}
-                            <div className="my-1 h-px bg-border" />
-                            <button onClick={() => logout()} role="menuitem" className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-destructive hover:bg-destructive/10">
-                                <LogOut className="size-4" />
-                                Sign out
-                            </button>
-                        </motion.div>
-                    </>
-                )}
-            </AnimatePresence>
-        </div>
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <button className="group flex items-center gap-2 rounded-xl p-1 pr-2 outline-none transition-colors hover:bg-muted focus-visible:ring-[3px] focus-visible:ring-ring/40" aria-label="Account menu">
+                    <span className="grid size-9 place-items-center rounded-lg bg-gradient-brand text-sm font-bold text-white">
+                        {initials(user.firstName, user.lastName, user.email)}
+                    </span>
+                    <ChevronDown className="hidden size-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180 md:block" />
+                </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" sideOffset={8} className="w-64 rounded-2xl p-2">
+                <DropdownMenuLabel className="px-3 py-2">
+                    <p className="truncate font-semibold">{fullName(user)}</p>
+                    <p className="truncate text-xs font-normal text-muted-foreground">{user.email}</p>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {links.map(({ href, label, icon: Icon }) => (
+                    <DropdownMenuItem key={href} asChild className="cursor-pointer gap-3 rounded-lg px-3 py-2">
+                        <Link href={href}><Icon className="size-4 text-muted-foreground" />{label}</Link>
+                    </DropdownMenuItem>
+                ))}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem variant="destructive" className="cursor-pointer gap-3 rounded-lg px-3 py-2" onSelect={() => logout()}>
+                    <LogOut className="size-4" /> Sign out
+                </DropdownMenuItem>
+            </DropdownMenuContent>
+        </DropdownMenu>
     );
 }
 
@@ -437,16 +398,8 @@ function BottomNav() {
 export default function AppShell({ children }: { children: React.ReactNode }) {
     const [drawerOpen, setDrawerOpen] = useState(false);
     const pathname = usePathname();
-    const reduce = useReducedMotion();
 
     useEffect(() => setDrawerOpen(false), [pathname]);
-
-    useEffect(() => {
-        document.body.style.overflow = drawerOpen ? 'hidden' : '';
-        return () => { document.body.style.overflow = ''; };
-    }, [drawerOpen]);
-
-    const drawerTransition = useMemo(() => (reduce ? { duration: 0.15 } : { type: 'spring' as const, stiffness: 380, damping: 38 }), [reduce]);
 
     return (
         <div className="min-h-dvh bg-background">
@@ -457,35 +410,15 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 </Suspense>
             </aside>
 
-            {/* Mobile drawer */}
-            <AnimatePresence>
-                {drawerOpen && (
-                    <>
-                        <motion.button
-                            aria-label="Close menu"
-                            className="fixed inset-0 z-40 bg-foreground/40 backdrop-blur-sm lg:hidden"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            onClick={() => setDrawerOpen(false)}
-                        />
-                        <motion.aside
-                            className="fixed inset-y-0 left-0 z-50 w-[82%] max-w-xs bg-sidebar shadow-lift lg:hidden"
-                            initial={{ x: '-100%' }}
-                            animate={{ x: 0 }}
-                            exit={{ x: '-100%' }}
-                            transition={drawerTransition}
-                        >
-                            <button onClick={() => setDrawerOpen(false)} className="absolute right-3 top-3 grid size-10 place-items-center rounded-xl hover:bg-muted" aria-label="Close menu">
-                                <X className="size-5" />
-                            </button>
-                            <Suspense fallback={null}>
-                                <SidebarContent onNavigate={() => setDrawerOpen(false)} />
-                            </Suspense>
-                        </motion.aside>
-                    </>
-                )}
-            </AnimatePresence>
+            {/* Mobile drawer (shadcn Sheet: focus trap, Esc to close, scroll lock) */}
+            <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
+                <SheetContent side="left" className="bg-sidebar p-0 lg:hidden">
+                    <SheetTitle className="sr-only">Menu</SheetTitle>
+                    <Suspense fallback={null}>
+                        <SidebarContent onNavigate={() => setDrawerOpen(false)} />
+                    </Suspense>
+                </SheetContent>
+            </Sheet>
 
             <div className="lg:pl-64">
                 <TopBar onOpenMenu={() => setDrawerOpen(true)} />
