@@ -49,7 +49,7 @@ function Gallery({ images, name }: { images: ProductImage[]; name: string }) {
 
     return (
         <div className="space-y-3">
-            <div className="relative aspect-square overflow-hidden rounded-[1.75rem] border border-border/70 bg-gradient-to-br from-brand-50 via-white to-sky-50 shadow-soft">
+            <div className="relative aspect-[4/3] overflow-hidden rounded-[1.75rem] border border-border/70 bg-gradient-to-br from-brand-50 via-white to-sky-50 shadow-soft sm:aspect-square">
                 <AnimatePresence initial={false} custom={direction} mode="popLayout">
                     <motion.img
                         key={index}
