@@ -1,6 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { api } from './base';
-
 export interface NigerianBank {
   name: string;
   slug: string;
@@ -19,13 +16,17 @@ export interface NigerianBank {
 
 export const banksAPI = {
   // Get all Nigerian banks from Paystack API
+  // Plain fetch, NOT the app's API client: that client attaches the user's
+  // session token, which must never be sent to a third party.
   getNigerianBanks: async (): Promise<NigerianBank[]> => {
     try {
-      const response = await api.get('https://api.paystack.co/bank');
-      return response.data.data || [];
-    } catch (error) {
-      console.error('Failed to fetch Nigerian banks:', error);
-      // Fallback to static list if API fails
+      const response = await fetch('https://api.paystack.co/bank?country=nigeria&perPage=100', { credentials: 'omit' });
+      if (!response.ok) throw new Error(`Bank list request failed (${response.status})`);
+      const body = await response.json();
+      const banks: NigerianBank[] = (body?.data || []).filter((b: NigerianBank) => b.active !== false);
+      return banks.length ? banks.sort((a, b) => a.name.localeCompare(b.name)) : getFallbackBanks();
+    } catch {
+      // Fallback to static list if the API is unavailable
       return getFallbackBanks();
     }
   },
