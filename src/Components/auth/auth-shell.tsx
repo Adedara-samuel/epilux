@@ -1,111 +1,121 @@
 /* eslint-disable @next/next/no-img-element */
-'use client';
-
 import Link from 'next/link';
-import { motion, useReducedMotion } from 'framer-motion';
 import { Droplets, ShieldCheck, Truck, Wallet } from 'lucide-react';
-import { Reveal, Stagger, StaggerItem } from '@/Components/motion';
 
 const highlights = [
     { icon: Truck, title: 'Doorstep delivery', text: 'A dedicated marketer brings every order to you.' },
-    { icon: Wallet, title: 'Earn on every order', text: 'Get a share of each purchase paid into your wallet.' },
-    { icon: ShieldCheck, title: 'Secure payments', text: 'Pay safely by card, transfer or USSD with Flutterwave.' },
+    { icon: Wallet, title: 'Earn on every order', text: 'A share of each purchase is paid into your wallet.' },
+    { icon: ShieldCheck, title: 'Secure payments', text: 'Card, transfer or USSD, protected by Flutterwave.' },
 ];
 
-/** Split-screen frame shared by the sign-in, sign-up and password pages. */
+// Fixed positions so server and client render the same markup
+const droplets = [
+    { left: '8%', size: 14, duration: 16, delay: 0 },
+    { left: '22%', size: 8, duration: 12, delay: 4 },
+    { left: '37%', size: 18, duration: 20, delay: 2 },
+    { left: '55%', size: 10, duration: 14, delay: 7 },
+    { left: '68%', size: 16, duration: 18, delay: 1 },
+    { left: '84%', size: 9, duration: 13, delay: 5 },
+    { left: '93%', size: 12, duration: 17, delay: 9 },
+];
+
+/**
+ * Full-bleed aurora frame shared by the sign-in, sign-up and password pages.
+ * Entrance animations are CSS-only so the form is visible even before
+ * JavaScript loads.
+ */
 export function AuthShell({
     title,
     subtitle,
     children,
     footer,
+    wide = false,
 }: {
     title: string;
     subtitle?: string;
     children: React.ReactNode;
     footer?: React.ReactNode;
+    wide?: boolean;
 }) {
-    const reduce = useReducedMotion();
-
     return (
-        <div className="relative grid min-h-dvh lg:grid-cols-[1.05fr_1fr]">
-            {/* Brand panel */}
-            <aside className="relative hidden overflow-hidden bg-gradient-brand text-white lg:flex lg:flex-col lg:justify-between lg:p-12">
-                <img src="/images/auth-bg.jpg" alt="" className="absolute inset-0 h-full w-full object-cover opacity-20 mix-blend-overlay" />
-                {/* Soft animated water bubbles */}
-                {!reduce && [0, 1, 2, 3].map((i) => (
-                    <motion.span
-                        key={i}
-                        aria-hidden
-                        className="absolute rounded-full bg-white/10 blur-[1px]"
-                        style={{ width: 80 + i * 40, height: 80 + i * 40, left: `${10 + i * 22}%`, bottom: -120 }}
-                        animate={{ y: [0, -760], opacity: [0, 0.6, 0] }}
-                        transition={{ duration: 14 + i * 3, repeat: Infinity, delay: i * 2.5, ease: 'easeOut' }}
-                    />
-                ))}
+        <div className="aurora min-h-dvh text-white">
+            <span aria-hidden className="aurora-blob one" />
+            <span aria-hidden className="aurora-blob two" />
+            <span aria-hidden className="aurora-blob three" />
+            {droplets.map((d, i) => (
+                <span
+                    key={i}
+                    aria-hidden
+                    className="droplet"
+                    style={{ left: d.left, width: d.size, height: d.size, animationDuration: `${d.duration}s`, animationDelay: `${d.delay}s` }}
+                />
+            ))}
 
-                <Link href="/" className="relative z-10 flex items-center gap-3">
-                    <span className="grid size-11 place-items-center rounded-2xl bg-white shadow-lg">
-                        <img src="/images/logo.png" alt="Epilux" className="size-9 object-contain" />
-                    </span>
-                    <span className="text-xl font-bold tracking-tight">Epilux Water</span>
-                </Link>
-
-                <div className="relative z-10 max-w-md">
-                    <Reveal immediate delay={0.1}>
-                        <p className="mb-3 inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-sm font-medium backdrop-blur">
-                            <Droplets className="size-4" /> Pure. Fresh. Delivered.
-                        </p>
-                        <h2 className="text-4xl font-extrabold leading-tight text-white xl:text-5xl">
-                            Premium water, delivered to your door.
-                        </h2>
-                    </Reveal>
-                    <Stagger immediate delay={0.3} className="mt-10 space-y-4">
-                        {highlights.map(({ icon: Icon, title, text }) => (
-                            <StaggerItem key={title} className="flex items-start gap-4 rounded-2xl bg-white/10 p-4 backdrop-blur-sm">
-                                <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-white/15">
-                                    <Icon className="size-5" />
-                                </span>
-                                <div>
-                                    <p className="font-semibold text-white">{title}</p>
-                                    <p className="text-sm text-white/80">{text}</p>
-                                </div>
-                            </StaggerItem>
-                        ))}
-                    </Stagger>
-                </div>
-
-                <p className="relative z-10 text-sm text-white/70">© {new Date().getFullYear()} Epilux Water. All rights reserved.</p>
-            </aside>
-
-            {/* Form panel */}
-            <main className="relative flex items-center justify-center bg-mesh px-5 py-10 sm:px-8">
-                <div className="w-full max-w-md">
-                    <Link href="/" className="mb-8 flex items-center gap-2 lg:hidden">
-                        <img src="/images/logo.png" alt="Epilux" className="size-10 object-contain" />
-                        <span className="text-lg font-bold tracking-tight">Epilux Water</span>
+            <div className="mx-auto grid min-h-dvh max-w-7xl grid-cols-[minmax(0,1fr)] content-center items-center gap-8 px-4 py-8 sm:px-8 lg:grid-cols-[1.1fr_1fr] lg:content-normal lg:gap-16 lg:px-12">
+                {/* Brand story */}
+                <section className="flex flex-col">
+                    <Link href="/" className="animate-fade-in inline-flex w-fit items-center gap-3">
+                        <span className="grid size-12 place-items-center rounded-2xl bg-white shadow-lg shadow-black/20 ring-1 ring-white/40">
+                            <img src="/images/logo.png" alt="Epilux" className="size-10 object-contain" />
+                        </span>
+                        <span className="text-xl font-bold tracking-tight text-white">Epilux Water</span>
                     </Link>
 
-                    <Reveal immediate>
-                        <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl">{title}</h1>
-                        {subtitle && <p className="mt-2 text-muted-foreground">{subtitle}</p>}
-                    </Reveal>
+                    <div className="mt-14 hidden max-w-xl lg:block">
+                        <p className="animate-fade-in inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3.5 py-1.5 text-sm font-medium text-white/90 backdrop-blur" style={{ animationDelay: '80ms' }}>
+                            <Droplets className="size-4 text-sky-200" /> Pure. Fresh. Delivered.
+                        </p>
+                        <h2 className="animate-fade-in mt-6 text-5xl font-extrabold leading-[1.05] tracking-tight xl:text-6xl" style={{ animationDelay: '140ms' }}>
+                            <span className="text-gradient-light">Premium water,</span>
+                            <br />
+                            <span className="text-white">delivered to your door.</span>
+                        </h2>
+                        <p className="animate-fade-in mt-5 max-w-md text-lg text-white/75" style={{ animationDelay: '200ms' }}>
+                            Order sachet and bottled water in seconds, track every delivery, and earn rewards each time you buy.
+                        </p>
 
-                    <Reveal immediate delay={0.08} className="mt-8 rounded-2xl border border-border/70 bg-card p-6 shadow-lift sm:p-8">
-                        {children}
-                    </Reveal>
+                        <ul className="mt-10 space-y-3">
+                            {highlights.map(({ icon: Icon, title, text }, i) => (
+                                <li
+                                    key={title}
+                                    className="animate-fade-in group flex items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.06] p-4 backdrop-blur-sm transition-colors duration-300 hover:bg-white/[0.1]"
+                                    style={{ animationDelay: `${280 + i * 80}ms` }}
+                                >
+                                    <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-white/25 to-white/5 ring-1 ring-white/20 transition-transform duration-300 group-hover:scale-110">
+                                        <Icon className="size-5 text-white" />
+                                    </span>
+                                    <div>
+                                        <p className="font-semibold text-white">{title}</p>
+                                        <p className="text-sm text-white/70">{text}</p>
+                                    </div>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                </section>
+
+                {/* Form */}
+                <section className={wide ? 'w-full max-w-xl justify-self-center lg:justify-self-end' : 'w-full max-w-md justify-self-center lg:justify-self-end'}>
+                    <div className="animate-fade-in-scale glass-card rounded-3xl p-6 text-foreground sm:p-9" style={{ animationDelay: '120ms' }}>
+                        <h1 className="text-[1.75rem] font-extrabold leading-tight tracking-tight sm:text-3xl">{title}</h1>
+                        {subtitle && <p className="mt-2 text-[15px] text-muted-foreground">{subtitle}</p>}
+                        <div className="mt-7">{children}</div>
+                    </div>
 
                     {footer && (
-                        <Reveal immediate delay={0.16} className="mt-6 text-center text-sm text-muted-foreground">
+                        <div className="animate-fade-in mt-6 text-center text-sm text-white/80" style={{ animationDelay: '220ms' }}>
                             {footer}
-                        </Reveal>
+                        </div>
                     )}
-                </div>
-            </main>
+
+                    <p className="mt-8 text-center text-xs text-white/50 lg:hidden">© {new Date().getFullYear()} Epilux Water</p>
+                </section>
+            </div>
         </div>
     );
 }
 
-/** Labelled form field with an optional icon and error message. */
+/** Labelled form field with an optional error or hint. */
 export function Field({
     label,
     htmlFor,
@@ -124,7 +134,7 @@ export function Field({
     return (
         <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-                <label htmlFor={htmlFor} className="text-sm font-medium text-foreground">{label}</label>
+                <label htmlFor={htmlFor} className="text-sm font-semibold text-foreground/90">{label}</label>
                 {action}
             </div>
             {children}
@@ -133,6 +143,16 @@ export function Field({
             ) : hint ? (
                 <p className="text-xs text-muted-foreground">{hint}</p>
             ) : null}
+        </div>
+    );
+}
+
+/** Text input with a leading icon, sized for auth forms. */
+export function IconInputWrapper({ icon: Icon, children }: { icon: React.ComponentType<{ className?: string }>; children: React.ReactNode }) {
+    return (
+        <div className="group relative">
+            <Icon className="pointer-events-none absolute left-3.5 top-1/2 size-[18px] -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-primary" />
+            {children}
         </div>
     );
 }
