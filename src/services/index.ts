@@ -5,14 +5,7 @@ export { productsAPI, adminProductsAPI } from './products';
 export { ordersAPI, adminOrdersAPI, orderActionsAPI } from './orders';
 export { userAPI } from './user';
 export { affiliateAPI } from './affiliate';
-export {
-  adminUsersAPI,
-  adminAffiliatesAPI,
-  adminCommissionsAPI,
-  adminWithdrawalsAPI,
-  adminSettingsAPI,
-  adminDashboardAPI
-} from './admin';
+export { adminAPI } from './admin';
 export { supportAPI } from './support';
 export { healthAPI } from './health';
 export { marketerAPI } from './marketer';

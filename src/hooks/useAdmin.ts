@@ -1,443 +1,138 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 // src/hooks/useAdmin.ts
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { User } from '@/types/auth';
-import {
-  adminUsersAPI,
-  adminAffiliatesAPI,
-  adminCommissionsAPI,
-  adminWithdrawalsAPI,
-  adminSettingsAPI,
-  adminDashboardAPI
-} from '@/services';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { adminAPI, type AssignableRole, type ContactMessage, type OrdersQuery } from '@/services/admin';
 
-interface BackendOverview {
-  totalOrders: number;
-  totalRevenue: number;
-  monthlyRevenue: number;
-  pendingOrders: number;
-  completedOrders: number;
-  totalUsers: number;
-  totalProducts: number;
-  lowStockProducts: number;
-  activeAffiliates: number;
-  changes: {
-    totalOrders: number;
-    totalRevenue: number;
-    pendingOrders: number;
-    activeAffiliates: number;
-  };
-}
+const keys = {
+  stats: ['admin', 'stats'] as const,
+  orders: (q?: OrdersQuery) => ['admin', 'orders', q] as const,
+  order: (id: string) => ['admin', 'order', id] as const,
+  users: (q?: object) => ['admin', 'users', q] as const,
+  marketers: ['admin', 'marketers'] as const,
+  withdrawals: (s?: string) => ['admin', 'withdrawals', s] as const,
+  commissionSettings: ['admin', 'commission-settings'] as const,
+  commissionRecords: (q?: object) => ['admin', 'commission-records', q] as const,
+  inbox: ['admin', 'inbox'] as const,
+  contact: ['admin', 'contact'] as const,
+};
 
-interface BackendRecent {
-  users: any[];
-  activity: any[];
-}
+// Anything that changes orders or money can move the dashboard numbers
+const invalidateAdmin = (qc: ReturnType<typeof useQueryClient>, ...prefixes: string[]) => {
+  qc.invalidateQueries({ queryKey: keys.stats });
+  prefixes.forEach((p) => qc.invalidateQueries({ queryKey: ['admin', p] }));
+};
 
-interface BackendData {
-  overview: BackendOverview;
-  recent: BackendRecent;
-}
+export const useAdminStats = () =>
+  useQuery({ queryKey: keys.stats, queryFn: adminAPI.getStats, refetchInterval: 60_000 });
 
-interface BackendResponse {
-  success: boolean;
-  data: BackendData;
-}
-interface TransformedDashboardStats {
-  totalUsers: number;
-  totalProducts: number;
-  totalOrders: number;
-  totalRevenue: number;
-  monthlyRevenue: number;
-  pendingOrders: number;
-  completedOrders: number;
-  lowStockItems: number;
-  activeAffiliates: number;
-  changes: {
-    totalOrders: number;
-    totalRevenue: number;
-    pendingOrders: number;
-    activeAffiliates: number;
-  };
-}
+export const useAdminOrders = (q?: OrdersQuery) =>
+  useQuery({ queryKey: keys.orders(q), queryFn: () => adminAPI.getOrders(q), placeholderData: keepPreviousData, refetchInterval: 60_000 });
 
-type ActivityType = 'order' | 'user' | 'product' | 'system';
-type ActivityStatus = 'success' | 'info' | 'warning' | 'error';
+export const useAdminOrder = (id: string | null) =>
+  useQuery({ queryKey: keys.order(id || ''), queryFn: () => adminAPI.getOrder(id as string), enabled: !!id });
 
-interface TransformedRecentActivity {
-  id: string | number;
-  type: ActivityType;
-  message: string;
-  time: string;
-  status: ActivityStatus;
-}
-
-interface TransformedDashboardData {
-  stats: TransformedDashboardStats;
-  recentActivities: TransformedRecentActivity[];
-  recentUsers: any[];
-}
-
-// Admin Users Hooks
-export const useAdminUsers = (options: { page?: number; limit?: number } = {}) => {
-  return useQuery({
-    queryKey: ['admin', 'users', options],
-    queryFn: () => adminUsersAPI.getUsers(options),
+export const useUpdateAdminOrderStatus = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, status, note }: { id: string; status: string; note?: string }) => adminAPI.updateOrderStatus(id, status, note),
+    onSuccess: () => invalidateAdmin(qc, 'orders', 'order', 'marketers'),
   });
 };
+
+export const useAssignOrder = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, marketerId }: { id: string; marketerId?: string }) => adminAPI.assignOrder(id, marketerId),
+    onSuccess: () => invalidateAdmin(qc, 'orders', 'order', 'marketers'),
+  });
+};
+
+export const useAdminUsers = (q?: { page?: number; limit?: number; search?: string; role?: string }) =>
+  useQuery({ queryKey: keys.users(q), queryFn: () => adminAPI.getUsers(q), placeholderData: keepPreviousData });
 
 export const useCreateAdminUser = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: adminUsersAPI.createUser,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
-    },
-  });
-};
-
-export const useAdminUser = (id: string) => {
-  return useQuery({
-    queryKey: ['admin', 'user', id],
-    queryFn: () => adminUsersAPI.getUser(id),
-    enabled: !!id,
-  });
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: adminAPI.createUser, onSuccess: () => invalidateAdmin(qc, 'users', 'marketers') });
 };
 
 export const useUpdateAdminUser = () => {
-  const queryClient = useQueryClient();
-
+  const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<User> }) =>
-      adminUsersAPI.updateUser(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
-      queryClient.invalidateQueries({ queryKey: ['admin', 'user'] });
-    },
+    mutationFn: ({ id, data }: { id: string; data: Parameters<typeof adminAPI.updateUser>[1] }) => adminAPI.updateUser(id, data),
+    onSuccess: () => invalidateAdmin(qc, 'users', 'marketers'),
+  });
+};
+
+export const useSetUserRole = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, role }: { id: string; role: AssignableRole }) => adminAPI.setRole(id, role),
+    onSuccess: () => invalidateAdmin(qc, 'users', 'marketers'),
+  });
+};
+
+export const useSetUserSuspended = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, suspended, reason }: { id: string; suspended: boolean; reason?: string }) => adminAPI.setSuspended(id, suspended, reason),
+    onSuccess: () => invalidateAdmin(qc, 'users', 'marketers'),
   });
 };
 
 export const useDeleteAdminUser = () => {
-  const queryClient = useQueryClient();
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: adminAPI.deleteUser, onSuccess: () => invalidateAdmin(qc, 'users', 'marketers') });
+};
 
+export const useAdminMarketers = () => useQuery({ queryKey: keys.marketers, queryFn: adminAPI.getMarketers });
+
+export const useAdminWithdrawals = (status?: string) =>
+  useQuery({ queryKey: keys.withdrawals(status), queryFn: () => adminAPI.getWithdrawals(status), placeholderData: keepPreviousData, refetchInterval: 60_000 });
+
+export const useUpdateWithdrawal = () => {
+  const qc = useQueryClient();
   return useMutation({
-    mutationFn: adminUsersAPI.deleteUser,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
-    },
+    mutationFn: ({ id, status, note }: { id: string; status: 'paid' | 'rejected'; note?: string }) => adminAPI.updateWithdrawal(id, status, note),
+    onSuccess: () => invalidateAdmin(qc, 'withdrawals'),
   });
 };
 
-export const useUpdateUserRole = () => {
-  const queryClient = useQueryClient();
+export const useCommissionSettings = () => useQuery({ queryKey: keys.commissionSettings, queryFn: adminAPI.getCommissionSettings });
 
+export const useUpdateCommissionSettings = () => {
+  const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, role }: { id: string; role: string }) =>
-      adminUsersAPI.updateUserRole(id, role),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
-      queryClient.invalidateQueries({ queryKey: ['admin', 'user'] });
-    },
+    mutationFn: adminAPI.updateCommissionSettings,
+    onSuccess: () => qc.invalidateQueries({ queryKey: keys.commissionSettings }),
   });
 };
 
-export const useSuspendUser = () => {
-  const queryClient = useQueryClient();
+export const useCommissionRecords = (q?: { page?: number; limit?: number; status?: string }) =>
+  useQuery({ queryKey: keys.commissionRecords(q), queryFn: () => adminAPI.getCommissionRecords(q), placeholderData: keepPreviousData });
 
+export const useAdminInbox = () => useQuery({ queryKey: keys.inbox, queryFn: adminAPI.getInbox, refetchInterval: 60_000 });
+
+export const useReplyToMessage = () => {
+  const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, suspended }: { id: string; suspended?: boolean }) =>
-      adminUsersAPI.suspendUser(id, suspended),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
-      queryClient.invalidateQueries({ queryKey: ['admin', 'user'] });
-    },
+    mutationFn: ({ id, message }: { id: string; message: string }) => adminAPI.replyToMessage(id, message),
+    onSuccess: () => qc.invalidateQueries({ queryKey: keys.inbox }),
   });
 };
 
-// Admin Affiliates Hooks
-export const useAdminAffiliates = () => {
-  return useQuery({
-    queryKey: ['admin', 'affiliates'],
-    queryFn: () => adminAffiliatesAPI.getAffiliates(),
-  });
-};
-
-export const useAdminAffiliate = (id: string) => {
-  return useQuery({
-    queryKey: ['admin', 'affiliate', id],
-    queryFn: () => adminAffiliatesAPI.getAffiliate(id),
-    enabled: !!id,
-  });
-};
-
-export const useUpdateAffiliateStatus = () => {
-  const queryClient = useQueryClient();
-
+export const useSetMessageRead = () => {
+  const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, status }: { id: string; status: string }) =>
-      adminAffiliatesAPI.updateAffiliateStatus(id, status),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'affiliates'] });
-      queryClient.invalidateQueries({ queryKey: ['admin', 'affiliate'] });
-    },
+    mutationFn: ({ id, isRead }: { id: string; isRead: boolean }) => adminAPI.setMessageRead(id, isRead),
+    onSuccess: () => qc.invalidateQueries({ queryKey: keys.inbox }),
   });
 };
 
-// Admin Commissions Hooks
-export const useUpdateCommissionStatus = () => {
-  const queryClient = useQueryClient();
+export const useContactMessages = () => useQuery({ queryKey: keys.contact, queryFn: adminAPI.getContactMessages, refetchInterval: 120_000 });
 
+export const useSetContactStatus = () => {
+  const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, status }: { id: string; status: string }) =>
-      adminCommissionsAPI.updateCommissionStatus(id, status),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'affiliates'] });
-      queryClient.invalidateQueries({ queryKey: ['admin', 'affiliate'] });
-    },
+    mutationFn: ({ id, status }: { id: string; status: ContactMessage['status'] }) => adminAPI.setContactStatus(id, status),
+    onSuccess: () => qc.invalidateQueries({ queryKey: keys.contact }),
   });
 };
-
-// Admin Withdrawals Hooks
-export const useAdminWithdrawals = () => {
-  return useQuery({
-    queryKey: ['admin', 'withdrawals'],
-    queryFn: () => adminWithdrawalsAPI.getWithdrawals(),
-  });
-};
-
-export const useUpdateWithdrawalStatus = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ id, status }: { id: string; status: string }) =>
-      adminWithdrawalsAPI.updateWithdrawalStatus(id, status),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'withdrawals'] });
-    },
-  });
-};
-
-// Admin Settings Hooks
-export const useAdminSettings = () => {
-  return useQuery({
-    queryKey: ['admin', 'settings'],
-    queryFn: () => adminSettingsAPI.getSettings(),
-  });
-};
-
-export const useUpdateAdminSettings = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: adminSettingsAPI.updateSettings,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'settings'] });
-    },
-  });
-};
-
-// Admin Dashboard Hooks
-export const useAdminDashboardStats = () => {
-  return useQuery<BackendResponse, Error, TransformedDashboardData>({
-    queryKey: ['admin', 'dashboard', 'stats'],
-    queryFn: () => adminDashboardAPI.getStats(),
-    // 💡 THE FIX: Use 'select' to transform the API data structure
-    select: (data) => {
-      // Safely access the nested data using optional chaining
-      const overview = data?.data?.overview;
-      const recentActivities = data?.data?.recent?.activity;
-      const recentUsers = data?.data?.recent?.users || [];
-
-      if (!overview) {
-        // Return a structure matching the component's expectations but with empty/default data
-        const defaultStats: TransformedDashboardStats = {
-          totalUsers: 0,
-          totalProducts: 0,
-          totalOrders: 0,
-          totalRevenue: 0,
-          monthlyRevenue: 0,
-          pendingOrders: 0,
-          completedOrders: 0,
-          lowStockItems: 0,
-          activeAffiliates: 0,
-          changes: {
-            totalOrders: 0,
-            totalRevenue: 0,
-            pendingOrders: 0,
-            activeAffiliates: 0,
-          },
-        };
-
-        return {
-          stats: defaultStats,
-          recentActivities: [],
-          recentUsers: [],
-        };
-      }
-
-      // Map the backend structure (overview) to the component's expected structure (stats)
-      const transformedStats: TransformedDashboardStats = {
-        totalUsers: overview.totalUsers,
-        totalProducts: overview.totalProducts,
-        totalOrders: overview.totalOrders,
-        totalRevenue: overview.totalRevenue,
-        monthlyRevenue: overview.monthlyRevenue,
-        pendingOrders: overview.pendingOrders,
-        completedOrders: overview.completedOrders,
-        // Mapping lowStockProducts to lowStockItems
-        lowStockItems: overview.lowStockProducts,
-        activeAffiliates: overview.activeAffiliates,
-        changes: overview.changes,
-      };
-
-      // Map the recent.activity array to the component's expected recentActivities structure
-      // NOTE: Using a simple map here. The component expects status to be 'success' | 'info' | 'warning' | 'error'
-      const mappedActivities: TransformedRecentActivity[] = recentActivities
-        ? recentActivities.map((act: any) => ({
-          // Use act._id if it exists, otherwise generate a key
-          id: act._id || act.createdAt || Math.random(),
-          type: act.type || 'system',
-          // Assuming a message field exists
-          message: act.message || `Activity of type ${act.type || 'system'} recorded.`,
-          time: act.createdAt ? new Date(act.createdAt).toLocaleTimeString() : 'just now',
-          status: act.status || 'info', // Assuming status is returned by API
-        }))
-        : [];
-
-      return {
-        stats: transformedStats,
-        recentActivities: mappedActivities,
-        recentUsers: recentUsers,
-      };
-    },
-  });
-};
-
-
-// Add the new types to src/hooks/useAdmin.ts alongside the existing ones
-
-interface MonthlyData {
-  month: string;
-  revenue: number;
-  orders: number;
-}
-
-interface TopProduct {
-  name: string;
-  sales: number;
-  revenue: number;
-}
-
-interface AnalyticsBackendResponse {
-  success: boolean;
-  data: {
-    overview: {
-      totalOrders: number;
-      totalRevenue: number;
-      monthlyRevenue: number;
-      pendingOrders: number;
-      completedOrders: number;
-      totalUsers: number;
-      totalProducts: number;
-      lowStockProducts: number;
-      activeAffiliates: number;
-      changes: {
-        totalOrders: number;
-        totalRevenue: number;
-        pendingOrders: number;
-        activeAffiliates: number;
-      };
-    };
-    recent: {
-      users: any[];
-      activity: any[];
-    };
-  }
-}
-
-interface TransformedAnalyticsData {
-  totalRevenue: number;
-  totalOrders: number;
-  totalUsers: number;
-  conversionRate: string | undefined; // Calculated on client
-  topProducts: TopProduct[];
-  monthlyData: MonthlyData[];
-  overview: {
-    totalOrders: number;
-    totalRevenue: number;
-    monthlyRevenue: number;
-    pendingOrders: number;
-    completedOrders: number;
-    totalUsers: number;
-    totalProducts: number;
-    lowStockProducts: number;
-    activeAffiliates: number;
-    changes: {
-      totalOrders: number;
-      totalRevenue: number;
-      pendingOrders: number;
-      activeAffiliates: number;
-    };
-  };
-  recentUsers: any[];
-}
-
-// Admin Analytics Hook
-export const useAdminAnalytics = () => {
-  return useQuery<AnalyticsBackendResponse, Error, TransformedAnalyticsData>({
-    queryKey: ['admin', 'analytics'],
-    queryFn: () => adminDashboardAPI.getStats(),
-    select: (data) => {
-      const analyticsData = data?.data;
-
-      if (!analyticsData) {
-        return {
-          totalRevenue: 0,
-          totalOrders: 0,
-          totalUsers: 0,
-          conversionRate: '0',
-          topProducts: [],
-          monthlyData: [],
-          overview: {
-            totalOrders: 0,
-            totalRevenue: 0,
-            monthlyRevenue: 0,
-            pendingOrders: 0,
-            completedOrders: 0,
-            totalUsers: 0,
-            totalProducts: 0,
-            lowStockProducts: 0,
-            activeAffiliates: 0,
-            changes: {
-              totalOrders: 0,
-              totalRevenue: 0,
-              pendingOrders: 0,
-              activeAffiliates: 0,
-            },
-          },
-          recentUsers: [],
-        };
-      }
-
-      // Calculate conversion rate if data is available
-      const conversionRate = (analyticsData.overview.totalOrders && analyticsData.overview.totalUsers)
-        ? ((analyticsData.overview.totalOrders / analyticsData.overview.totalUsers) * 100).toFixed(1)
-        : '0';
-
-      return {
-        totalRevenue: analyticsData.overview.totalRevenue || 0,
-        totalOrders: analyticsData.overview.totalOrders || 0,
-        totalUsers: analyticsData.overview.totalUsers || 0,
-        conversionRate: conversionRate,
-        topProducts: [], // Backend doesn't provide this yet
-        monthlyData: [], // Backend doesn't provide this yet
-        overview: analyticsData.overview,
-        recentUsers: analyticsData.recent.users || [],
-      };
-    },
-  });
-};
-
-// NOTE: You must also ensure adminDashboardAPI.getAnalytics is defined and accessible
-// in the same file where adminDashboardAPI.getStats is used.
