@@ -14,6 +14,7 @@ import { EmptyState, ErrorState, PageHeader, Panel, QuantityStepper } from '@/Co
 import { formatNaira } from '@/lib/format';
 import { handleImageError, resolveImageUrl } from '@/lib/images';
 import { MIN_ORDER_QUANTITY } from '@/lib/constants';
+import { CheckoutSteps } from '@/Components/orders/checkout-steps';
 
 export default function CartPage() {
     const router = useRouter();
@@ -67,6 +68,7 @@ export default function CartPage() {
 
     return (
         <div>
+            <CheckoutSteps current={0} />
             <PageHeader
                 title="Your cart"
                 description={`${itemCount} ${itemCount === 1 ? 'unit' : 'units'} across ${lines.length} ${lines.length === 1 ? 'product' : 'products'}`}

@@ -10,6 +10,7 @@ import { getErrorMessage } from '@/services/base';
 import { Button } from '@/Components/ui/button';
 import { Panel } from '@/Components/ui/kit';
 import { formatNaira } from '@/lib/format';
+import { CheckoutSteps } from '@/Components/orders/checkout-steps';
 
 type Outcome =
     | { kind: 'verifying' }
@@ -71,7 +72,8 @@ function CallbackContent() {
     }, [status, transactionId, verify]);
 
     return (
-        <div className="mx-auto max-w-lg py-6">
+        <div className="mx-auto max-w-lg py-2">
+            <CheckoutSteps current={outcome.kind === 'success' ? 3 : 2} />
             <Panel className="relative overflow-hidden p-8 text-center sm:p-10">
                 {outcome.kind === 'success' && <Confetti />}
 

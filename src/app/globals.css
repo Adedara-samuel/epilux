@@ -228,7 +228,7 @@
 }
 
 .glass {
-  background: color-mix(in oklch, var(--card) 78%, transparent);
+  background: color-mix(in oklch, var(--card) 92%, transparent);
   backdrop-filter: saturate(160%) blur(14px);
   -webkit-backdrop-filter: saturate(160%) blur(14px);
 }

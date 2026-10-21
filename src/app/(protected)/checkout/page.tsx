@@ -21,6 +21,7 @@ import { EmptyState, PageHeader, Panel } from '@/Components/ui/kit';
 import { formatNaira, fullName } from '@/lib/format';
 import { handleImageError, resolveImageUrl } from '@/lib/images';
 import { cn } from '@/lib/utils';
+import { CheckoutSteps } from '@/Components/orders/checkout-steps';
 
 const NIGERIAN_STATES = [
     'Abia', 'Abuja (FCT)', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue', 'Borno', 'Cross River', 'Delta', 'Ebonyi',
@@ -169,6 +170,7 @@ export default function CheckoutPage() {
 
     return (
         <div className="pb-24 lg:pb-0">
+            <CheckoutSteps current={1} />
             <Link href="/cart" className="mb-4 inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground">
                 <ArrowLeft className="size-4" /> Back to cart
             </Link>
