@@ -3,7 +3,7 @@
 // app/reset-password/page.tsx
 'use client';
 
-import axios from 'axios';
+import { api } from '@/services/base';
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
@@ -54,10 +54,9 @@ function ResetPasswordContent() {
         setMessage('');
 
         try {
-            const response = await axios.post('/api/auth/reset-password', {
+            const response = await api.post('/api/auth/reset-password', {
                 token,
-                newPassword,
-                confirmPassword
+                password: newPassword
             });
 
             setMessage(response.data.message);
