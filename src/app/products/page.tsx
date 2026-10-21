@@ -1,405 +1,202 @@
-/* eslint-disable react/no-unescaped-entities */
-/* eslint-disable @typescript-eslint/no-unused-vars */
-// app/products/page.tsx
 'use client';
 
-import { useState, useMemo, useEffect, Suspense } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
-import ProductGrid from '@/Components/products/product-grid';
-import { useSearchStore } from '@/stores/search-store';
-import { useProducts, useCategories } from '@/hooks/useProducts';
+import { Suspense, useMemo } from 'react';
+import Link from 'next/link';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { motion } from 'framer-motion';
+import { ArrowRight, Gift, PackageSearch, ShieldCheck, Sparkles, Truck, Wallet, X } from 'lucide-react';
+import { useCategories, useProducts } from '@/hooks/useProducts';
 import { useAuth } from '@/hooks/useAuth';
-import {
-  Wallet,
-  Users,
-  Eye,
-  EyeOff,
-  Clock,
-  Copy,
-  Check,
-  TrendingUp,
-  DollarSign,
-  Award,
-  Filter,
-  Search,
-  Calendar,
-  Timer,
-  ArrowLeft,
-  ShoppingBag,
-  Star,
-  Heart,
-  Share2,
-  ChevronRight,
-  Menu,
-  X,
-  Sparkles,
-  Zap,
-  Droplets,
-  Package2,
-  Truck,
-  Shield
-} from 'lucide-react';
-import { Button } from '@/Components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/Components/ui/card';
-import { Badge } from '@/Components/ui/badge';
-import { useAffiliateProfile, useAffiliateDashboard, useAffiliateReferrals } from '@/hooks/useAffiliate';
+import { useWalletBalance } from '@/hooks/useWallet';
+import ProductGrid from '@/Components/products/product-grid';
+import { EmptyState, ErrorState } from '@/Components/ui/kit';
+import { Reveal } from '@/Components/motion';
+import { formatNaira } from '@/lib/format';
+import { FREE_DELIVERY_THRESHOLD } from '@/services/delivery';
+import { cn } from '@/lib/utils';
+import type { Product } from '@/types/product';
 
-// Note: Metadata export is moved to app/layout.tsx for client components.
-// If you need dynamic titles based on filters, you'd update the document title client-side.
+const SORTS = [
+    { value: 'newest', label: 'Newest' },
+    { value: 'price-asc', label: 'Price: low to high' },
+    { value: 'price-desc', label: 'Price: high to low' },
+    { value: 'name', label: 'Name A–Z' },
+] as const;
 
-function ProductsPage() {
-    const searchParams = useSearchParams();
-    const router = useRouter();
-    const initialCategory = searchParams.get('category') || 'all';
-    const { searchQuery } = useSearchStore(); // Get searchQuery from store
+const greeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
+};
+
+const label = (c: string) => c.charAt(0).toUpperCase() + c.slice(1).replace(/[-_]/g, ' ');
+
+function ShopHero() {
     const { user } = useAuth();
-
-    const [selectedCategory, setSelectedCategory] = useState<string>(initialCategory);
-    const [showBalance, setShowBalance] = useState(false);
-    const [copiedCode, setCopiedCode] = useState(false);
-    const [activeTab, setActiveTab] = useState<'products'>('products');
-    const [showMobileMenu, setShowMobileMenu] = useState(false);
-
-    // Affiliate hooks
-    const { data: profileData } = useAffiliateProfile();
-    const { data: dashboardData } = useAffiliateDashboard();
-    const { data: referralsData } = useAffiliateReferrals();
-
-    const profile = profileData?.profile;
-    const dashboard = dashboardData?.dashboard;
-    const referrals = referralsData?.referrals || [];
-
-    // Removed [searchQuery, setSearchQuery] useState and handleSearch function
-
-    // Update category state if URL param changes
-    useEffect(() => {
-        setSelectedCategory(searchParams.get('category') || 'all');
-    }, [searchParams]);
-
-    // Handle tab changes from URL - redirect to dedicated pages
-    useEffect(() => {
-        const tab = searchParams.get('tab');
-        if (tab === 'wallet') {
-            router.push('/products/wallet');
-        } else if (tab === 'referrals') {
-            router.push('/products/referrals');
-        }
-    }, [searchParams, router]);
-
-    const handleCategoryChange = (categoryValue: string) => {
-        setSelectedCategory(categoryValue);
-        // Optionally update URL for persistence/sharing
-        const newSearchParams = new URLSearchParams(searchParams.toString());
-        if (categoryValue === 'all') {
-            newSearchParams.delete('category');
-        } else {
-            newSearchParams.set('category', categoryValue);
-        }
-        window.history.pushState(null, '', `?${newSearchParams.toString()}`);
-    };
-
-    // Withdrawal countdown logic
-    const getNextWithdrawalDate = () => {
-        const now = new Date();
-        const currentDay = now.getDate();
-        let nextWithdrawalDay;
-
-        if (currentDay <= 25) {
-            nextWithdrawalDay = 26;
-        } else if (currentDay <= 30) {
-            nextWithdrawalDay = 30;
-        } else {
-            // Next month 26th
-            const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 26);
-            return nextMonth;
-        }
-
-        return new Date(now.getFullYear(), now.getMonth(), nextWithdrawalDay);
-    };
-
-    const getWithdrawalCountdown = () => {
-        const nextDate = getNextWithdrawalDate();
-        const now = new Date();
-        const diff = nextDate.getTime() - now.getTime();
-
-        if (diff <= 0) return null;
-
-        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-
-        return { days, hours, minutes };
-    };
-
-    const getLockCountdown = () => {
-        const now = new Date();
-        const currentDay = now.getDate();
-
-        // If it's withdrawal day (26-30), show lock countdown until end of period
-        if (currentDay >= 26 && currentDay <= 30) {
-            const lockDate = new Date(now.getFullYear(), now.getMonth(), 30, 23, 59, 59);
-            const diff = lockDate.getTime() - now.getTime();
-
-            if (diff <= 0) return null;
-
-            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-
-            return { days, hours, minutes };
-        }
-
-        return null;
-    };
-
-    const copyReferralCode = async () => {
-        if (profile?.referralCode) {
-            await navigator.clipboard.writeText(profile.referralCode);
-            setCopiedCode(true);
-            setTimeout(() => setCopiedCode(false), 2000);
-        }
-    };
-
-    const withdrawalCountdown = getWithdrawalCountdown();
-    const lockCountdown = getLockCountdown();
-
-    // Use API for products
-    const { data: productsData, isLoading } = useProducts({
-        category: selectedCategory !== 'all' ? selectedCategory : undefined,
-        search: searchQuery || undefined,
-    });
-
-    // Ensure products have the required 'id' field for cart operations
-    const products = (productsData?.products || []).map((product: any) => ({
-        ...product,
-        id: product.id || product._id, // Use _id as fallback if id is missing
-    }));
-
-    // Get categories for filters
-    const { data: categoriesData } = useCategories();
-
-    const categories = categoriesData?.categories || [];
-
-    // Add null check for user.role to prevent "Cannot read properties of null" error
-    if (user && !user.role) {
-        return (
-            <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-                <div className="text-center max-w-md mx-auto p-8">
-                    <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <span className="text-4xl">⚠️</span>
-                    </div>
-                    <h2 className="text-2xl font-bold text-gray-900 mb-4">Loading...</h2>
-                    <p className="text-gray-600 mb-6">
-                        Please wait while we load your account information.
-                    </p>
-                </div>
-            </div>
-        );
-    }
+    const { data: wallet } = useWalletBalance();
 
     return (
-        <div className="app-content">
-            {/* Main Content */}
-            <div className="max-w-7xl mx-auto px-4 py-4 md:py-6">
-                {/* Products Tab */}
-                {activeTab === 'products' && (
-                    <div className="space-y-6">
-
-                        {/* Elegant Product Showcase */}
-                        <div className="bg-gradient-to-br from-blue-50 via-white to-indigo-50 rounded-2xl md:rounded-3xl shadow-xl border border-blue-100/50 p-4 md:p-8 backdrop-blur-sm">
-                            <div className="text-center mb-6 md:mb-8">
-                                <div className="w-12 h-12 md:w-16 md:h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-3 md:mb-4 shadow-lg">
-                                    <Droplets className="w-6 h-6 md:w-8 md:h-8 text-white" />
-                                </div>
-                                <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">Premium Water Collection</h2>
-                                <p className="text-base md:text-lg text-blue-600 max-w-2xl mx-auto px-2">
-                                    Discover our complete range of high-quality water products, from convenient sachets to premium dispensers
-                                </p>
-                                <div className="flex flex-col sm:flex-row items-center justify-center gap-2 md:gap-4 mt-4 md:mt-6">
-                                    <div className="flex items-center gap-2 bg-white/60 backdrop-blur-sm px-3 md:px-4 py-2 rounded-xl border border-blue-200">
-                                        <Package2 className="w-4 h-4 text-blue-600" />
-                                        <span className="font-semibold text-blue-800 text-sm md:text-base">{products.length} Products</span>
-                                    </div>
-                                    <div className="flex items-center gap-2 bg-white/60 backdrop-blur-sm px-3 md:px-4 py-2 rounded-xl border border-green-200">
-                                        <Truck className="w-4 h-4 text-green-600" />
-                                        <span className="font-semibold text-green-800 text-sm md:text-base">Free Delivery</span>
-                                    </div>
-                                    <div className="flex items-center gap-2 bg-white/60 backdrop-blur-sm px-3 md:px-4 py-2 rounded-xl border border-purple-200">
-                                        <Shield className="w-4 h-4 text-purple-600" />
-                                        <span className="font-semibold text-purple-800 text-sm md:text-base">Quality Guaranteed</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Featured Categories Preview */}
-                            {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                {[
-                                    {
-                                        title: 'Sachet Water',
-                                        icon: '💧',
-                                        desc: 'Convenient, hygienic, and affordable',
-                                        color: 'from-blue-500 to-cyan-500',
-                                        products: products.filter((p: any) => p.category === 'sachet').length
-                                    },
-                                    {
-                                        title: 'Bottled Water',
-                                        icon: '🥤',
-                                        desc: 'Premium bottled solutions for every need',
-                                        color: 'from-green-500 to-emerald-500',
-                                        products: products.filter((p: any) => p.category === 'bottled').length
-                                    },
-                                    {
-                                        title: 'Bulk & Dispensers',
-                                        icon: '🏢',
-                                        desc: 'Large quantities and home/office solutions',
-                                        color: 'from-purple-500 to-indigo-500',
-                                        products: products.filter((p: any) => p.category === 'bulk').length + products.filter((p: any) => p.category === 'dispenser').length
-                                    }
-                                ].map((category, index) => (
-                                    <div key={index} className="group relative overflow-hidden bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-gray-100"> */}
-                                        {/* <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${category.color} flex items-center justify-center mb-4 shadow-md`}>
-                                            <span className="text-2xl filter drop-shadow-sm">{category.icon}</span>
-                                        </div> */}
-                                        {/* <h3 className="text-xl font-bold text-gray-900 mb-2">{category.title}</h3>
-                                        <p className="text-gray-600 mb-4">{category.desc}</p> */}
-                                        {/* <div className="flex items-center justify-between">
-                                            <span className="text-sm font-semibold text-blue-600">{category.products} products</span>
-                                            <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center group-hover:bg-blue-100 transition-colors">
-                                                <ChevronRight className="w-4 h-4 text-blue-600" />
-                                            </div>
-                                        </div> */}
-
-                                        {/* Hover overlay */}
-                                        {/* <div className="absolute inset-0 bg-gradient-to-br from-blue-500/0 to-indigo-500/0 group-hover:from-blue-500/5 group-hover:to-indigo-500/5 rounded-2xl transition-all duration-300"></div>
-                                    </div>
-                                ))}
-                            </div> */}
-
-                            {/* Call to Action */}
-                            <div className="text-center mt-6 md:mt-8">
-                                <p className="text-gray-600 mb-3 md:mb-4 text-sm md:text-base px-2">Ready to start earning commissions?</p>
-                                <div className="flex flex-col sm:flex-row gap-2 md:gap-3 justify-center px-4">
-                                    <Button className="cursor-pointer bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-6 md:px-8 py-2.5 md:py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 text-sm md:text-base" onClick={() => document.getElementById('products-section')?.scrollIntoView({ behavior: 'smooth' })}>
-                                        <ShoppingBag className="w-4 h-4 mr-2" />
-                                        Browse All Products
-                                    </Button>
-                                    {user && user.role !== 'admin' && user.role !== 'marketer' && (
-                                        <Button
-                                            variant="outline"
-                                            onClick={() => {
-                                                // Smooth scroll animation to referrals page
-                                                const scrollToReferrals = () => {
-                                                    // First, navigate to referrals page
-                                                    router.push('/products/referrals');
-
-                                                    // Add a small delay to allow page load, then scroll to section
-                                                    setTimeout(() => {
-                                                        const element = document.getElementById('referrals-section');
-                                                        if (element) {
-                                                            element.scrollIntoView({
-                                                                behavior: 'smooth',
-                                                                block: 'start'
-                                                            });
-                                                            // Add a subtle bounce animation
-                                                            element.style.animation = 'bounceIn 0.8s ease-out';
-                                                        }
-                                                    }, 500);
-                                                };
-
-                                                scrollToReferrals();
-                                            }}
-                                            className="cursor-pointer border-2 border-purple-200 text-purple-700 hover:bg-purple-50 px-6 md:px-8 py-2.5 md:py-3 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-lg text-sm md:text-base"
-                                        >
-                                            <Users className="w-4 h-4 mr-2" />
-                                            Share & Earn
-                                        </Button>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Products Grid */}
-                        <div id="products-section" className="space-y-4">
-                            {isLoading ? (
-                                <div className="flex items-center justify-center py-16">
-                                    <div className="text-center">
-                                        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
-                                        <p className="text-lg text-gray-700">Loading products...</p>
-                                    </div>
-                                </div>
-                            ) : products.length > 0 ? (
-                                <>
-                                    <div className="flex items-center justify-between">
-                                        <h2 className="text-xl font-semibold text-gray-900">
-                                            {selectedCategory === 'all'
-                                                ? 'All Products'
-                                                : `${selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)} Products`
-                                            }
-                                        </h2>
-                                        <span className="text-sm text-gray-600">
-                                            {products.length} items
-                                        </span>
-                                    </div>
-                                    <ProductGrid products={products} />
-                                </>
-                            ) : (
-                                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
-                                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                        <span className="text-3xl"><Search size={20} strokeWidth={2.8} /></span>
-                                    </div>
-                                    <h3 className="text-xl font-semibold text-gray-900 mb-2">No products found</h3>
-                                    <p className="text-gray-600 mb-6">
-                                        Try selecting a different category or check back later.
-                                    </p>
-                                    <Button
-                                        onClick={() => handleCategoryChange('all')}
-                                        className="bg-blue-600 hover:bg-blue-700 cursor-pointer border-blue-600"
-                                    >
-                                        View All Products
-                                    </Button>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Trust Badges */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 mt-6 md:mt-8">
-                            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 md:p-4 text-center">
-                                <div className="w-8 h-8 md:w-10 md:h-10 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-2 md:mb-3">
-                                    <span className="text-lg md:text-xl">🚚</span>
-                                </div>
-                                <h4 className="font-semibold text-gray-900 mb-1 text-sm md:text-base">Free Delivery</h4>
-                                <p className="text-xs md:text-sm text-gray-600">On orders above ₦10,000</p>
-                            </div>
-
-                            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 md:p-4 text-center">
-                                <div className="w-8 h-8 md:w-10 md:h-10 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-2 md:mb-3">
-                                    <span className="text-lg md:text-xl">✅</span>
-                                </div>
-                                <h4 className="font-semibold text-gray-900 mb-1 text-sm md:text-base">Quality Guaranteed</h4>
-                                <p className="text-xs md:text-sm text-gray-600">Premium water products</p>
-                            </div>
-
-                            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 md:p-4 text-center">
-                                <div className="w-8 h-8 md:w-10 md:h-10 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-2 md:mb-3">
-                                    <span className="text-lg md:text-xl">🔒</span>
-                                </div>
-                                <h4 className="font-semibold text-gray-900 mb-1 text-sm md:text-base">Secure Payments</h4>
-                                <p className="text-xs md:text-sm text-gray-600">Bank-grade security</p>
-                            </div>
-                        </div>
+        <section className="aurora relative mb-6 overflow-hidden rounded-[1.75rem] px-5 py-7 text-white shadow-lift sm:px-8 sm:py-9">
+            <span aria-hidden className="aurora-blob one !h-80 !w-80 !opacity-40" />
+            <span aria-hidden className="aurora-blob three !opacity-30" />
+            <div className="relative grid gap-6 lg:grid-cols-[1.4fr_1fr] lg:items-center">
+                <div className="animate-fade-in">
+                    <p className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white/90 ring-1 ring-white/20 backdrop-blur">
+                        <Sparkles className="size-3.5 text-amber-200" /> Earn rewards on every delivered order
+                    </p>
+                    <h1 className="mt-4 text-[1.7rem] font-extrabold leading-tight tracking-tight text-white sm:text-4xl">
+                        {greeting()}{user?.firstName ? `, ${user.firstName}` : ''} 👋
+                    </h1>
+                    <p className="mt-2 max-w-lg text-sm text-white/75 sm:text-base">
+                        Fresh, safe drinking water delivered by a dedicated marketer. Free delivery on orders from {formatNaira(FREE_DELIVERY_THRESHOLD)}.
+                    </p>
+                    <div className="mt-5 flex flex-wrap gap-2">
+                        <a href="#catalogue" className="inline-flex h-10 items-center gap-2 rounded-xl bg-white px-4 text-sm font-semibold text-brand-700 shadow-lg shadow-black/10 transition-transform hover:-translate-y-0.5">
+                            Shop now <ArrowRight className="size-4" />
+                        </a>
+                        <Link href="/products/referrals" className="inline-flex h-10 items-center gap-2 rounded-xl bg-white/10 px-4 text-sm font-semibold text-white ring-1 ring-white/25 backdrop-blur transition-colors hover:bg-white/15">
+                            <Gift className="size-4" /> Invite & earn
+                        </Link>
                     </div>
-                )}
+                </div>
 
+                <div className="animate-fade-in grid grid-cols-2 gap-3" style={{ animationDelay: '120ms' }}>
+                    <Link href="/products/wallet" className="group rounded-2xl bg-white/10 p-4 ring-1 ring-white/15 backdrop-blur transition-colors hover:bg-white/15">
+                        <span className="grid size-9 place-items-center rounded-xl bg-emerald-400/20 text-emerald-200"><Wallet className="size-5" /></span>
+                        <p className="mt-3 text-xs text-white/70">Wallet balance</p>
+                        <p className="text-lg font-extrabold tabular-nums text-white">{formatNaira(wallet?.availableBalance)}</p>
+                    </Link>
+                    <div className="rounded-2xl bg-white/10 p-4 ring-1 ring-white/15 backdrop-blur">
+                        <span className="grid size-9 place-items-center rounded-xl bg-sky-300/20 text-sky-100"><Truck className="size-5" /></span>
+                        <p className="mt-3 text-xs text-white/70">Delivery</p>
+                        <p className="text-lg font-extrabold text-white">To your door</p>
+                    </div>
+                </div>
             </div>
-        </div>
+        </section>
     );
 }
 
-export default function App() {
+function ShopContent() {
+    const router = useRouter();
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
+    const category = searchParams.get('category') || '';
+    const search = searchParams.get('search') || '';
+    const sort = (searchParams.get('sort') || 'newest') as (typeof SORTS)[number]['value'];
+
+    const { data, isLoading, isError, refetch } = useProducts({ category: category || undefined, search: search || undefined });
+    const { data: categoriesData } = useCategories();
+    const categories: string[] = (categoriesData as { categories?: string[] } | undefined)?.categories || [];
+
+    const setParam = (key: string, value: string | null) => {
+        const params = new URLSearchParams(searchParams.toString());
+        if (value) params.set(key, value); else params.delete(key);
+        router.replace(`${pathname}${params.toString() ? `?${params}` : ''}`, { scroll: false });
+    };
+
+    const products = useMemo(() => {
+        const list: (Product & { createdAt?: string })[] = (data?.products || []).map((p: Product & { _id?: string }) => ({ ...p, id: p.id || p._id }));
+        const sorted = [...list];
+        if (sort === 'price-asc') sorted.sort((a, b) => a.price - b.price);
+        if (sort === 'price-desc') sorted.sort((a, b) => b.price - a.price);
+        if (sort === 'name') sorted.sort((a, b) => a.name.localeCompare(b.name));
+        // Keep in-stock items first
+        return sorted.sort((a, b) => Number(b.stock > 0) - Number(a.stock > 0));
+    }, [data, sort]);
+
+    const chips = ['', ...categories];
+
     return (
-        <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading products...</div>}>
-            <ProductsPage />
+        <>
+            <ShopHero />
+
+            <section id="catalogue" className="scroll-mt-24">
+                <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <h2 className="text-xl font-extrabold tracking-tight sm:text-2xl">
+                            {search ? <>Results for “{search}”</> : category ? `${label(category)} water` : 'All products'}
+                        </h2>
+                        <p className="text-sm text-muted-foreground">
+                            {isLoading ? 'Loading…' : `${products.length} ${products.length === 1 ? 'product' : 'products'}`}
+                        </p>
+                    </div>
+                    <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                        Sort
+                        <select
+                            value={sort}
+                            onChange={(e) => setParam('sort', e.target.value === 'newest' ? null : e.target.value)}
+                            className="h-10 rounded-xl border border-border bg-card px-3 text-sm font-medium text-foreground shadow-xs outline-none focus:border-ring focus:ring-4 focus:ring-ring/15"
+                        >
+                            {SORTS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+                        </select>
+                    </label>
+                </div>
+
+                {/* Category chips */}
+                <div className="-mx-4 mb-6 overflow-x-auto px-4 no-scrollbar sm:mx-0 sm:px-0">
+                    <div className="flex w-max gap-2">
+                        {chips.map((c) => {
+                            const active = c === category;
+                            return (
+                                <button
+                                    key={c || 'all'}
+                                    onClick={() => setParam('category', c || null)}
+                                    className={cn('relative h-10 rounded-full px-4 text-sm font-semibold transition-colors', active ? 'text-white' : 'bg-card text-muted-foreground ring-1 ring-border hover:text-foreground')}
+                                >
+                                    {active && <motion.span layoutId="category-chip" className="absolute inset-0 rounded-full bg-primary shadow-brand" transition={{ type: 'spring', stiffness: 500, damping: 38 }} />}
+                                    <span className="relative">{c ? label(c) : 'All'}</span>
+                                </button>
+                            );
+                        })}
+                        {search && (
+                            <button onClick={() => setParam('search', null)} className="flex h-10 items-center gap-1.5 rounded-full bg-accent px-4 text-sm font-semibold text-accent-foreground">
+                                “{search}” <X className="size-4" />
+                            </button>
+                        )}
+                    </div>
+                </div>
+
+                {isError ? (
+                    <ErrorState description="We couldn't load products. Check your connection and try again." onRetry={() => refetch()} />
+                ) : isLoading ? (
+                    <ProductGrid products={[]} loading />
+                ) : products.length === 0 ? (
+                    <EmptyState
+                        icon={PackageSearch}
+                        title="No products found"
+                        description={search ? 'Try a different search term or browse all products.' : 'Nothing in this category yet. Check back soon.'}
+                        action={{ label: 'View all products', onClick: () => router.replace(pathname) }}
+                    />
+                ) : (
+                    <ProductGrid products={products} />
+                )}
+            </section>
+
+            <Reveal className="mt-12 grid gap-3 sm:grid-cols-3">
+                {[
+                    { icon: Truck, title: 'Free delivery', text: `On orders from ${formatNaira(FREE_DELIVERY_THRESHOLD)}` },
+                    { icon: ShieldCheck, title: 'Quality guaranteed', text: 'Treated, sealed and safe to drink' },
+                    { icon: Wallet, title: 'Rewards in your wallet', text: 'Paid when you confirm delivery' },
+                ].map(({ icon: Icon, title, text }) => (
+                    <div key={title} className="flex items-center gap-4 rounded-2xl border border-border/70 bg-card p-4 shadow-soft">
+                        <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-accent text-primary"><Icon className="size-5" /></span>
+                        <div>
+                            <p className="font-semibold">{title}</p>
+                            <p className="text-sm text-muted-foreground">{text}</p>
+                        </div>
+                    </div>
+                ))}
+            </Reveal>
+        </>
+    );
+}
+
+export default function ProductsPage() {
+    return (
+        <Suspense fallback={<ProductGrid products={[]} loading />}>
+            <ShopContent />
         </Suspense>
     );
 }
-
