@@ -30,15 +30,18 @@ export function AuthShell({
     children,
     footer,
     wide = false,
+    fit = false,
 }: {
     title: string;
     subtitle?: string;
     children: React.ReactNode;
     footer?: React.ReactNode;
     wide?: boolean;
+    /** Compact layout locked to the viewport (no page scroll) on screens at least 640px tall. */
+    fit?: boolean;
 }) {
     return (
-        <div className="aurora min-h-dvh text-white">
+        <div className={fit ? 'aurora min-h-dvh text-white [@media(min-height:640px)]:h-dvh' : 'aurora min-h-dvh text-white'}>
             <span aria-hidden className="aurora-blob one" />
             <span aria-hidden className="aurora-blob two" />
             <span aria-hidden className="aurora-blob three" />
@@ -51,7 +54,7 @@ export function AuthShell({
                 />
             ))}
 
-            <div className="mx-auto grid min-h-dvh max-w-7xl grid-cols-[minmax(0,1fr)] content-center items-center gap-8 px-4 py-8 sm:px-8 lg:grid-cols-[1.1fr_1fr] lg:content-normal lg:gap-16 lg:px-12">
+            <div className={`mx-auto grid min-h-dvh max-w-7xl grid-cols-[minmax(0,1fr)] content-center items-center px-4 sm:px-8 lg:grid-cols-[1.1fr_1fr] lg:content-normal lg:gap-16 lg:px-12 ${fit ? 'h-full gap-5 py-5' : 'gap-8 py-8'}`}>
                 {/* Brand story */}
                 <section className="flex flex-col">
                     <Link href="/" className="animate-fade-in inline-flex w-fit items-center gap-3">
@@ -61,7 +64,7 @@ export function AuthShell({
                         <span className="text-xl font-bold tracking-tight text-white">Epilux Water</span>
                     </Link>
 
-                    <div className="mt-14 hidden max-w-xl lg:block">
+                    <div className={`hidden max-w-xl lg:block ${fit ? 'mt-10' : 'mt-14'}`}>
                         <p className="animate-fade-in inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3.5 py-1.5 text-sm font-medium text-white/90 backdrop-blur" style={{ animationDelay: '80ms' }}>
                             <Droplets className="size-4 text-sky-200" /> Pure. Fresh. Delivered.
                         </p>
@@ -74,7 +77,7 @@ export function AuthShell({
                             Order sachet and bottled water in seconds, track every delivery, and earn rewards each time you buy.
                         </p>
 
-                        <ul className="mt-10 space-y-3">
+                        <ul className={fit ? 'mt-8 space-y-3 [@media(max-height:820px)]:hidden' : 'mt-10 space-y-3'}>
                             {highlights.map(({ icon: Icon, title, text }, i) => (
                                 <li
                                     key={title}
@@ -96,19 +99,19 @@ export function AuthShell({
 
                 {/* Form */}
                 <section className={wide ? 'w-full max-w-xl justify-self-center lg:justify-self-end' : 'w-full max-w-md justify-self-center lg:justify-self-end'}>
-                    <div className="animate-fade-in-scale glass-card rounded-3xl p-6 text-foreground sm:p-9" style={{ animationDelay: '120ms' }}>
+                    <div className={`animate-fade-in-scale glass-card rounded-3xl p-6 text-foreground ${fit ? 'sm:p-8' : 'sm:p-9'}`} style={{ animationDelay: '120ms' }}>
                         <h1 className="text-[1.75rem] font-extrabold leading-tight tracking-tight sm:text-3xl">{title}</h1>
                         {subtitle && <p className="mt-2 text-[15px] text-muted-foreground">{subtitle}</p>}
-                        <div className="mt-7">{children}</div>
+                        <div className={fit ? 'mt-5' : 'mt-7'}>{children}</div>
                     </div>
 
                     {footer && (
-                        <div className="animate-fade-in mt-6 text-center text-sm text-white/80" style={{ animationDelay: '220ms' }}>
+                        <div className={`animate-fade-in text-center text-sm text-white/80 ${fit ? 'mt-4' : 'mt-6'}`} style={{ animationDelay: '220ms' }}>
                             {footer}
                         </div>
                     )}
 
-                    <p className="mt-8 text-center text-xs text-white/50 lg:hidden">© {new Date().getFullYear()} Epilux Water</p>
+                    {!fit && <p className="mt-8 text-center text-xs text-white/50 lg:hidden">© {new Date().getFullYear()} Epilux Water</p>}
                 </section>
             </div>
         </div>

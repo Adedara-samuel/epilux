@@ -46,6 +46,7 @@ function LoginForm() {
 
     return (
         <AuthShell
+            fit
             title="Welcome back"
             subtitle="Sign in to order water, track deliveries and see your earnings."
             footer={
@@ -57,7 +58,7 @@ function LoginForm() {
                 </>
             }
         >
-            <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+            <form onSubmit={handleSubmit} className="space-y-4" noValidate>
                 {error && (
                     <div className="animate-shake flex items-start gap-2.5 rounded-xl border border-destructive/20 bg-destructive/5 p-3.5 text-sm text-destructive" role="alert">
                         <AlertCircle className="mt-0.5 size-4 shrink-0" />
