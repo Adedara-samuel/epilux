@@ -114,7 +114,7 @@ function WithdrawDialog({ open, onOpenChange, available }: { open: boolean; onOp
 export default function WalletPage() {
     const { data: wallet, isLoading, isError, refetch } = useWalletBalance();
     const { data: txData, isLoading: txLoading } = useWalletTransactions();
-    const { data: window } = useWithdrawalWindow();
+    const { data: payoutWindow } = useWithdrawalWindow();
     const [showBalance, setShowBalance] = useState(true);
     const [withdrawOpen, setWithdrawOpen] = useState(false);
     const [filter, setFilter] = useState<'all' | 'in' | 'out'>('all');
@@ -127,7 +127,7 @@ export default function WalletPage() {
         return !v;
     });
 
-    const countdown = useCountdown(window?.isOpen ? window?.closesAt : window?.nextOpensAt);
+    const countdown = useCountdown(payoutWindow?.isOpen ? payoutWindow?.closesAt : payoutWindow?.nextOpensAt);
     const transactions: WalletTransaction[] = useMemo(() => txData?.data || [], [txData]);
     const shown = transactions.filter((t) => filter === 'all' || (filter === 'in' ? t.amount > 0 : t.amount < 0));
 
@@ -169,7 +169,7 @@ export default function WalletPage() {
                         <div className="mt-6 flex flex-wrap gap-2">
                             <Button
                                 onClick={() => setWithdrawOpen(true)}
-                                disabled={!window?.isOpen || available <= 0}
+                                disabled={!payoutWindow?.isOpen || available <= 0}
                                 className="bg-white text-brand-700 shadow-lg hover:bg-white/90"
                             >
                                 <ArrowUpRight /> Withdraw
@@ -184,19 +184,19 @@ export default function WalletPage() {
                 {/* Withdrawal window */}
                 <Panel className="flex flex-col p-6">
                     <div className="flex items-center gap-3">
-                        <span className={cn('grid size-11 place-items-center rounded-xl', window?.isOpen ? 'bg-emerald-50 text-emerald-600' : 'bg-accent text-primary')}>
-                            {window?.isOpen ? <CalendarClock className="size-5" /> : <Lock className="size-5" />}
+                        <span className={cn('grid size-11 place-items-center rounded-xl', payoutWindow?.isOpen ? 'bg-emerald-50 text-emerald-600' : 'bg-accent text-primary')}>
+                            {payoutWindow?.isOpen ? <CalendarClock className="size-5" /> : <Lock className="size-5" />}
                         </span>
                         <div>
-                            <p className="font-bold">{window?.isOpen ? 'Withdrawals are open' : 'Withdrawals are closed'}</p>
+                            <p className="font-bold">{payoutWindow?.isOpen ? 'Withdrawals are open' : 'Withdrawals are closed'}</p>
                             <p className="text-sm text-muted-foreground">
-                                Payout window: the {window?.startDay ?? 26}th to {window?.endDay ?? 30}th of every month
+                                Payout window: the {payoutWindow?.startDay ?? 26}th to {payoutWindow?.endDay ?? 30}th of every month
                             </p>
                         </div>
                     </div>
                     {countdown && (
                         <div className="mt-6">
-                            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{window?.isOpen ? 'Closes in' : 'Opens in'}</p>
+                            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{payoutWindow?.isOpen ? 'Closes in' : 'Opens in'}</p>
                             <div className="mt-2 grid grid-cols-3 gap-2">
                                 {[
                                     { v: countdown.days, l: 'days' },
