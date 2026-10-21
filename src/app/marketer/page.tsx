@@ -1,4 +1,5 @@
 'use client';
+import { BACKEND_URL } from '@/lib/config';
 
 import { useState, useEffect } from 'react';
 import { MapPin, Package, Truck, CheckCircle, Clock, Navigation, Phone, MessageSquare, Search, Filter, User, Eye, EyeOff, Key, Settings, RefreshCw, TrendingUp, Calendar, Star, Zap, Bell, ChevronDown, ChevronUp, MoreVertical, Play, Pause, RotateCcw, Menu, LogOut } from 'lucide-react';
@@ -92,7 +93,7 @@ export default function MarketerPage() {
     try {
       const token = localStorage.getItem('auth_token');
       if (token) {
-        await fetch('https://epilux-backend.vercel.app/api/auth/logout', {
+        await fetch(`${BACKEND_URL}/api/auth/logout`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,

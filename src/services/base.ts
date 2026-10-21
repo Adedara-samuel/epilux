@@ -1,9 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // src/services/base.ts
 import axios from 'axios';
+import { BACKEND_URL } from '@/lib/config';
 
-// Always use production backend URL
-export const API_BASE_URL = 'https://epilux-backend.vercel.app';
+// Backend origin: NEXT_PUBLIC_BACKEND_URL locally, deployed backend otherwise
+export const API_BASE_URL = BACKEND_URL;
 
 // Create axios instance with default config
 export const api = axios.create({

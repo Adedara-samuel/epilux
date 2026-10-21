@@ -1,4 +1,5 @@
 'use client';
+import { BACKEND_URL } from '@/lib/config';
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -39,7 +40,7 @@ export function AdminSidebar() {
         try {
             const token = localStorage.getItem('auth_token');
             if (token) {
-                await fetch('https://epilux-backend.vercel.app/api/auth/logout', {
+                await fetch(`${BACKEND_URL}/api/auth/logout`, {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`,

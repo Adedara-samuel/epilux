@@ -1,6 +1,7 @@
+import { BACKEND_URL } from '@/lib/config';
 import { NextRequest, NextResponse } from 'next/server';
 
-const BASE_URL = 'https://epilux-backend.vercel.app';
+const BASE_URL = BACKEND_URL;
 
 export async function GET(
     request: NextRequest,

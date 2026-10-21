@@ -1,9 +1,10 @@
+import { BACKEND_URL } from '@/lib/config';
 // src/services/messageService.ts
 import { api } from './base'; // Assuming base.ts is in the same directory
 
 // Use the backend API URL directly
 const getBaseUrl = () => {
-  return 'https://epilux-backend.vercel.app';
+  return BACKEND_URL;
 };
 
 // --- TypeScript Definitions ---

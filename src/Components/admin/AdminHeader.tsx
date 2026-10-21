@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 'use client';
+import { BACKEND_URL } from '@/lib/config';
 
 import { useState } from 'react';
 import { Menu, Bell, Search, User, Settings, LogOut, ChevronRight, MessageSquare, Loader2, X } from 'lucide-react';
@@ -54,7 +55,7 @@ export function AdminHeader() {
         try {
             const token = localStorage.getItem('auth_token');
             if (token) {
-                await fetch('https://epilux-backend.vercel.app/api/auth/logout', {
+                await fetch(`${BACKEND_URL}/api/auth/logout`, {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`,

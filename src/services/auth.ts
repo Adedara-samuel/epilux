@@ -1,8 +1,9 @@
+import { BACKEND_URL } from '@/lib/config';
 // src/services/auth.ts
 
 // Use relative URLs for all requests to leverage Next.js rewrites
 const getBaseUrl = () => {
-  return 'https://epilux-backend.vercel.app';
+  return BACKEND_URL;
 };
 
 /**

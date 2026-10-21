@@ -1,7 +1,8 @@
+import { BACKEND_URL } from '@/lib/config';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
 
-const BASE_URL = 'https://epilux-backend.vercel.app';
+const BASE_URL = BACKEND_URL;
 
 // FIX: Changed the type of 'params' to 'any' in all function signatures to resolve the Next.js build error.
 // The functions are also updated to proxy calls to a real backend API, removing mock data.

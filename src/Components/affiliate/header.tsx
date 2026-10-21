@@ -1,6 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 'use client';
+import { BACKEND_URL } from '@/lib/config';
 
 import React from 'react';
 import { Award, User, Settings } from 'lucide-react';
@@ -16,7 +17,7 @@ const HeaderComponent = React.memo(() => {
         try {
             const token = localStorage.getItem('auth_token');
             if (token) {
-                await fetch('https://epilux-backend.vercel.app/api/auth/logout', {
+                await fetch(`${BACKEND_URL}/api/auth/logout`, {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`,

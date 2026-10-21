@@ -1,8 +1,9 @@
+import { BACKEND_URL } from '@/lib/config';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { NextRequest, NextResponse } from 'next/server';
 
-const BASE_URL = 'https://epilux-backend.vercel.app';
+const BASE_URL = BACKEND_URL;
 
 // In-memory storage for products
 const products: any[] = [];

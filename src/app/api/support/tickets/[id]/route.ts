@@ -1,7 +1,8 @@
+import { BACKEND_URL } from '@/lib/config';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
 
-const BASE_URL = 'https://epilux-backend.vercel.app';
+const BASE_URL = BACKEND_URL;
 
 // FIX: Changed the type of the second argument from '{ params: { id: string } }' to 'any'
 export async function GET(request: NextRequest, { params }: any) { 

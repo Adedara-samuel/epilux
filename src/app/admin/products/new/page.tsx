@@ -1,4 +1,5 @@
 'use client';
+import { BACKEND_URL } from '@/lib/config';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -71,7 +72,7 @@ export default function AddProductPage() {
             });
 
             // Upload via API
-            const response = await fetch('https://epilux-backend.vercel.app/api/admin/products', {
+            const response = await fetch(`${BACKEND_URL}/api/admin/products`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('auth_token')}`

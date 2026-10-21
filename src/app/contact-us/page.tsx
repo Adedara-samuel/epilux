@@ -1,5 +1,6 @@
 /* eslint-disable react/no-unescaped-entities */
 'use client';
+import { BACKEND_URL } from '@/lib/config';
 
 import { useState } from 'react';
 import { Button } from '@/Components/ui/button';
@@ -81,7 +82,7 @@ export default function ContactUsPage() {
         setSubmitStatus('idle');
 
         try {
-            const response = await fetch('https://epilux-backend.vercel.app/api/contact', {
+            const response = await fetch(`${BACKEND_URL}/api/contact`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

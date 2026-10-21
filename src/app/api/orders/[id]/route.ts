@@ -1,7 +1,8 @@
+import { BACKEND_URL } from '@/lib/config';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
 
-const BASE_URL = 'https://epilux-backend.vercel.app';
+const BASE_URL = BACKEND_URL;
 
 // NOTE: We are removing the type annotation from the second argument to satisfy
 // the strict Next.js internal type checker, which causes the build error.
