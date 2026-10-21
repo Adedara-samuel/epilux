@@ -36,10 +36,10 @@ export interface Withdrawal {
 }
 
 export const walletAPI = {
-  // Get wallet balance
+  // Get wallet balance (the backend nests it under `data`)
   getBalance: async (): Promise<WalletBalance> => {
     const response = await api.get('/api/wallet/balance');
-    return response.data;
+    return response.data?.data ?? response.data;
   },
 
   // Get wallet transactions
@@ -64,13 +64,13 @@ export const walletAPI = {
 
   // Admin: Get all pending withdrawals
   getPendingWithdrawals: async (): Promise<{ withdrawals: Withdrawal[]; total: number }> => {
-    const response = await api.get('/admin/wallet/withdrawals/pending');
+    const response = await api.get('/api/wallet/withdrawals/pending');
     return response.data;
   },
 
   // Admin: Process withdrawal (approve/reject)
   processWithdrawal: async (id: string, action: 'approve' | 'reject', adminNote?: string): Promise<{ withdrawal: Withdrawal; message: string }> => {
-    const response = await api.post(`/admin/wallet/withdraw/${id}/process`, { action, adminNote });
+    const response = await api.post(`/api/wallet/withdraw/${id}/process`, { action, adminNote });
     return response.data;
   },
 };
