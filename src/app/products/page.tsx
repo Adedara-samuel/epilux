@@ -37,7 +37,7 @@ function ShopHero() {
     const { data: wallet } = useWalletBalance();
 
     return (
-        <section className="aurora relative mb-6 overflow-hidden rounded-[1.75rem] px-5 py-7 text-white shadow-lift sm:px-8 sm:py-9">
+        <section className="aurora relative mb-6 overflow-hidden rounded-[1.75rem] px-5 py-6 text-white shadow-lift sm:px-8 sm:py-9">
             <span aria-hidden className="aurora-blob one !h-80 !w-80 !opacity-40" />
             <span aria-hidden className="aurora-blob three !opacity-30" />
             <div className="relative grid gap-6 lg:grid-cols-[1.4fr_1fr] lg:items-center">
@@ -49,7 +49,7 @@ function ShopHero() {
                         {greeting()}{user?.firstName ? `, ${user.firstName}` : ''} 👋
                     </h1>
                     <p className="mt-2 max-w-lg text-sm text-white/75 sm:text-base">
-                        Fresh, safe drinking water delivered by a dedicated marketer. Free delivery on orders from {formatNaira(FREE_DELIVERY_THRESHOLD)}.
+                        <span className="hidden sm:inline">Fresh, safe drinking water delivered by a dedicated marketer. </span>Free delivery on orders from {formatNaira(FREE_DELIVERY_THRESHOLD)}.
                     </p>
                     <div className="mt-5 flex flex-wrap gap-2">
                         <a href="#catalogue" className="inline-flex h-10 items-center gap-2 rounded-xl bg-white px-4 text-sm font-semibold text-brand-700 shadow-lg shadow-black/10 transition-transform hover:-translate-y-0.5">
@@ -62,16 +62,20 @@ function ShopHero() {
                 </div>
 
                 <div className="animate-fade-in grid grid-cols-2 gap-3" style={{ animationDelay: '120ms' }}>
-                    <Link href="/products/wallet" className="group rounded-2xl bg-white/10 p-4 ring-1 ring-white/15 backdrop-blur transition-colors hover:bg-white/15">
-                        <span className="grid size-9 place-items-center rounded-xl bg-emerald-400/20 text-emerald-200"><Wallet className="size-5" /></span>
-                        <p className="mt-3 text-xs text-white/70">Wallet balance</p>
-                        <p className="text-lg font-extrabold tabular-nums text-white">{formatNaira(wallet?.availableBalance)}</p>
+                    <Link href="/products/wallet" className="group flex items-center gap-3 rounded-2xl bg-white/10 p-3 ring-1 ring-white/15 backdrop-blur transition-colors hover:bg-white/15 sm:block sm:p-4">
+                        <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-emerald-400/20 text-emerald-200"><Wallet className="size-5" /></span>
+                        <div className="min-w-0 sm:mt-3">
+                            <p className="text-xs text-white/70">Wallet</p>
+                            <p className="truncate font-extrabold tabular-nums text-white sm:text-lg">{formatNaira(wallet?.availableBalance)}</p>
+                        </div>
                     </Link>
-                    <div className="rounded-2xl bg-white/10 p-4 ring-1 ring-white/15 backdrop-blur">
-                        <span className="grid size-9 place-items-center rounded-xl bg-sky-300/20 text-sky-100"><Truck className="size-5" /></span>
-                        <p className="mt-3 text-xs text-white/70">Delivery</p>
-                        <p className="text-lg font-extrabold text-white">To your door</p>
-                    </div>
+                    <Link href="/account/orders" className="group flex items-center gap-3 rounded-2xl bg-white/10 p-3 ring-1 ring-white/15 backdrop-blur transition-colors hover:bg-white/15 sm:block sm:p-4">
+                        <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-sky-300/20 text-sky-100"><Truck className="size-5" /></span>
+                        <div className="min-w-0 sm:mt-3">
+                            <p className="text-xs text-white/70">Deliveries</p>
+                            <p className="truncate font-extrabold text-white sm:text-lg">Track orders</p>
+                        </div>
+                    </Link>
                 </div>
             </div>
         </section>
