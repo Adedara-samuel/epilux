@@ -90,4 +90,10 @@ export const userAPI = {
         const response = await api.delete('/api/users/me/address');
         return response.data;
     },
+
+    // Permanently delete the account (refused while money or orders are outstanding)
+    deleteAccount: async () => {
+        const response = await api.delete('/api/users/me');
+        return response.data;
+    },
 };
