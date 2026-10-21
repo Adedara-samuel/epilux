@@ -26,9 +26,9 @@ import { formatNaira, timeAgo } from '@/lib/format';
 import { handleImageError, resolveImageUrl } from '@/lib/images';
 
 const TABS = {
-    todo: { label: 'To deliver', statuses: ['assigned', 'in_transit'] },
-    awaiting: { label: 'Awaiting customer', statuses: ['delivered'] },
-    done: { label: 'Completed', statuses: ['completed'] },
+    todo: { label: 'To deliver', short: 'To deliver', statuses: ['assigned', 'in_transit'] },
+    awaiting: { label: 'Awaiting customer', short: 'Waiting', statuses: ['delivered'] },
+    done: { label: 'Completed', short: 'Done', statuses: ['completed'] },
 } as const;
 type TabKey = keyof typeof TABS;
 
@@ -209,7 +209,21 @@ export default function MarketerPage() {
                 actions={<Button variant="outline" onClick={() => refetch()} loading={isFetching && !isLoading}><RefreshCw /> Refresh</Button>}
             />
 
-            <Stagger immediate className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+            {/* Phones: one compact row so the orders stay near the top */}
+            <div className="animate-fade-in grid grid-cols-3 divide-x divide-border/60 rounded-2xl border bg-card py-3 text-center shadow-soft sm:hidden">
+                {[
+                    { label: 'To deliver', value: stats ? stats.pending + stats.inTransit : '…', tone: 'text-primary' },
+                    { label: 'Waiting', value: stats?.delivered ?? '…', tone: 'text-amber-600' },
+                    { label: 'Done', value: stats?.completed ?? '…', tone: 'text-emerald-600' },
+                ].map((s) => (
+                    <div key={s.label}>
+                        <p className={`text-xl font-extrabold tabular-nums ${s.tone}`}>{s.value}</p>
+                        <p className="text-xs text-muted-foreground">{s.label}</p>
+                    </div>
+                ))}
+            </div>
+
+            <Stagger immediate className="hidden gap-4 sm:grid sm:grid-cols-2 lg:grid-cols-4">
                 <StaggerItem><StatTile label="To deliver" value={stats ? stats.pending + stats.inTransit : '…'} icon={Truck} hint={stats ? `${stats.inTransit} on the way` : undefined} /></StaggerItem>
                 <StaggerItem><StatTile label="Awaiting customer" value={stats?.delivered ?? '…'} icon={Clock} tone="warning" /></StaggerItem>
                 <StaggerItem><StatTile label="Completed" value={stats?.completed ?? '…'} icon={CheckCircle2} tone="success" /></StaggerItem>
@@ -221,7 +235,8 @@ export default function MarketerPage() {
                     <TabsList className="grid w-full grid-cols-3 sm:inline-flex sm:w-fit">
                         {(Object.keys(TABS) as TabKey[]).map((k) => (
                             <TabsTrigger key={k} value={k}>
-                                {TABS[k].label}
+                                <span className="sm:hidden">{TABS[k].short}</span>
+                                <span className="hidden sm:inline">{TABS[k].label}</span>
                                 {counts[k] > 0 && <span className="ml-1 rounded-full bg-primary/10 px-1.5 text-[11px] font-bold text-primary tabular-nums">{counts[k]}</span>}
                             </TabsTrigger>
                         ))}
