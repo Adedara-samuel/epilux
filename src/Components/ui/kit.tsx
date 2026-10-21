@@ -1,10 +1,14 @@
 'use client';
 
+// App-level building blocks composed from shadcn/ui primitives (Card, Badge,
+// Button), so every screen shares the same look and behaviour.
 import Link from 'next/link';
 import { AlertTriangle, Minus, Plus, RefreshCw } from 'lucide-react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Button } from './button';
+import { Card } from './card';
+import { Badge } from './badge';
 import { ORDER_STATUS_META } from '@/lib/constants';
 
 // ---------------------------------------------------------------------------
@@ -40,11 +44,12 @@ export function PageHeader({
 // Surfaces
 // ---------------------------------------------------------------------------
 
+/** shadcn Card without the default inner spacing; callers control padding. */
 export function Panel({ className, children, ...props }: React.HTMLAttributes<HTMLDivElement>) {
     return (
-        <div className={cn('rounded-3xl border border-border/70 bg-card shadow-soft', className)} {...props}>
+        <Card className={cn('block gap-0 rounded-3xl py-0', className)} {...props}>
             {children}
-        </div>
+        </Card>
     );
 }
 
@@ -122,23 +127,15 @@ export function ErrorState({ title = 'Something went wrong', description = 'We c
 // Badges
 // ---------------------------------------------------------------------------
 
-const toneClasses = {
-    neutral: 'bg-muted text-muted-foreground ring-border',
-    info: 'bg-sky-50 text-sky-700 ring-sky-200 dark:bg-sky-500/10 dark:text-sky-300 dark:ring-sky-500/30',
-    brand: 'bg-accent text-accent-foreground ring-brand-100',
-    warning: 'bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/30',
-    success: 'bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/30',
-    danger: 'bg-red-50 text-red-700 ring-red-200 dark:bg-red-500/10 dark:text-red-300 dark:ring-red-500/30',
-} as const;
+export type Tone = 'neutral' | 'info' | 'brand' | 'warning' | 'success' | 'danger';
 
-export type Tone = keyof typeof toneClasses;
-
+/** Status badge (shadcn Badge with a semantic tone). */
 export function Pill({ tone = 'neutral', children, className, dot = false }: { tone?: Tone; children: React.ReactNode; className?: string; dot?: boolean }) {
     return (
-        <span className={cn('inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset', toneClasses[tone], className)}>
+        <Badge variant={tone} className={className}>
             {dot && <span className="size-1.5 rounded-full bg-current" />}
             {children}
-        </span>
+        </Badge>
     );
 }
 
