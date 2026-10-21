@@ -14,7 +14,8 @@ interface UserRegistrationData {
     lastName: string;
     email: string;
     password: string;
-    role?: string;
+    phone?: string;
+    referralCode?: string;
 }
 
 /**
@@ -58,14 +59,18 @@ const authAPI = {
      * @returns A promise that resolves with the API response (e.g., auth token and user data).
      */
     async login(credentials: UserCredentials) {
-        const response = await fetch(`${getBaseUrl()}/api/auth/login`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(credentials),
-            credentials: 'include', // Important for cookies
-        });
+        let response: Response;
+        try {
+            response = await fetch(`${getBaseUrl()}/api/auth/login`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(credentials),
+            });
+        } catch {
+            throw new Error('Unable to reach the server. Please check your connection and try again.');
+        }
 
         return handleResponse(response, 'Login failed');
     },
@@ -75,20 +80,20 @@ const authAPI = {
      * @returns A promise that resolves with the API response (e.g., user data or token).
      */
     register: async (userData: UserRegistrationData) => {
-        console.log('Attempting to register user at:', `${getBaseUrl()}/api/auth/register`);
+        let response: Response;
         try {
-            const response = await fetch(`${getBaseUrl()}/api/auth/register`, {
+            response = await fetch(`${getBaseUrl()}/api/auth/register`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify(userData),
             });
-            return await handleResponse(response, 'Registration failed');
-        } catch (error) {
-            console.error('Network error during registration:', error);
-            throw new Error('Failed to Fetch')
+        } catch {
+            throw new Error('Unable to reach the server. Please check your connection and try again.');
         }
+        // Surfaces the backend's message (e.g. "User with this email already exists")
+        return handleResponse(response, 'Registration failed');
     },
 
 
@@ -98,7 +103,7 @@ const authAPI = {
      * @returns A promise that resolves with the user profile data.
      */
     getProfile: async (token: string) => {
-        const response = await fetch(`${getBaseUrl()}/api/user/profile`, {
+        const response = await fetch(`${getBaseUrl()}/api/users/me`, {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,

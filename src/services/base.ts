@@ -2,13 +2,17 @@
 // src/services/base.ts
 import axios from 'axios';
 import { BACKEND_URL } from '@/lib/config';
+import { authSession, isTokenExpired } from '@/lib/auth-session';
 
 // Backend origin: NEXT_PUBLIC_BACKEND_URL locally, deployed backend otherwise
 export const API_BASE_URL = BACKEND_URL;
 
+// Fired when the backend rejects the stored session; AuthProvider listens for it
+export const AUTH_EXPIRED_EVENT = 'epilux:auth-expired';
+
 // Create axios instance with default config
 export const api = axios.create({
-    baseURL: API_BASE_URL, // Use backend URL directly
+    baseURL: API_BASE_URL,
     headers: {
         'Content-Type': 'application/json',
     },
@@ -18,36 +22,18 @@ export const api = axios.create({
 // Request interceptor to add auth token
 api.interceptors.request.use(
     (config) => {
-        // Get token from localStorage first (using 'auth_token' key), then try cookie as fallback
-        let token = tokenManager.getToken();
-
-        // If no token in localStorage, try to get from cookie
-        if (!token && typeof window !== 'undefined') {
-            const cookies = document.cookie.split(';');
-            const authCookie = cookies.find(cookie => cookie.trim().startsWith('authToken='));
-            if (authCookie) {
-                token = authCookie.split('=')[1];
-                // Store in localStorage for future requests using 'auth_token' key
-                if (token) {
-                    tokenManager.setToken(token);
-                }
-            }
-        }
-
-        if (token && typeof window !== 'undefined') {
+        const token = authSession.getToken();
+        // Callers may pass their own Authorization header; don't override it
+        if (token && !config.headers.Authorization) {
             config.headers.Authorization = `Bearer ${token}`;
-            console.log('Authorization token being sent:', `Bearer ${token.substring(0, 20)}...`);
-            if (typeof document !== 'undefined') {
-                document.cookie = `authToken=${token}; path=/; max-age=604800; samesite=strict${process.env.NODE_ENV === 'production' ? '; secure' : ''}`;
-            }
         }
-
         return config;
     },
-    (error) => {
-        return Promise.reject(error);
-    }
+    (error) => Promise.reject(error)
 );
+
+// Messages the backend uses when a token is no longer usable
+const SESSION_ERRORS = /invalid token|token expired|user not found|no token provided|token verification failed/i;
 
 // Response interceptor to handle auth errors
 api.interceptors.response.use(
@@ -57,13 +43,27 @@ api.interceptors.response.use(
         if (!error.response) {
             error.response = {
                 status: 0,
-                data: { message: 'Network error or server unreachable' }
+                data: { message: 'Unable to reach the server. Please check your connection and try again.' }
             };
         }
-        // Don't automatically clear auth on 401, let components handle it
+
+        const status = error.response.status;
+        const message = error.response.data?.message || '';
+        const sentToken = !!error.config?.headers?.Authorization;
+        const isLoginRequest = /\/api\/auth\/(login|register|admin\/login)/.test(error.config?.url || '');
+
+        if (typeof window !== 'undefined' && sentToken && !isLoginRequest && status === 401 && SESSION_ERRORS.test(message)) {
+            authSession.clear();
+            window.dispatchEvent(new CustomEvent(AUTH_EXPIRED_EVENT));
+        }
+
         return Promise.reject(error);
     }
 );
+
+// Pull a user-facing message out of an API error
+export const getErrorMessage = (error: any, fallback = 'Something went wrong. Please try again.') =>
+    error?.response?.data?.message || error?.message || fallback;
 
 // Enhanced API wrapper with loading states
 export class ApiService {
@@ -115,8 +115,7 @@ export class ApiService {
                 toast.dismiss('api-loading');
 
                 if (showErrorToast) {
-                    const message = errorMessage || error.response?.data?.message || 'An error occurred';
-                    toast.error(message);
+                    toast.error(errorMessage || getErrorMessage(error));
                 }
             }
 
@@ -142,58 +141,33 @@ export class ApiService {
     }
 }
 
-// Utility functions for token management
+// Utility functions for token management (kept for existing callers)
 export const tokenManager = {
     setToken: (token: string) => {
-        if (typeof window !== 'undefined') {
-            localStorage.setItem('auth_token', token);
-            localStorage.setItem('tokenTimestamp', Date.now().toString());
-        }
+        authSession.save(token, authSession.getUser());
     },
 
     getToken: () => {
-        if (typeof window !== 'undefined') {
-            return localStorage.getItem('auth_token');
-        }
-        return null;
+        const token = authSession.getToken();
+        return token && !isTokenExpired(token) ? token : null;
     },
 
     removeToken: () => {
-        if (typeof window !== 'undefined') {
-            localStorage.removeItem('auth_token');
-        }
+        authSession.clear();
     },
 
     setUser: (user: any) => {
-        if (typeof window !== 'undefined') {
-            localStorage.setItem('user', JSON.stringify(user));
-        }
+        authSession.saveUser(user);
     },
 
-    getUser: () => {
-        if (typeof window !== 'undefined') {
-            const userStr = localStorage.getItem('user');
-            return userStr ? JSON.parse(userStr) : null;
-        }
-        return null;
-    },
+    getUser: () => authSession.getUser<any>(),
 
     removeUser: () => {
-        if (typeof window !== 'undefined') {
-            localStorage.removeItem('user');
-        }
+        authSession.clear();
     },
 
     // Clear all auth data
     clearAuth: () => {
-        if (typeof window !== 'undefined') {
-            localStorage.removeItem('auth_token');
-            localStorage.removeItem('user');
-            localStorage.removeItem('tokenTimestamp');
-            // Clear the auth cookie
-            if (typeof document !== 'undefined') {
-                document.cookie = 'authToken=; path=/; max-age=0; samesite=strict';
-            }
-        }
+        authSession.clear();
     },
 };
