@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ChevronRight, Gift, Headphones, Inbox, LogOut, MapPin, MessageSquare, Package, Settings, Star, Users, Wallet } from 'lucide-react';
+import { ChevronRight, Gift, Headphones, Inbox, LogOut, MapPin, MessageSquare, Package, Settings, Star, Truck, Users, Wallet } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useOrders } from '@/hooks/useOrders';
 import { useWalletBalance } from '@/hooks/useWallet';
@@ -12,7 +12,8 @@ import { formatDate, formatNaira, fullName, initials } from '@/lib/format';
 import { orderId, type CustomerOrder } from '@/Components/orders/order-helpers';
 
 const LINKS = [
-    { href: '/account/orders', icon: Package, title: 'My orders', text: 'Track and confirm deliveries' },
+    { href: '/account/orders', icon: Package, title: 'My orders', text: 'Order history and receipts' },
+    { href: '/account/delivery', icon: Truck, title: 'Deliveries', text: 'Orders on their way to you' },
     { href: '/products/wallet', icon: Wallet, title: 'Wallet', text: 'Balance, rewards and withdrawals' },
     { href: '/products/referrals', icon: Users, title: 'Refer & earn', text: 'Invite friends, earn 40%' },
     { href: '/settings?tab=address', icon: MapPin, title: 'Delivery address', text: 'Where we deliver your water' },

@@ -203,14 +203,12 @@ function SettingsContent() {
         <div className="max-w-4xl">
             <PageHeader title="Settings" description="Manage your profile, address and security." />
             <Tabs value={tab} onValueChange={(t) => router.replace(`/settings?tab=${t}`, { scroll: false })}>
-                <div className="-mx-4 overflow-x-auto px-4 no-scrollbar sm:mx-0 sm:px-0">
-                    <TabsList>
-                        <TabsTrigger value="profile"><User /> Profile</TabsTrigger>
-                        <TabsTrigger value="address"><MapPin /> Address</TabsTrigger>
-                        <TabsTrigger value="password"><KeyRound /> Password</TabsTrigger>
-                        <TabsTrigger value="account"><ShieldAlert /> Account</TabsTrigger>
-                    </TabsList>
-                </div>
+                <TabsList className="grid w-full grid-cols-4 sm:inline-flex sm:w-fit [&_svg]:hidden sm:[&_svg]:block">
+                    <TabsTrigger value="profile"><User /> Profile</TabsTrigger>
+                    <TabsTrigger value="address"><MapPin /> Address</TabsTrigger>
+                    <TabsTrigger value="password"><KeyRound /> Password</TabsTrigger>
+                    <TabsTrigger value="account"><ShieldAlert /> Account</TabsTrigger>
+                </TabsList>
                 <TabsContent value="profile"><ProfileTab /></TabsContent>
                 <TabsContent value="address"><AddressTab /></TabsContent>
                 <TabsContent value="password"><PasswordTab /></TabsContent>
