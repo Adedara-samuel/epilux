@@ -3,9 +3,9 @@ import { api } from './base';
 
 // Support API functions
 export const supportAPI = {
-  // Get support tickets
-  getTickets: async () => {
-    const response = await api.get('/api/support/tickets');
+  // Get the user's support tickets (admins see all)
+  getTickets: async (params?: { status?: string; category?: string }) => {
+    const response = await api.get('/api/support', { params });
     return response.data;
   },
 
@@ -16,13 +16,18 @@ export const supportAPI = {
     priority?: string;
     category?: string;
   }) => {
-    const response = await api.post('/api/support/tickets', ticketData);
+    const response = await api.post('/api/support', {
+      subject: ticketData.subject,
+      description: ticketData.message,
+      priority: ticketData.priority,
+      category: ticketData.category,
+    });
     return response.data;
   },
 
   // Get ticket by ID
   getTicket: async (id: string) => {
-    const response = await api.get(`/api/support/tickets/${id}`);
+    const response = await api.get(`/api/support/${id}`);
     return response.data;
   },
 
@@ -30,46 +35,40 @@ export const supportAPI = {
   replyToTicket: async (id: string, replyData: {
     message: string;
   }) => {
-    const response = await api.post(`/api/support/${id}/reply`, replyData);
+    const response = await api.post(`/api/support/${id}/messages`, replyData);
     return response.data;
   },
 
-  // Direct Messages
+  // Direct messages to the Epilux team
   getMessages: async (params?: { page?: number; limit?: number; isRead?: boolean }) => {
     const response = await api.get('/api/messages', { params });
     return response.data;
   },
 
   sendMessage: async (messageData: {
-    recipient: string;
+    recipient?: string;
     subject: string;
     message: string;
     priority?: string;
     category?: string;
   }) => {
-    const response = await api.post('/api/support/messages', messageData);
+    const response = await api.post('/api/messages', {
+      subject: messageData.subject,
+      message: messageData.message,
+    });
     return response.data;
   },
 
+  // There is no single-message endpoint; find it in the user's messages
   getMessage: async (id: string) => {
-    const response = await api.get(`/api/support/messages/${id}`);
-    return response.data;
+    const response = await api.get('/api/messages');
+    const list = response.data?.data || response.data?.messages || [];
+    const message = Array.isArray(list) ? list.find((m: { _id: string }) => m._id === id) : undefined;
+    return { success: !!message, data: message || null };
   },
 
   markMessageAsRead: async (id: string) => {
-    // Get token from localStorage
-    const token = localStorage.getItem('auth_token');
-
-    if (!token) {
-      throw new Error('No authentication token found');
-    }
-
-    const response = await api.put(`/api/messages/${id}/read`, {}, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    });
+    const response = await api.put(`/api/messages/${id}/read`, {});
     return response.data;
   },
 };

@@ -59,27 +59,30 @@ export const marketerAPI = {
     return response.data.data;
   },
 
-  // Admin: Get all marketers
+  // Admin: Get all marketers with their assigned products
   getAllMarketers: async () => {
-    const response = await api.get('/api/marketers');
+    const response = await api.get('/api/marketer/admin/marketers');
     return response.data.data;
   },
 
   // Admin: Get single marketer by ID
   getMarketer: async (id: string) => {
-    const response = await api.get(`/api/marketers/${id}`);
-    return response.data.data;
+    const response = await api.get(`/api/admin/users/${id}`);
+    return response.data.data || response.data.user;
   },
 
-  // Admin: Get marketer's orders
+  // Admin: Get orders assigned to a marketer
   getMarketerOrders: async (id: string) => {
-    const response = await api.get(`/api/marketers/${id}/orders`);
-    return response.data.data;
+    const response = await api.get('/api/admin/orders');
+    const orders = response.data.orders || response.data.data || [];
+    return orders.filter((order: { marketer?: string | { _id: string } }) =>
+      (typeof order.marketer === 'string' ? order.marketer : order.marketer?._id) === id
+    );
   },
 
-  // Admin: Get marketer's commissions
+  // Admin: Get a marketer's commission records
   getMarketerCommissions: async (id: string) => {
-    const response = await api.get(`/api/marketers/${id}/commissions`);
+    const response = await api.get('/api/commission/admin/commissions', { params: { userId: id } });
     return response.data.data;
   },
 
@@ -91,25 +94,30 @@ export const marketerAPI = {
     phone?: string;
     password: string;
   }) => {
-    const response = await api.post('/api/marketers', marketerData);
+    const response = await api.post('/api/admin/users', { ...marketerData, role: 'marketer' });
     return response.data;
   },
 
-  // Admin: Update marketer
+  // Admin: Update marketer details (role changes go through the role endpoint)
   updateMarketer: async (id: string, updateData: {
     firstName?: string;
     lastName?: string;
     email?: string;
-    phone?: string;
     isActive?: boolean;
   }) => {
-    const response = await api.put(`/api/marketers/${id}`, updateData);
+    const response = await api.put(`/api/admin/users/${id}`, updateData);
     return response.data;
   },
 
-  // Admin: Delete marketer
+  // Admin: Delete marketer account
   deleteMarketer: async (id: string) => {
-    const response = await api.delete(`/api/marketers/${id}`);
+    const response = await api.delete(`/api/admin/users/${id}`);
+    return response.data;
+  },
+
+  // Admin: Assign a product to a marketer
+  assignProduct: async (productId: string, marketerId: string) => {
+    const response = await api.post('/api/marketer/admin/assign-product', { productId, marketerId });
     return response.data;
   },
 };

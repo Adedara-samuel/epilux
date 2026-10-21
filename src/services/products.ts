@@ -4,19 +4,23 @@ import { api } from './base';
 
 // Public Products API functions
 export const productsAPI = {
-    // Get all products
-    getProducts: async (params?: { category?: string; search?: string }) => {
-        let url = '/api/products';
-        const queryParams: Record<string, string> = {};
+    // Get active products. Filters map to query params on /api/products.
+    getProducts: async (params?: {
+        category?: string;
+        search?: string;
+        page?: number;
+        limit?: number;
+        minPrice?: number;
+        maxPrice?: number;
+    }) => {
+        const queryParams: Record<string, string | number> = { limit: params?.limit ?? 100 };
+        if (params?.category) queryParams.category = params.category;
+        if (params?.search) queryParams.search = params.search;
+        if (params?.page) queryParams.page = params.page;
+        if (params?.minPrice !== undefined) queryParams.minPrice = params.minPrice;
+        if (params?.maxPrice !== undefined) queryParams.maxPrice = params.maxPrice;
 
-        if (params?.category) {
-            url = `/api/products/category/${params.category}`;
-        } else if (params?.search) {
-            url = '/api/products/search';
-            queryParams.q = params.search;
-        }
-
-        const response = await api.get(url, { params: queryParams });
+        const response = await api.get('/api/products', { params: queryParams });
         return response.data;
     },
 
@@ -28,14 +32,14 @@ export const productsAPI = {
 
     // Get products by category
     getProductsByCategory: async (category: string) => {
-        const response = await api.get(`/api/products/category/${category}`);
+        const response = await api.get('/api/products', { params: { category, limit: 100 } });
         return response.data;
     },
 
     // Search products
     searchProducts: async (query: string) => {
-        const response = await api.get('/api/products/search', {
-            params: { q: query }
+        const response = await api.get('/api/products', {
+            params: { search: query, limit: 100 }
         });
         return response.data;
     },
@@ -93,18 +97,20 @@ export const adminProductsAPI = {
         return response.data;
     },
 
-    // Create new product (admin only)
-    createProduct: async (productData: {
+    // Create new product (admin only). Pass FormData to upload image files.
+    createProduct: async (productData: FormData | {
         name: string;
         description: string;
         price: number;
         category: string;
         stock: number;
         brand?: string;
-        images?: { url: string; alt: string; isPrimary: boolean }[];
+        images?: { url: string; alt?: string; isPrimary?: boolean }[];
         [key: string]: any;
     }) => {
-        const response = await api.post('/api/admin/products', productData);
+        const response = await api.post('/api/admin/products', productData, productData instanceof FormData
+            ? { headers: { 'Content-Type': 'multipart/form-data' } }
+            : undefined);
         return response.data;
     },
 
@@ -114,16 +120,22 @@ export const adminProductsAPI = {
         return response.data;
     },
 
-    // Update product (admin only)
-    updateProduct: async (id: string, productData: Partial<{
+    // Update product (admin only). Pass FormData to upload new image files;
+    // its `images` field (JSON) lists the existing images to keep.
+    updateProduct: async (id: string, productData: FormData | Partial<{
         name: string;
         description: string;
         price: number;
         category: string;
+        brand: string;
         stock: number;
-        images: { url: string; alt: string; isPrimary: boolean }[];
+        isActive: boolean;
+        isFeatured: boolean;
+        images: { url: string; alt?: string; isPrimary?: boolean; publicId?: string }[];
     }>) => {
-        const response = await api.put(`/api/admin/products/${id}`, productData);
+        const response = await api.put(`/api/admin/products/${id}`, productData, productData instanceof FormData
+            ? { headers: { 'Content-Type': 'multipart/form-data' } }
+            : undefined);
         return response.data;
     },
 
@@ -133,13 +145,13 @@ export const adminProductsAPI = {
         return response.data;
     },
 
-    // Upload product images (admin only)
+    // Add images to an existing product (admin only); existing images are kept
     uploadProductImages: async (id: string, images: File[]) => {
         const formData = new FormData();
         images.forEach(image => {
             formData.append('images', image);
         });
-        const response = await api.post(`/api/products/${id}/images`, formData, {
+        const response = await api.put(`/api/admin/products/${id}`, formData, {
             headers: {
                 'Content-Type': 'multipart/form-data',
             },
@@ -149,7 +161,7 @@ export const adminProductsAPI = {
 
     // Get product categories (admin)
     getCategories: async () => {
-        const response = await api.get('/api/admin/products/category');
+        const response = await api.get('/api/admin/products/categories');
         return response.data;
     },
 };

@@ -20,7 +20,9 @@
       "Bash(curl -s __TRACKED_VAR__/api/products?limit=2)",
       "Bash(curl -s -w ' [%{http_code}]\\\\n' __TRACKED_VAR__/api/products/696933ad47e83a7f00a95362)",
       "PowerShell(node C:\\\\Users\\\\HomePC\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-HomePC-Documents-work-epilux\\\\f3be4b51-bf0b-4daf-b2b1-2a6ee1a503a7\\\\scratchpad\\\\inspect-orders.mjs C:/Users/HomePC/Documents/work/epilux-backend)",
-      "Bash(node /c/Users/HomePC/AppData/Local/Temp/claude/c--Users-HomePC-Documents-work-epilux/f3be4b51-bf0b-4daf-b2b1-2a6ee1a503a7/scratchpad/snapshot.mjs C:/Users/HomePC/Documents/work/epilux-backend 691ef658ed49393b88173e50)"
+      "Bash(node /c/Users/HomePC/AppData/Local/Temp/claude/c--Users-HomePC-Documents-work-epilux/f3be4b51-bf0b-4daf-b2b1-2a6ee1a503a7/scratchpad/snapshot.mjs C:/Users/HomePC/Documents/work/epilux-backend 691ef658ed49393b88173e50)",
+      "PowerShell(Remove-Item -LiteralPath 'C:\\\\Users\\\\HomePC\\\\Documents\\\\work\\\\epilux\\\\src\\\\app\\\\\\(auth\\)\\\\admin-register' -Recurse -Confirm:$false)",
+      "PowerShell(Remove-Item -LiteralPath 'C:\\\\Users\\\\HomePC\\\\Documents\\\\work\\\\epilux\\\\src\\\\app\\\\api\\\\set-user-role' -Recurse -Confirm:$false)"
     ],
     "additionalDirectories": [
       "C:\\Users\\HomePC\\Documents\\work\\epilux-backend\\config",
