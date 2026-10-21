@@ -1,32 +1,52 @@
 import { api } from './base';
 
+// An order assigned to the logged in marketer (GET /api/marketer/orders)
 export interface Order {
   _id: string;
   orderNumber: string;
-  // Backend returns a customer object, updated from string
-  customer: {
-    firstName: string;
-    lastName: string;
-    email: string;
-  };
-  customerPhone?: string;
-  address: string;
+  status: 'assigned' | 'processing' | 'pending' | 'in_transit' | 'delivered' | 'completed' | 'cancelled';
+  totalAmount: number;
+  deliveryFee?: number;
+  paymentMethod?: string;
+  isPaid?: boolean;
   items: Array<{
+    productId?: string;
     name: string;
     quantity: number;
     price: number;
+    image?: string | null;
   }>;
-  // Added 'assigned' to match your debug log statuses
-  status: 'assigned' | 'pending' | 'in_transit' | 'delivered' | 'completed' | 'cancelled';
-  deliveryTime?: string;
-  coordinates?: {
-    lat: number;
-    lng: number;
+  customer: {
+    name: string;
+    phone?: string;
+    email?: string;
   };
-  totalAmount: number;
+  shippingAddress?: {
+    address?: string;
+    city?: string;
+    state?: string;
+    landmark?: string;
+    deliveryInstructions?: string;
+  };
+  assignedAt?: string;
+  inTransitAt?: string;
+  deliveredAt?: string;
+  completedAt?: string;
+  customerConfirmed?: boolean;
   createdAt: string;
   updatedAt: string;
 }
+
+export interface MarketerStats {
+  totalOrders: number;
+  pending: number;
+  inTransit: number;
+  delivered: number;
+  completed: number;
+  cancelled: number;
+}
+
+export type MarketerAction = 'in_transit' | 'delivered' | 'declined';
 
 export const marketerAPI = {
   // Get assigned orders for the marketer
@@ -37,8 +57,7 @@ export const marketerAPI = {
     limit?: number;
   }) => {
     const response = await api.get('/api/marketer/orders', { params });
-    // Fix: access response.data.data to unwrap backend nesting
-    return response.data.data;
+    return (response.data.data || []) as Order[];
   },
 
   // Get single order details
@@ -47,14 +66,14 @@ export const marketerAPI = {
     return response.data.data;
   },
 
-  // Update order status
-  updateOrderStatus: async (id: string, status: string) => {
-    const response = await api.put(`/api/marketer/orders/${id}/status`, { status });
-    return response.data; // Usually response status is at root
+  // Start a delivery, mark it delivered, or decline it (it is passed to another marketer)
+  updateOrderStatus: async (id: string, status: MarketerAction, note?: string) => {
+    const response = await api.put(`/api/marketer/orders/${id}/status`, { status, note });
+    return response.data as { success: boolean; message: string };
   },
 
   // Get dashboard stats
-  getStats: async () => {
+  getStats: async (): Promise<MarketerStats> => {
     const response = await api.get('/api/marketer/dashboard'); // Updated to standard endpoint
     return response.data.data;
   },
