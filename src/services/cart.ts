@@ -34,12 +34,12 @@ export const cartAPI = {
         return response.data;
     },
 
-    // Add item to cart
-    addToCart: async (token: string, productId: string, quantity: number, image: string, name?: string, price?: number, userId?: string): Promise<{ data: Cart }> => {
+    // Add item to cart (price/name/image are taken from the catalogue server-side)
+    addToCart: async (token: string, productId: string, quantity: number): Promise<{ data: Cart }> => {
         if (!token) {
-            throw new Error('Authentication required');
+            throw new Error('Please sign in to add items to your cart');
         }
-        const response = await api.post('/api/cart/items', { productId, quantity, image, name, price, userId }, {
+        const response = await api.post('/api/cart/items', { productId, quantity }, {
             headers: { Authorization: `Bearer ${token}` }
         });
         return response.data;

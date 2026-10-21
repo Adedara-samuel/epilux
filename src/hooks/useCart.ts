@@ -12,14 +12,18 @@ export const useCart = () => {
     });
 };
 
+// Price, name and image always come from the catalogue on the server;
+// extra fields passed by older callers are ignored.
 export const useAddToCart = () => {
     const queryClient = useQueryClient();
-    const { token, user } = useAuth();
+    const { token } = useAuth();
 
     return useMutation({
-        mutationFn: ({ productId, quantity, image, name, price }: { productId: string; quantity: number; image: string; name?: string; price?: number }) =>
-            cartAPI.addToCart(token || '', productId, quantity, image || '', name, price, user?.id || user?._id),
-        onSuccess: () => {
+        mutationFn: ({ productId, quantity }: { productId: string; quantity: number; image?: string; name?: string; price?: number }) =>
+            cartAPI.addToCart(token || '', productId, quantity),
+        onSuccess: (data) => {
+            // Update the header badge immediately, then refetch
+            if (data?.data) queryClient.setQueryData(['cart'], data);
             queryClient.invalidateQueries({ queryKey: ['cart'] });
         },
     });
