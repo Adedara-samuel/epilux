@@ -73,6 +73,16 @@ export const useSendMessage = () => {
   });
 };
 
+// Hook for the number of unread replies
+export const useUnreadMessageCount = (enabled = true) => {
+  return useQuery({
+    queryKey: ['messages', 'unread'],
+    queryFn: supportAPI.getUnreadCount,
+    enabled,
+    refetchInterval: 60_000,
+  });
+};
+
 // Hook for marking message as read
 export const useMarkMessageAsRead = () => {
   const queryClient = useQueryClient();

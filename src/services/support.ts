@@ -61,10 +61,15 @@ export const supportAPI = {
 
   // There is no single-message endpoint; find it in the user's messages
   getMessage: async (id: string) => {
-    const response = await api.get('/api/messages');
-    const list = response.data?.data || response.data?.messages || [];
-    const message = Array.isArray(list) ? list.find((m: { _id: string }) => m._id === id) : undefined;
+    const response = await api.get('/api/messages', { params: { limit: 100 } });
+    const list = response.data?.data?.messages || [];
+    const message = list.find((m: { _id: string }) => m._id === id);
     return { success: !!message, data: message || null };
+  },
+
+  getUnreadCount: async (): Promise<number> => {
+    const response = await api.get('/api/messages/unread');
+    return response.data?.data?.count || 0;
   },
 
   markMessageAsRead: async (id: string) => {

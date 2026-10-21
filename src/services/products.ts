@@ -66,6 +66,18 @@ export const productsAPI = {
         return response.data;
     },
 
+    // Delete the current user's review of a product
+    deleteProductReview: async (productId: string, reviewId: string) => {
+        const response = await api.delete(`/api/products/${productId}/reviews/${reviewId}`);
+        return response.data;
+    },
+
+    // Reviews written by the current user (approved and pending)
+    getMyReviews: async () => {
+        const response = await api.get('/api/users/me/reviews');
+        return response.data;
+    },
+
     // Get product ratings
     getProductRatings: async (productId: string) => {
         const response = await api.get(`/api/products/${productId}/ratings`);
