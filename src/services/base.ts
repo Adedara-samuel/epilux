@@ -23,9 +23,12 @@ export const api = axios.create({
 api.interceptors.request.use(
     (config) => {
         const token = authSession.getToken();
-        // Callers may pass their own Authorization header; don't override it
-        if (token && !config.headers.Authorization) {
+        if (token) {
+            // Always use the stored session token. Some callers pass their own
+            // header built before the session was available ("Bearer undefined").
             config.headers.Authorization = `Bearer ${token}`;
+        } else if (/^Bearer (undefined|null)?$/.test(String(config.headers.Authorization || ''))) {
+            delete config.headers.Authorization;
         }
         return config;
     },
@@ -49,10 +52,15 @@ api.interceptors.response.use(
 
         const status = error.response.status;
         const message = error.response.data?.message || '';
-        const sentToken = !!error.config?.headers?.Authorization;
         const isLoginRequest = /\/api\/auth\/(login|register|admin\/login)/.test(error.config?.url || '');
 
-        if (typeof window !== 'undefined' && sentToken && !isLoginRequest && status === 401 && SESSION_ERRORS.test(message)) {
+        // Only end the session when the backend rejected the token we actually
+        // hold now (not a stale or missing one from an earlier request)
+        const storedToken = typeof window !== 'undefined' ? authSession.getToken() : null;
+        const sentHeader = String(error.config?.headers?.Authorization || '');
+        const rejectedCurrentToken = !!storedToken && sentHeader === `Bearer ${storedToken}`;
+
+        if (rejectedCurrentToken && !isLoginRequest && status === 401 && SESSION_ERRORS.test(message)) {
             authSession.clear();
             window.dispatchEvent(new CustomEvent(AUTH_EXPIRED_EVENT));
         }

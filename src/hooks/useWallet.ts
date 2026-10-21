@@ -39,11 +39,11 @@ export const useRequestWithdrawal = () => {
 
 // Admin hooks
 export const usePendingWithdrawals = () => {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   return useQuery({
     queryKey: ['admin', 'withdrawals', 'pending'],
     queryFn: () => walletAPI.getPendingWithdrawals(),
-    enabled: !!user?.token && user.role === 'admin',
+    enabled: !!token && user?.role === 'admin',
   });
 };
 
