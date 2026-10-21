@@ -1,172 +1,110 @@
+/* eslint-disable @next/next/no-img-element */
 'use client';
 
-import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { useAuth } from '@/app/context/auth-context';
-import { paymentAPI } from '@/services/payment';
-import { useCartStore } from '@/stores/cart-store';
-import { Button } from '@/Components/ui/button';
 import { toast } from 'sonner';
-import { Loader2, CreditCard, Wallet } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, CreditCard, Lock, PackageX, ShieldCheck } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { useOrder } from '@/hooks/useOrders';
+import { useInitializePayment } from '@/hooks/usePayment';
+import { getErrorMessage } from '@/services/base';
+import { Button } from '@/Components/ui/button';
+import { EmptyState, OrderStatusPill, Panel } from '@/Components/ui/kit';
+import { formatDate, formatNaira, fullName } from '@/lib/format';
+import { handleImageError, productImageUrl } from '@/lib/images';
 
-export default function PaymentPage() {
-    const params = useParams();
-    const orderId = params.orderId as string;
+type OrderItem = { product?: { _id?: string; name?: string; images?: { url: string; isPrimary?: boolean }[] } | string; quantity: number; price: number };
+
+// Pay (or retry paying) for an existing order. The amount is the order's own
+// total from the server.
+export default function PayForOrderPage() {
+    const { orderId } = useParams<{ orderId: string }>();
     const router = useRouter();
     const { user } = useAuth();
-    const clearCart = useCartStore((s) => s.clearCart);
-    const [isProcessing, setIsProcessing] = useState(false);
-    const [selectedMethod, setSelectedMethod] = useState<'wallet' | 'online' | null>('online');
+    const { data, isLoading, isError } = useOrder(orderId);
+    const initPayment = useInitializePayment();
 
-    useEffect(() => {
-        if (!user) {
-            router.push('/login?redirect=/payment/' + orderId);
-        }
-    }, [user, router, orderId]);
+    const order = data?.data;
 
-    const handlePayment = async (method: 'wallet' | 'online') => {
-        setIsProcessing(true);
-        try {
-            // For now, using dummy data as per the example. In real app, fetch order details
-            const paymentPayload = {
-                // top-level fields expected by backend
-                amount: 2500,
-                email: "john@example.com",
-                phone: "+234800000000",
-                name: "John Doe",
-
-                items: [
-                    {
-                        product: "64a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5",
-                        quantity: 1,
-                        price: 2500
-                    }
-                ],
-                shippingAddress: {
-                    address: "123 Main Street",
-                    city: "Lagos",
-                    state: "Lagos",
-                    country: "Nigeria"
-                },
-                customerInfo: {
-                    name: "John Doe",
-                    phone: "+234800000000",
-                    email: "john@example.com"
-                },
-                paymentMethod: 'wallet',
-                totalAmount: 2500
-            };
-
-            const paymentData = await paymentAPI.initializePayment(orderId, paymentPayload);
-
-            if (method === 'wallet') {
-                toast.success("Payment completed successfully!");
-                clearCart();
-                router.push(`/order/success?orderId=${orderId}`);
-            } else if (method === 'online' && paymentData.paymentUrl) {
-                window.location.href = paymentData.paymentUrl;
-            } else {
-                toast.success("Payment initialized successfully!");
-                clearCart();
-                router.push(`/order/success?orderId=${orderId}`);
-            }
-        } catch (error: any) {
-            console.error('Payment error:', error);
-            const errorMessage = error.response?.data?.error || error.response?.data?.message || error.message || "Payment failed. Please try again.";
-            toast.error(errorMessage);
-        } finally {
-            setIsProcessing(false);
-        }
+    const pay = () => {
+        initPayment.mutate({ orderId, customer: { email: user?.email, phone: user?.profile?.phone, name: fullName(user) } }, {
+            onSuccess: (res) => {
+                const url = res?.data?.paymentUrl || res?.data?.link;
+                if (url) window.location.href = url;
+                else toast.error('Could not open the payment page. Please try again.');
+            },
+            onError: (err) => toast.error(getErrorMessage(err, 'Could not start payment')),
+        });
     };
 
-    if (!user) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-100">
-                <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
-            </div>
-        );
+    if (isLoading) {
+        return <div className="mx-auto max-w-lg"><div className="skeleton-shimmer h-[420px] rounded-3xl" /></div>;
     }
 
+    if (isError || !order) {
+        return <EmptyState icon={PackageX} title="Order not found" description="We couldn't find this order on your account." action={{ label: 'My orders', href: '/account/orders' }} />;
+    }
+
+    const items: OrderItem[] = order.items || [];
+    const alreadyPaid = order.isPaid || order.paymentStatus === 'completed';
+    const closed = ['cancelled', 'rejected'].includes(order.status);
+
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8 px-4 sm:px-6 lg:px-8">
-            <div className="max-w-2xl mx-auto">
-                <div className="text-center mb-8">
-                    <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-2">Choose Payment Method</h1>
-                    <p className="text-gray-600">Select how you'd like to pay for your order</p>
+        <div className="mx-auto max-w-lg">
+            <button onClick={() => router.back()} className="mb-4 inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground">
+                <ArrowLeft className="size-4" /> Back
+            </button>
+            <Panel className="animate-fade-in overflow-hidden">
+                <div className="aurora px-6 py-7 text-white">
+                    <p className="text-sm text-white/70">Order {order.orderNumber}</p>
+                    <p className="mt-1 text-4xl font-extrabold tracking-tight tabular-nums">{formatNaira(order.totalAmount)}</p>
+                    <p className="mt-1 text-sm text-white/70">Placed {formatDate(order.createdAt)}</p>
                 </div>
-
-                <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8 border border-gray-100">
-                    <div className="space-y-6">
-                        {/* Wallet Payment Option */}
-                        <div
-                            className={`p-6 border-2 rounded-xl cursor-pointer transition-all ${selectedMethod === 'wallet'
-                                    ? 'border-green-500 bg-green-50'
-                                    : 'border-gray-200 hover:border-green-300'
-                                }`}
-                            onClick={() => setSelectedMethod('wallet')}
-                        >
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                                    <Wallet className="w-6 h-6 text-green-600" />
-                                </div>
-                                <div className="flex-1">
-                                    <h3 className="font-semibold text-lg text-gray-800">Wallet Payment</h3>
-                                    <p className="text-gray-600">Pay instantly using your wallet balance</p>
-                                </div>
-                                {selectedMethod === 'wallet' && (
-                                    <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
-                                        <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                        </svg>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Online Payment Option */}
-                        <div
-                            className={`p-6 border-2 rounded-xl cursor-pointer transition-all ${selectedMethod === 'online'
-                                    ? 'border-blue-500 bg-blue-50'
-                                    : 'border-gray-200 hover:border-blue-300'
-                                }`}
-                            onClick={() => setSelectedMethod('online')}
-                        >
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                                    <CreditCard className="w-6 h-6 text-blue-600" />
-                                </div>
-                                <div className="flex-1">
-                                    <h3 className="font-semibold text-lg text-gray-800">Online Payment</h3>
-                                    <p className="text-gray-600">Pay securely with card, bank transfer, or other methods via Flutterwave</p>
-                                </div>
-                                {selectedMethod === 'online' && (
-                                    <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
-                                        <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                        </svg>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Pay Button */}
-                        <Button
-                            onClick={() => selectedMethod && handlePayment(selectedMethod)}
-                            disabled={!selectedMethod || isProcessing}
-                            className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-4 px-8 rounded-xl transition-all shadow-lg disabled:opacity-50 cursor-pointer transform hover:scale-105"
-                        >
-                            {isProcessing ? (
-                                <>
-                                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                                    Processing Payment...
-                                </>
-                            ) : (
-                                `Pay Now ${selectedMethod === 'wallet' ? 'with Wallet' : selectedMethod === 'online' ? 'Online' : ''}`
-                            )}
-                        </Button>
+                <div className="p-6">
+                    <div className="mb-4 flex items-center justify-between">
+                        <h1 className="font-bold">Order summary</h1>
+                        <OrderStatusPill status={order.status} />
                     </div>
+                    <ul className="space-y-3">
+                        {items.map((item, i) => {
+                            const product = typeof item.product === 'object' ? item.product : undefined;
+                            return (
+                                <li key={i} className="flex items-center gap-3">
+                                    <img src={productImageUrl(product)} alt="" onError={handleImageError} className="size-12 rounded-xl object-cover" />
+                                    <span className="min-w-0 flex-1 truncate text-sm font-medium">{product?.name || 'Product'} <span className="text-muted-foreground">× {item.quantity}</span></span>
+                                    <span className="text-sm font-semibold tabular-nums">{formatNaira(item.price * item.quantity)}</span>
+                                </li>
+                            );
+                        })}
+                    </ul>
+                    <dl className="mt-5 space-y-2 border-t border-border/70 pt-4 text-sm">
+                        <div className="flex justify-between"><dt className="text-muted-foreground">Subtotal</dt><dd className="tabular-nums">{formatNaira(order.subtotal ?? order.totalAmount - (order.deliveryFee || 0))}</dd></div>
+                        <div className="flex justify-between"><dt className="text-muted-foreground">Delivery</dt><dd className="tabular-nums">{order.deliveryFee ? formatNaira(order.deliveryFee) : 'Free'}</dd></div>
+                        <div className="flex justify-between text-base font-bold"><dt>Total</dt><dd className="tabular-nums">{formatNaira(order.totalAmount)}</dd></div>
+                    </dl>
+
+                    {alreadyPaid ? (
+                        <div className="mt-6 flex items-center gap-3 rounded-2xl bg-success/10 p-4 text-sm font-medium text-success">
+                            <CheckCircle2 className="size-5 shrink-0" /> This order has been paid.
+                        </div>
+                    ) : closed ? (
+                        <p className="mt-6 rounded-2xl bg-muted p-4 text-sm text-muted-foreground">This order was {order.status} and can no longer be paid.</p>
+                    ) : (
+                        <Button variant="brand" size="xl" className="mt-6 w-full rounded-xl" onClick={pay} loading={initPayment.isPending}>
+                            <Lock /> Pay {formatNaira(order.totalAmount)}
+                        </Button>
+                    )}
+
+                    <div className="mt-5 flex items-center justify-center gap-4 text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1"><ShieldCheck className="size-3.5" /> Secured by Flutterwave</span>
+                        <span className="flex items-center gap-1"><CreditCard className="size-3.5" /> Card · Transfer · USSD</span>
+                    </div>
+                    <p className="mt-4 text-center text-sm">
+                        <Link href={`/account/orders/${orderId}`} className="font-semibold text-primary hover:underline">View order details</Link>
+                    </p>
                 </div>
-            </div>
+            </Panel>
         </div>
     );
 }

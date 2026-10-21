@@ -1,458 +1,319 @@
+/* eslint-disable @next/next/no-img-element */
 'use client';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-export const dynamic = 'force-dynamic';
-
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { useCartStore } from '@/stores/cart-store';
-import { useAuth } from '@/app/context/auth-context';
+import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Input } from '@/Components/ui/input';
-import { FormControl, FormField, FormItem, FormLabel, FormMessage, Form } from '@/Components/ui/form';
-import { Button } from '@/Components/ui/button';
+import { motion } from 'framer-motion';
 import { toast } from 'sonner';
-import { useEffect, useState } from 'react';
-import { Loader2, ArrowLeft } from 'lucide-react';
+import { ArrowLeft, CreditCard, Lock, MapPin, ShieldCheck, ShoppingCart, Wallet } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { useCartSummary, useClearCart } from '@/hooks/useCart';
+import { useCreateOrder, useInitializePayment } from '@/hooks/usePayment';
 import { useUserAddresses } from '@/hooks/useUser';
-import { useCart } from '@/hooks/useCart';
-import { useCreateOrder } from '@/hooks/useOrders';
-import { useInitializePayment } from '@/hooks/usePayment';
+import { useWalletBalance } from '@/hooks/useWallet';
+import { userAPI } from '@/services/user';
+import { getErrorMessage } from '@/services/base';
+import { Button } from '@/Components/ui/button';
+import { Input } from '@/Components/ui/input';
+import { Textarea } from '@/Components/ui/textarea';
+import { EmptyState, PageHeader, Panel } from '@/Components/ui/kit';
+import { formatNaira, fullName } from '@/lib/format';
+import { handleImageError, resolveImageUrl } from '@/lib/images';
+import { cn } from '@/lib/utils';
 
-interface CartItem {
-    id: string;
-    name: string;
-    price: number;
-    quantity: number;
+const NIGERIAN_STATES = [
+    'Abia', 'Abuja (FCT)', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue', 'Borno', 'Cross River', 'Delta', 'Ebonyi',
+    'Edo', 'Ekiti', 'Enugu', 'Gombe', 'Imo', 'Jigawa', 'Kaduna', 'Kano', 'Katsina', 'Kebbi', 'Kogi', 'Kwara', 'Lagos', 'Nasarawa',
+    'Niger', 'Ogun', 'Ondo', 'Osun', 'Oyo', 'Plateau', 'Rivers', 'Sokoto', 'Taraba', 'Yobe', 'Zamfara',
+];
+
+type PaymentChoice = 'flutterwave' | 'wallet';
+
+function FieldLabel({ htmlFor, children }: { htmlFor: string; children: React.ReactNode }) {
+    return <label htmlFor={htmlFor} className="mb-1.5 block text-sm font-semibold">{children}</label>;
 }
-
-const formSchema = z.object({
-    fullName: z.string().min(2, 'Full name is required'),
-    email: z.string().email('Valid email is required'),
-    phone: z.string().min(11, 'Valid phone number is required (min 11 digits)').max(15, 'Phone number too long'),
-    address: z.string().min(5, 'Delivery address is required'),
-    city: z.string().min(2, 'City is required'),
-    state: z.string().min(2, 'State is required'),
-    zipCode: z.string().min(1, 'Zip code is required'),
-    additionalInfo: z.string().optional(),
-});
 
 export default function CheckoutPage() {
     const router = useRouter();
-    const { user, loading: authLoading, token } = useAuth();
-    const cart = useCartStore((s) => s.cart);
+    const { user } = useAuth();
+    const { lines, subtotal, deliveryFee, total, isLoading: cartLoading } = useCartSummary();
+    const { data: addressData } = useUserAddresses();
+    const { data: wallet } = useWalletBalance();
+    const createOrder = useCreateOrder();
+    const initPayment = useInitializePayment();
+    const clearCart = useClearCart();
 
-    const createOrderMutation = useCreateOrder();
-    const initializePaymentMutation = useInitializePayment();
+    const saved = addressData?.addresses?.[0];
+    const [form, setForm] = useState({ name: '', email: '', phone: '', address: '', city: '', state: 'Lagos', landmark: '', instructions: '' });
+    const [saveAddress, setSaveAddress] = useState(true);
+    const [payment, setPayment] = useState<PaymentChoice>('flutterwave');
+    const [errors, setErrors] = useState<Record<string, string>>({});
+    const [submitting, setSubmitting] = useState(false);
+    const [prefilled, setPrefilled] = useState(false);
 
-    const { data: cartData, isLoading: cartLoading } = useCart();
-    const { data: addresses, isLoading: addressesLoading } = useUserAddresses();
-    const cartQueryEnabled = !!token;
-
-    const [isProcessingPayment, setIsProcessingPayment] = useState(false);
-    const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
-
-    // Be tolerant of different shapes returned by the cart API and local store
-    const cartDataAny: any = cartData;
-    const storeCartAny: any = cart;
-
-    const rawItems: any[] = cartDataAny?.data?.items || cartDataAny?.items || storeCartAny || [];
-
-    const normalizedCartItems = (Array.isArray(rawItems) ? rawItems : [])
-        .filter((item: any) => item && (item.product || item.productId || item._id || item.id))
-        .map((item: any) => ({
-            id: item.product || item.productId?._id || item._id || item.id,
-            name: item.name || item.product?.name || item.productId?.name || '',
-            price: Number(item.price || item.product?.price || item.productId?.price || 0) || 0,
-            image: item.image || item.product?.image || item.productId?.images?.[0]?.url || '',
-            quantity: Number(item.quantity || item.qty || 1) || 1,
-        }));
-
-    const subtotal = normalizedCartItems.reduce((total: number, item: any) => total + item.price * item.quantity, 0);
-    const deliveryFee = subtotal >= 10000 ? 0 : 1500;
-    const totalAmount = subtotal + deliveryFee;
-
-    const form = useForm<z.infer<typeof formSchema>>({
-        resolver: zodResolver(formSchema),
-        defaultValues: {
-            fullName: user ? `${user.firstName} ${user.lastName}` : '',
-            email: user?.email || '',
-            phone: '',
-            address: '',
-            city: '',
-            state: '',
-            zipCode: '',
-            additionalInfo: '',
-        },
-    });
-
+    // Prefill once from the profile and saved address
     useEffect(() => {
-        if (authLoading || addressesLoading || (cartQueryEnabled && cartLoading)) return;
-        if (!user) { router.push('/login?redirect=/checkout'); return; }
+        if (prefilled || !user) return;
+        setForm((f) => ({
+            ...f,
+            name: fullName(user),
+            email: user.email || '',
+            phone: user.profile?.phone || '',
+            address: saved?.street || f.address,
+            city: saved?.city || f.city,
+            state: saved?.state || f.state,
+        }));
+        if (saved || user) setPrefilled(true);
+    }, [user, saved, prefilled]);
 
-        if (user && !form.formState.isDirty) {
-            const addressList = addresses?.addresses || addresses?.data || addresses || [];
-            const defaultAddress = Array.isArray(addressList) ? addressList.find((addr: any) => addr.isDefault) || addressList[0] : addressList;
-            form.reset({
-                ...form.getValues(),
-                fullName: `${user.firstName} ${user.lastName}`,
-                email: user?.email || '',
-                address: defaultAddress?.street || '',
-                city: defaultAddress?.city || '',
-                state: defaultAddress?.state || '',
-                zipCode: defaultAddress?.zipCode || '',
-            });
-            if (defaultAddress?._id) {
-                setSelectedAddressId(defaultAddress._id);
-            }
+    const walletBalance = Number(wallet?.availableBalance) || 0;
+    const walletCovers = walletBalance >= total && total > 0;
+
+    const set = (key: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+        setForm((f) => ({ ...f, [key]: e.target.value }));
+        if (errors[key]) setErrors((er) => ({ ...er, [key]: '' }));
+    };
+
+    const validate = () => {
+        const e: Record<string, string> = {};
+        if (form.name.trim().length < 2) e.name = 'Enter the name for this delivery';
+        if (!/^(\+?234|0)[789][01]\d{8}$/.test(form.phone.replace(/\s/g, ''))) e.phone = 'Enter a valid phone number for the marketer to call';
+        if (form.address.trim().length < 5) e.address = 'Enter your street address';
+        if (form.city.trim().length < 2) e.city = 'Enter your city or area';
+        if (!form.state) e.state = 'Choose your state';
+        setErrors(e);
+        return Object.keys(e).length === 0;
+    };
+
+    const placeOrder = async () => {
+        if (!validate()) {
+            toast.error('Please check your delivery details');
+            document.getElementById('delivery')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            return;
         }
-    }, [user, authLoading, router, form, addresses, addressesLoading, cartQueryEnabled, cartLoading]);
-
-    const handlePayment = async () => {
-        const isFormValid = await form.trigger();
-        if (!isFormValid) {
-            toast.error("Please fill in all delivery details.");
+        if (payment === 'wallet' && !walletCovers) {
+            toast.error('Your wallet balance does not cover this order');
             return;
         }
 
-        setIsProcessingPayment(true);
-
+        setSubmitting(true);
         try {
-            const deliveryInfo = form.getValues();
-
-            // Step 1: Create the order first
-            console.log('Cart Items:', normalizedCartItems);
-            console.log('Subtotal before calc:', subtotal, typeof subtotal);
-
-            const tax = Math.max(0, Math.round(Number(subtotal) * 0.1));
-            const shipping = Number(deliveryFee) || 0;
-            const totalAmount = Number(subtotal) + tax + shipping;
-
-            console.log('Calculated values:', { subtotal: Number(subtotal), tax, shipping, totalAmount });
-
-            if (!isFinite(totalAmount) || totalAmount <= 0) {
-                toast.error('Total amount must be greater than 0. Please check your cart.');
-                setIsProcessingPayment(false);
-                return;
+            // Keep the profile current so marketers can reach the customer
+            const phone = form.phone.replace(/\s/g, '');
+            if (phone !== (user?.profile?.phone || '')) {
+                userAPI.updateProfile({ phone }).catch(() => {});
+            }
+            if (saveAddress) {
+                userAPI.addAddress({ street: form.address.trim(), city: form.city.trim(), state: form.state, country: 'Nigeria' }).catch(() => {});
             }
 
-            const orderData: any = {
-                items: normalizedCartItems.map((item: any) => ({
-                    product: item.id,
-                    quantity: item.quantity,
-                    price: item.price
-                })),
-                subtotal: Number(subtotal),
-                tax: Number(tax),
-                shipping: Number(shipping),
-                totalAmount: Number(totalAmount),
+            const instructions = [form.instructions.trim(), `Contact: ${form.name.trim()} ${phone}`].filter(Boolean).join(' · ');
+            const order = await createOrder.mutateAsync({
+                items: lines.map((l) => ({ product: l.productId, quantity: l.quantity })),
                 shippingAddress: {
-                    address: deliveryInfo.address,
-                    city: deliveryInfo.city,
-                    state: deliveryInfo.state,
+                    address: form.address.trim(),
+                    city: form.city.trim(),
+                    state: form.state,
                     country: 'Nigeria',
-                    zipCode: deliveryInfo.zipCode || 'N/A'
+                    landmark: form.landmark.trim() || undefined,
+                    deliveryInstructions: instructions,
                 },
-                billingAddress: {
-                    address: deliveryInfo.address,
-                    city: deliveryInfo.city,
-                    state: deliveryInfo.state,
-                    country: 'Nigeria',
-                    zipCode: deliveryInfo.zipCode || 'N/A'
-                },
-                paymentMethod: 'card',
-                notes: deliveryInfo.additionalInfo || undefined,
-                userId: user?._id || user?.id,
-                buyer: user?._id || user?.id
-            };
+                paymentMethod: payment === 'wallet' ? 'wallet' : 'flutterwave',
+            });
+            const orderId: string = order?.data?.orderId;
 
-            console.log('Order Data being sent:', orderData);
-
-            const orderResponse = await createOrderMutation.mutateAsync(orderData);
-            console.log('Order response:', orderResponse);
-            const createdOrderId =
-                orderResponse?.data?.orderId ||
-                orderResponse?.data?._id ||
-                orderResponse?.order?._id ||
-                orderResponse?._id;
-
-            if (!createdOrderId) {
-                toast.error("Failed to create order. Please try again.");
-                setIsProcessingPayment(false);
+            if (payment === 'wallet') {
+                await clearCart.mutateAsync().catch(() => {});
+                toast.success('Order placed and paid from your wallet!');
+                router.push(`/account/orders/${orderId}?placed=1`);
                 return;
             }
 
-            toast.success("Order created successfully!");
-
-            // Step 2: Now initialize payment with the created order ID
-            const paymentPayload = {
-                orderId: createdOrderId,
-                paymentData: {
-                    amount: totalAmount,
-                    email: deliveryInfo.email || user?.email || '',
-                    phone: deliveryInfo.phone,
-                    name: deliveryInfo.fullName,
-                    items: normalizedCartItems.map((item: any) => ({
-                        product: item.id,
-                        quantity: item.quantity,
-                        price: item.price
-                    })),
-                    shippingAddress: {
-                        address: deliveryInfo.address,
-                        city: deliveryInfo.city,
-                        state: deliveryInfo.state,
-                        country: 'Nigeria'
-                    },
-                    customerInfo: {
-                        name: deliveryInfo.fullName,
-                        phone: deliveryInfo.phone,
-                        email: deliveryInfo.email || user?.email || ''
-                    },
-                    paymentMethod: 'card',
-                    totalAmount: totalAmount
-                }
-            };
-
-            console.log('Payment payload being sent:', paymentPayload);
             try {
-                const paymentResponse = await initializePaymentMutation.mutateAsync(paymentPayload);
-                console.log('Payment init response:', paymentResponse);
-
-                if (paymentResponse?.data?.link || paymentResponse?.link || paymentResponse?.paymentUrl || paymentResponse?.data?.paymentUrl) {
-                    const redirectUrl = paymentResponse.data?.link || paymentResponse.link || paymentResponse.paymentUrl || paymentResponse.data?.paymentUrl;
-                    window.location.href = redirectUrl;
-                    return;
-                }
-
-                // If backend returned success:false with message
-                const backendMessage = paymentResponse?.data?.message || paymentResponse?.message;
-                if (backendMessage) {
-                    toast.error(backendMessage);
-                } else {
-                    toast.error('Unable to generate payment link.');
-                }
-            } catch (err: any) {
-                console.error('Initialize payment error:', err);
-                const status = err?.response?.status;
-                const data = err?.response?.data;
-                // Surface detailed backend message if available
-                const message = data?.message || data?.error || err.message || 'Failed to initialize payment';
-                toast.error(`${message}${status ? ` (${status})` : ''}`);
-                setIsProcessingPayment(false);
-                return;
+                const init = await initPayment.mutateAsync({ orderId, customer: { email: form.email || user?.email, phone, name: form.name.trim() } });
+                const url = init?.data?.paymentUrl || init?.data?.link;
+                if (!url) throw new Error('No payment link returned');
+                window.location.href = url;
+            } catch (err) {
+                // The order exists; let the customer pay for it from their orders
+                toast.error(getErrorMessage(err, 'We could not open the payment page. You can pay from your orders.'));
+                router.push(`/account/orders/${orderId}`);
             }
-
-        } catch (error: any) {
-            toast.error(error.response?.data?.message || "Payment process failed. Please try again.");
-        } finally {
-            setIsProcessingPayment(false);
+        } catch (err) {
+            toast.error(getErrorMessage(err, 'Could not place your order. Please try again.'));
+            setSubmitting(false);
         }
     };
 
-    if (authLoading || (cartQueryEnabled && cartLoading)) {
+    const summary = useMemo(() => lines.slice(0, 6), [lines]);
+
+    if (cartLoading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-100">
-                <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
+            <div className="grid gap-6 lg:grid-cols-[1fr_400px]">
+                <div className="skeleton-shimmer h-[520px] rounded-3xl" />
+                <div className="skeleton-shimmer h-96 rounded-3xl" />
             </div>
         );
     }
 
-    // if there are no items, prompt user to go back
-    if (normalizedCartItems.length === 0) {
+    if (lines.length === 0) {
         return (
-            <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 px-4">
-                <h2 className="text-2xl font-bold text-gray-800 mb-4">Your cart is empty</h2>
-                <Button onClick={() => router.push('/cart')} className="bg-blue-600 hover:bg-blue-700 text-white">
-                    Go to Cart
-                </Button>
-            </div>
+            <Panel className="mx-auto max-w-xl">
+                <EmptyState icon={ShoppingCart} title="Your cart is empty" description="Add products to your cart before checking out." action={{ label: 'Browse products', href: '/products' }} />
+            </Panel>
         );
     }
+
+    const inputClass = (key: string) => cn('h-12 rounded-xl', errors[key] && 'border-destructive focus-visible:ring-destructive/20');
 
     return (
-        <div className="app-content min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8 px-4 sm:px-6 lg:px-8 pb-16">
-            <div className="max-w-7xl mx-auto">
-                <div className="mb-6">
-                    <Button onClick={() => router.back()} variant="ghost" className="flex items-center gap-2 text-gray-600 hover:text-gray-800 hover:bg-white/50 transition-all duration-200">
-                        <ArrowLeft className="h-4 w-4" /> Back to Cart
-                    </Button>
-                </div>
+        <div className="pb-24 lg:pb-0">
+            <Link href="/cart" className="mb-4 inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground">
+                <ArrowLeft className="size-4" /> Back to cart
+            </Link>
+            <PageHeader title="Checkout" description="Confirm where we should deliver and how you'd like to pay." />
 
-                <div className="flex flex-col lg:flex-row gap-6 lg:gap-10">
-                    <div className="lg:w-2/3 space-y-6">
-                        <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8 border border-gray-100">
-                            <div className="flex flex-col gap-4 mb-8">
-                                <div className="flex items-center gap-4">
-                                    <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">1</div>
-                                    <h2 className="text-xl md:text-2xl font-bold text-gray-800">Delivery Information</h2>
-                                </div>
-                                <p className="text-gray-600">Provide the address where you'd like your order delivered. You can choose from a saved address or enter a new one.</p>
+            <div className="grid gap-6 lg:grid-cols-[1fr_400px] lg:items-start">
+                <div className="space-y-6">
+                    {/* Delivery */}
+                    <Panel id="delivery" className="animate-fade-in scroll-mt-24 p-5 sm:p-7">
+                        <div className="mb-6 flex items-center gap-3">
+                            <span className="grid size-10 place-items-center rounded-xl bg-accent text-primary"><MapPin className="size-5" /></span>
+                            <div>
+                                <h2 className="text-lg font-bold">Delivery details</h2>
+                                <p className="text-sm text-muted-foreground">Your marketer will use these to reach you.</p>
                             </div>
+                        </div>
 
-                            {/* saved address selector if user has any */}
-                            {addresses && Array.isArray(addresses?.addresses || addresses?.data) && (addresses?.addresses || addresses?.data).length > 0 && (
-                                <div className="mb-6">
-                                    <select
-                                        className="w-full border-gray-200 rounded-xl p-2"
-                                        value={selectedAddressId || ''}
-                                        onChange={(e) => {
-                                            const id = e.target.value || null;
-                                            setSelectedAddressId(id);
-                                            if (id) {
-                                                const list = addresses?.addresses || addresses?.data || [];
-                                                const found = (Array.isArray(list) ? list : []).find((a: any) => a._id === id);
-                                                if (found) {
-                                                    form.setValue('address', found.street || '');
-                                                    form.setValue('city', found.city || '');
-                                                    form.setValue('state', found.state || '');
-                                                    form.setValue('zipCode', found.zipCode || '');
-                                                }
-                                            }
-                                        }}
+                        <div className="grid gap-4 sm:grid-cols-2">
+                            <div>
+                                <FieldLabel htmlFor="name">Full name</FieldLabel>
+                                <Input id="name" autoComplete="name" value={form.name} onChange={set('name')} className={inputClass('name')} />
+                                {errors.name && <p className="mt-1 text-xs text-destructive">{errors.name}</p>}
+                            </div>
+                            <div>
+                                <FieldLabel htmlFor="phone">Phone number</FieldLabel>
+                                <Input id="phone" type="tel" inputMode="tel" autoComplete="tel" placeholder="0803 123 4567" value={form.phone} onChange={set('phone')} className={inputClass('phone')} />
+                                {errors.phone && <p className="mt-1 text-xs text-destructive">{errors.phone}</p>}
+                            </div>
+                            <div className="sm:col-span-2">
+                                <FieldLabel htmlFor="address">Street address</FieldLabel>
+                                <Input id="address" autoComplete="street-address" placeholder="House number and street" value={form.address} onChange={set('address')} className={inputClass('address')} />
+                                {errors.address && <p className="mt-1 text-xs text-destructive">{errors.address}</p>}
+                            </div>
+                            <div>
+                                <FieldLabel htmlFor="city">City / area</FieldLabel>
+                                <Input id="city" autoComplete="address-level2" placeholder="e.g. Ikeja" value={form.city} onChange={set('city')} className={inputClass('city')} />
+                                {errors.city && <p className="mt-1 text-xs text-destructive">{errors.city}</p>}
+                            </div>
+                            <div>
+                                <FieldLabel htmlFor="state">State</FieldLabel>
+                                <select id="state" value={form.state} onChange={set('state')} className="h-12 w-full rounded-xl border border-input bg-card px-3.5 text-sm shadow-xs outline-none focus:border-ring focus:ring-4 focus:ring-ring/20">
+                                    {NIGERIAN_STATES.map((s) => <option key={s} value={s}>{s}</option>)}
+                                </select>
+                            </div>
+                            <div className="sm:col-span-2">
+                                <FieldLabel htmlFor="landmark">Nearest landmark <span className="font-normal text-muted-foreground">(optional)</span></FieldLabel>
+                                <Input id="landmark" placeholder="e.g. Opposite the filling station" value={form.landmark} onChange={set('landmark')} className="h-12 rounded-xl" />
+                            </div>
+                            <div className="sm:col-span-2">
+                                <FieldLabel htmlFor="instructions">Delivery instructions <span className="font-normal text-muted-foreground">(optional)</span></FieldLabel>
+                                <Textarea id="instructions" rows={2} maxLength={300} placeholder="Gate code, best time to deliver…" value={form.instructions} onChange={set('instructions')} className="rounded-xl" />
+                            </div>
+                        </div>
+
+                        <label className="mt-5 flex cursor-pointer items-center gap-3 text-sm">
+                            <input type="checkbox" checked={saveAddress} onChange={(e) => setSaveAddress(e.target.checked)} className="size-4 rounded accent-[var(--primary)]" />
+                            Save this address for next time
+                        </label>
+                    </Panel>
+
+                    {/* Payment */}
+                    <Panel className="animate-fade-in p-5 sm:p-7" style={{ animationDelay: '60ms' }}>
+                        <div className="mb-6 flex items-center gap-3">
+                            <span className="grid size-10 place-items-center rounded-xl bg-accent text-primary"><CreditCard className="size-5" /></span>
+                            <div>
+                                <h2 className="text-lg font-bold">Payment</h2>
+                                <p className="text-sm text-muted-foreground">Choose how you&apos;d like to pay.</p>
+                            </div>
+                        </div>
+
+                        <div className="grid gap-3 sm:grid-cols-2" role="radiogroup" aria-label="Payment method">
+                            {([
+                                { value: 'flutterwave', icon: CreditCard, title: 'Card, transfer or USSD', text: 'Pay securely with Flutterwave', disabled: false },
+                                { value: 'wallet', icon: Wallet, title: 'Wallet balance', text: walletCovers ? `${formatNaira(walletBalance)} available` : `${formatNaira(walletBalance)} available · not enough`, disabled: !walletCovers },
+                            ] as const).map((option) => {
+                                const active = payment === option.value;
+                                const Icon = option.icon;
+                                return (
+                                    <button
+                                        key={option.value}
+                                        type="button"
+                                        role="radio"
+                                        aria-checked={active}
+                                        disabled={option.disabled}
+                                        onClick={() => setPayment(option.value)}
+                                        className={cn(
+                                            'relative flex items-start gap-3 rounded-2xl border-2 p-4 text-left transition-[border-color,background-color,box-shadow] duration-200 disabled:cursor-not-allowed disabled:opacity-55',
+                                            active ? 'border-primary bg-accent/60 shadow-brand' : 'border-border hover:border-brand-500/40'
+                                        )}
                                     >
-                                        <option value="">-- Enter a new address --</option>
-                                        {(addresses?.addresses || addresses?.data || []).map((addr: any) => (
-                                            <option key={addr._id} value={addr._id}>{addr.street}, {addr.city}, {addr.state}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                            )}
-
-                            <Form {...form}>
-                                <form className="space-y-6">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <FormField control={form.control} name="fullName" render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel className="text-gray-700 font-semibold">Full Name</FormLabel>
-                                                <FormControl><Input placeholder="Enter your full name" className="rounded-xl border-gray-200 focus:ring-blue-500" {...field} /></FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )} />
-                                        <FormField control={form.control} name="email" render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel className="text-gray-700 font-semibold">Email Address</FormLabel>
-                                                <FormControl><Input type="email" placeholder="you@example.com" className="rounded-xl border-gray-200" {...field} /></FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )} />
-                                        <FormField control={form.control} name="phone" render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel className="text-gray-700 font-semibold">Phone Number</FormLabel>
-                                                <FormControl><Input placeholder="e.g. 08012345678" className="rounded-xl border-gray-200" {...field} /></FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )} />
-                                    </div>
-
-                                    <FormField control={form.control} name="address" render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel className="text-gray-700 font-semibold">Delivery Address</FormLabel>
-                                            <FormControl><Input placeholder="House number and street name" className="rounded-xl border-gray-200" {...field} /></FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )} />
-
-                                    <div className="grid grid-cols-2 gap-6">
-                                        <FormField control={form.control} name="city" render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel className="text-gray-700 font-semibold">City</FormLabel>
-                                                <FormControl><Input className="rounded-xl border-gray-200" {...field} /></FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )} />
-                                        <FormField control={form.control} name="state" render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel className="text-gray-700 font-semibold">State</FormLabel>
-                                                <FormControl><Input className="rounded-xl border-gray-200" {...field} /></FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )} />
-                                    </div>
-
-                                    <FormField control={form.control} name="zipCode" render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel className="text-gray-700 font-semibold">Zip Code</FormLabel>
-                                            <FormControl><Input placeholder="e.g. 100001" className="rounded-xl border-gray-200" {...field} /></FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )} />
-
-                                    <FormField control={form.control} name="additionalInfo" render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel className="text-gray-700 font-semibold">Additional Info</FormLabel>
-                                            <FormControl><Input placeholder="Apt, suite, landmark (optional)" className="rounded-xl border-gray-200" {...field} /></FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )} />
-                                </form>
-                            </Form>
+                                        <span className={cn('grid size-10 shrink-0 place-items-center rounded-xl', active ? 'bg-primary text-white' : 'bg-muted text-muted-foreground')}>
+                                            <Icon className="size-5" />
+                                        </span>
+                                        <span>
+                                            <span className="block font-semibold">{option.title}</span>
+                                            <span className="block text-sm text-muted-foreground">{option.text}</span>
+                                        </span>
+                                        <span className={cn('absolute right-4 top-4 grid size-5 place-items-center rounded-full border-2', active ? 'border-primary' : 'border-border')}>
+                                            {active && <motion.span layoutId="pay-dot" className="size-2.5 rounded-full bg-primary" />}
+                                        </span>
+                                    </button>
+                                );
+                            })}
                         </div>
-
-                        <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8 border border-gray-100">
-                            <div className="flex items-center gap-4 mb-8">
-                                <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">2</div>
-                                <h2 className="text-xl md:text-2xl font-bold text-gray-800">Payment Method</h2>
-                            </div>
-
-                            <div className="p-8 border-2 border-green-200 rounded-xl bg-green-50/50 flex flex-col items-center text-center">
-                                <div className="h-16 w-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-                                    <span className="text-3xl">💳</span>
-                                </div>
-                                <h3 className="font-bold text-xl text-green-800 mb-2">Secure Checkout</h3>
-                                <p className="text-green-600 mb-6 max-w-sm">You will be redirected to the secure Flutterwave gateway to complete your payment.</p>
-
-                                <Button
-                                    onClick={handlePayment}
-                                    disabled={isProcessingPayment}
-                                    className="w-full max-w-md bg-green-600 hover:bg-green-700 text-white font-bold py-6 rounded-xl shadow-lg hover:shadow-green-200/50 transition-all duration-300 text-lg"
-                                >
-                                    {isProcessingPayment ? (
-                                        <span className="flex items-center gap-2"><Loader2 className="h-5 w-5 animate-spin" /> Initializing Payment...</span>
-                                    ) : (
-                                        'Pay Now'
-                                    )}
-                                </Button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="lg:w-1/3">
-                        <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8 border border-gray-100 sticky top-8">
-                            <h2 className="text-xl font-bold text-gray-800 mb-6 pb-4 border-b">Order Summary</h2>
-                            <div className="max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                                {normalizedCartItems.map((item: any) => (
-                                    <div key={item.id} className="flex gap-4 py-4 border-b border-gray-50 last:border-0">
-                                        <div className="relative h-16 w-16 flex-shrink-0 bg-gray-50 rounded-lg overflow-hidden border border-gray-100">
-                                            <img src={item.image} alt={item.name} className="object-cover w-full h-full" />
-                                            <span className="absolute -top-2 -right-2 bg-blue-600 text-white text-xs font-bold h-5 w-5 rounded-full flex items-center justify-center border-2 border-white">{item.quantity}</span>
-                                        </div>
-                                        <div className="flex-1">
-                                            <h4 className="text-sm font-semibold text-gray-800 line-clamp-1">{item.name}</h4>
-                                            <p className="text-blue-600 font-bold">₦{item.price.toLocaleString()}</p>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-
-                            <div className="border-t border-gray-200 pt-6 space-y-4">
-                                <div className="flex justify-between items-center py-2">
-                                    <span className="text-gray-600">Subtotal</span>
-                                    <span className="font-semibold text-gray-800">₦{subtotal.toLocaleString()}</span>
-                                </div>
-                                <div className="flex justify-between items-center py-2">
-                                    <span className="text-gray-600">Delivery Fee</span>
-                                    <span className="font-semibold text-gray-800">₦{deliveryFee.toLocaleString()}</span>
-                                </div>
-                                <div className="flex justify-between items-center py-4 px-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border-2 border-purple-200">
-                                    <span className="font-bold text-xl text-gray-800">Total</span>
-                                    <span className="font-bold text-2xl text-purple-700">₦{totalAmount.toLocaleString()}</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    </Panel>
                 </div>
+
+                {/* Summary */}
+                <Panel className="animate-fade-in p-5 sm:p-6 lg:sticky lg:top-24" style={{ animationDelay: '100ms' }}>
+                    <h2 className="text-lg font-bold">Order summary</h2>
+                    <ul className="mt-4 space-y-3">
+                        {summary.map((line) => (
+                            <li key={line.productId} className="flex items-center gap-3">
+                                <span className="relative size-14 shrink-0 overflow-hidden rounded-xl bg-muted">
+                                    <img src={resolveImageUrl(line.image)} alt="" onError={handleImageError} className="h-full w-full object-cover" />
+                                    <span className="absolute -right-1 -top-1 grid min-w-5 place-items-center rounded-full bg-primary px-1 text-[11px] font-bold text-white">{line.quantity}</span>
+                                </span>
+                                <span className="min-w-0 flex-1 truncate text-sm font-medium">{line.name}</span>
+                                <span className="text-sm font-semibold tabular-nums">{formatNaira(line.lineTotal)}</span>
+                            </li>
+                        ))}
+                        {lines.length > summary.length && <li className="text-xs text-muted-foreground">+ {lines.length - summary.length} more</li>}
+                    </ul>
+                    <dl className="mt-5 space-y-3 border-t border-border/70 pt-5 text-sm">
+                        <div className="flex justify-between"><dt className="text-muted-foreground">Subtotal</dt><dd className="font-semibold tabular-nums">{formatNaira(subtotal)}</dd></div>
+                        <div className="flex justify-between"><dt className="text-muted-foreground">Delivery</dt><dd className="font-semibold tabular-nums">{deliveryFee === 0 ? <span className="text-success">Free</span> : formatNaira(deliveryFee)}</dd></div>
+                        <div className="flex items-center justify-between border-t border-border/70 pt-4">
+                            <dt className="text-base font-bold">Total to pay</dt>
+                            <dd className="text-2xl font-extrabold tracking-tight tabular-nums">{formatNaira(total)}</dd>
+                        </div>
+                    </dl>
+                    <Button variant="brand" size="xl" className="mt-6 hidden w-full rounded-xl lg:flex" onClick={placeOrder} loading={submitting}>
+                        <Lock /> {payment === 'wallet' ? `Pay ${formatNaira(total)} from wallet` : `Pay ${formatNaira(total)}`}
+                    </Button>
+                    <p className="mt-4 flex items-center justify-center gap-1.5 text-center text-xs text-muted-foreground">
+                        <ShieldCheck className="size-3.5 shrink-0" /> Your reward is paid into your wallet when you confirm delivery.
+                    </p>
+                </Panel>
+            </div>
+
+            {/* Mobile pay bar above the bottom navigation */}
+            <div className="glass fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-20 border-t border-border/70 px-4 py-3 lg:hidden">
+                <Button variant="brand" size="lg" className="w-full rounded-xl" onClick={placeOrder} loading={submitting}>
+                    <Lock /> {payment === 'wallet' ? `Pay ${formatNaira(total)} from wallet` : `Pay ${formatNaira(total)}`}
+                </Button>
             </div>
         </div>
     );

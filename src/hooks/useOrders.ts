@@ -99,6 +99,8 @@ export const useConfirmOrderReceipt = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
       queryClient.invalidateQueries({ queryKey: ['order'] });
+      // The reward lands in the wallet
+      queryClient.invalidateQueries({ queryKey: ['wallet'] });
     },
   });
 };

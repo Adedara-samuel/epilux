@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server';
 
 // Pages that need a signed-in user. The backend still authorizes every API
 // call; this only avoids rendering protected pages for signed-out visitors.
-const PROTECTED_PATHS = ['/admin', '/checkout', '/products', '/account', '/cart', '/affiliate', '/marketer', '/settings'];
+const PROTECTED_PATHS = ['/admin', '/checkout', '/products', '/account', '/cart', '/affiliate', '/marketer', '/settings', '/payment'];
 
 // Decode the JWT payload (no verification; that happens on the backend)
 const readTokenPayload = (token: string): { exp?: number; role?: string } | null => {
@@ -61,5 +61,6 @@ export const config = {
         '/admin/:path*',
         '/marketer/:path*',
         '/settings/:path*',
+        '/payment/:path*',
     ],
 };
