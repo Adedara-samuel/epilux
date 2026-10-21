@@ -90,14 +90,15 @@ export const affiliateAPI = {
         return response.data;
     },
 
-    // Update affiliate profile
-    // FIX: Added 'token: string' as the first argument
+    // Update affiliate profile. Only name and phone are editable; payout bank
+    // details are supplied with each withdrawal request.
     updateProfile: async (
-        token: string, 
-        profileData: Partial<AffiliateProfile>
+        token: string,
+        profileData: Partial<AffiliateProfile> & { firstName?: string; lastName?: string }
     ): Promise<{ profile: AffiliateProfile }> => {
-        const response = await api.patch('/api/affiliate/profile', profileData, { headers: { Authorization: `Bearer ${token}` } });
-        return response.data;
+        const { firstName, lastName, phone } = profileData;
+        const response = await api.put('/api/users/me', { firstName, lastName, phone }, { headers: { Authorization: `Bearer ${token}` } });
+        return { profile: response.data?.data };
     },
 
     // Get affiliate dashboard
@@ -110,7 +111,7 @@ export const affiliateAPI = {
     // Get affiliate commissions
     // FIX: Added 'token: string' as the first argument
     getCommissions: async (token: string): Promise<{ commissions: Commission[]; total: number }> => {
-        const response = await api.get('/api/commission/admin/commissions/me', { headers: { Authorization: `Bearer ${token}` } });
+        const response = await api.get('/api/affiliate/commissions', { headers: { Authorization: `Bearer ${token}` } });
         return response.data;
     },
 
@@ -134,7 +135,7 @@ export const affiliateAPI = {
         token: string, 
         saleData: Omit<Sale, 'id' | 'createdAt' | 'updatedAt' | 'date' | 'type'> // Removed 'date' and 'type' for cleaner Omit
     ): Promise<{ sale: Sale }> => {
-        const response = await api.post('/api/affiliate/sales', saleData, { headers: { Authorization: `Bearer ${token}` } });
+        const response = await api.post('/api/affiliate/record-sale', saleData, { headers: { Authorization: `Bearer ${token}` } });
         return response.data;
     },
 
