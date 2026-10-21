@@ -15,6 +15,9 @@ import { getErrorMessage } from '@/services/base';
 import { Button } from '@/Components/ui/button';
 import { Textarea } from '@/Components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/Components/ui/dialog';
+import {
+    AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/Components/ui/alert-dialog';
 import { EmptyState, OrderStatusPill, Panel, PanelHeader } from '@/Components/ui/kit';
 import { formatDateTime, formatNaira } from '@/lib/format';
 import { handleImageError, productImageUrl } from '@/lib/images';
@@ -312,31 +315,36 @@ function OrderDetail() {
             </div>
 
             {/* Confirm delivery */}
-            <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-                <DialogContent className="max-w-md rounded-3xl">
-                    <DialogHeader><DialogTitle>Confirm you received this order?</DialogTitle></DialogHeader>
-                    <p className="text-sm text-muted-foreground">
-                        Only confirm once you have all the items. This completes the order
-                        {reward > 0 ? <> and pays <span className="font-semibold text-foreground">{formatNaira(reward)}</span> into your wallet</> : null}.
-                    </p>
-                    <div className="mt-2 flex gap-2">
-                        <Button variant="outline" className="flex-1" onClick={() => setConfirmOpen(false)}>Not yet</Button>
-                        <Button variant="success" className="flex-1" onClick={doConfirm} loading={confirm.isPending}><Check /> Yes, I received it</Button>
-                    </div>
-                </DialogContent>
-            </Dialog>
+            <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Confirm you received this order?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Only confirm once you have all the items. This completes the order
+                            {reward > 0 ? <> and pays <span className="font-semibold text-foreground">{formatNaira(reward)}</span> into your wallet</> : null}.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Not yet</AlertDialogCancel>
+                        {/* A plain Button so the dialog stays open while the request runs */}
+                        <Button variant="success" onClick={doConfirm} loading={confirm.isPending}><Check /> Yes, I received it</Button>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
 
             {/* Cancel */}
-            <Dialog open={cancelOpen} onOpenChange={setCancelOpen}>
-                <DialogContent className="max-w-md rounded-3xl">
-                    <DialogHeader><DialogTitle>Cancel this order?</DialogTitle></DialogHeader>
-                    <p className="text-sm text-muted-foreground">The order will be cancelled and the items released. This can&apos;t be undone.</p>
-                    <div className="mt-2 flex gap-2">
-                        <Button variant="outline" className="flex-1" onClick={() => setCancelOpen(false)}>Keep order</Button>
-                        <Button variant="destructive" className="flex-1" onClick={doCancel} loading={cancel.isPending}>Cancel order</Button>
-                    </div>
-                </DialogContent>
-            </Dialog>
+            <AlertDialog open={cancelOpen} onOpenChange={setCancelOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Cancel this order?</AlertDialogTitle>
+                        <AlertDialogDescription>The order will be cancelled and the items released. This can&apos;t be undone.</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Keep order</AlertDialogCancel>
+                        <Button variant="destructive" onClick={doCancel} loading={cancel.isPending}>Cancel order</Button>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
 
             <RateDeliveryDialog open={rateOpen} onOpenChange={setRateOpen} orderId={id} />
         </div>

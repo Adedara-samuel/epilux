@@ -1,38 +1,45 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { api, tokenManager } from './base';
+// src/services/wallet.ts
+import { api } from './base';
 
 export interface WalletBalance {
   availableBalance: number;
+  lockedAmount: number;
+  totalBalance?: number;
   totalEarned: number;
   totalWithdrawn: number;
+  currency?: string;
 }
 
 export interface WalletTransaction {
-  id: string;
-  type: 'credit' | 'debit';
+  _id: string;
+  type: 'credit' | 'debit' | 'withdrawal' | 'refund' | 'commission';
   amount: number;
+  status: 'pending' | 'completed' | 'failed' | 'cancelled';
+  reference: string;
   description: string;
-  date: string;
-  status: 'pending' | 'completed' | 'failed';
+  metadata?: {
+    orderId?: string;
+    orderNumber?: string;
+    bankDetails?: { bankName?: string; accountNumber?: string; accountName?: string };
+    adminNote?: string;
+  };
+  createdAt: string;
+}
+
+export interface WithdrawalWindow {
+  isOpen: boolean;
+  startDay: number;
+  endDay: number;
+  nextOpensAt: string | null;
+  closesAt: string | null;
 }
 
 export interface WithdrawalRequest {
   amount: number;
   bankName: string;
+  bankCode?: string;
   accountNumber: string;
   accountName: string;
-}
-
-export interface Withdrawal {
-  id: string;
-  amount: number;
-  bankName: string;
-  accountNumber: string;
-  accountName: string;
-  status: 'pending' | 'approved' | 'rejected' | 'processed';
-  requestedAt: string;
-  processedAt?: string;
-  adminNote?: string;
 }
 
 export const walletAPI = {
@@ -42,34 +49,32 @@ export const walletAPI = {
     return response.data?.data ?? response.data;
   },
 
-  // Get wallet transactions
-  getTransactions: async (): Promise<{ transactions: WalletTransaction[]; total: number }> => {
-    const token = tokenManager.getToken();
-    if (!token) {
-      throw new Error('No authentication token found');
-    }
-    const response = await api.get('/api/wallet/transactions');
+  // Wallet history, newest first
+  getTransactions: async (params?: { page?: number; limit?: number; type?: string }): Promise<{ data: WalletTransaction[]; pagination?: { total: number; page: number; pages: number } }> => {
+    const response = await api.get('/api/wallet/transactions', { params: { limit: 50, ...params } });
     return response.data;
   },
 
-  // Request withdrawal
-  requestWithdrawal: async (data: WithdrawalRequest): Promise<{ withdrawal: Withdrawal; message: string }> => {
-    const token = tokenManager.getToken();
-    if (!token) {
-      throw new Error('No authentication token found');
-    }
+  // When withdrawals are open (admin-configured monthly window)
+  getWithdrawalWindow: async (): Promise<WithdrawalWindow> => {
+    const response = await api.get('/api/wallet/withdrawal-window');
+    return response.data?.data;
+  },
+
+  // Request withdrawal to a bank account; funds are held until an admin pays it
+  requestWithdrawal: async (data: WithdrawalRequest) => {
     const response = await api.post('/api/wallet/withdraw', data);
     return response.data;
   },
 
   // Admin: Get all pending withdrawals
-  getPendingWithdrawals: async (): Promise<{ withdrawals: Withdrawal[]; total: number }> => {
+  getPendingWithdrawals: async () => {
     const response = await api.get('/api/wallet/withdrawals/pending');
     return response.data;
   },
 
   // Admin: Process withdrawal (approve/reject)
-  processWithdrawal: async (id: string, action: 'approve' | 'reject', adminNote?: string): Promise<{ withdrawal: Withdrawal; message: string }> => {
+  processWithdrawal: async (id: string, action: 'approve' | 'reject', adminNote?: string) => {
     const response = await api.post(`/api/wallet/withdraw/${id}/process`, { action, adminNote });
     return response.data;
   },

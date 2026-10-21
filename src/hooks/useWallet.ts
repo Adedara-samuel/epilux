@@ -1,32 +1,37 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { walletAPI, WalletBalance, WalletTransaction, WithdrawalRequest, Withdrawal } from '@/services/wallet';
+import { walletAPI, type WithdrawalRequest } from '@/services/wallet';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from './useAuth';
 
 export const useWalletBalance = () => {
-  const { user, token } = useAuth();
+  const { token } = useAuth();
   return useQuery({
     queryKey: ['wallet', 'balance'],
     queryFn: () => walletAPI.getBalance(),
     enabled: !!token,
-    retry: 1,
   });
 };
 
 export const useWalletTransactions = () => {
-  const { user, token } = useAuth();
+  const { token } = useAuth();
   return useQuery({
     queryKey: ['wallet', 'transactions'],
     queryFn: () => walletAPI.getTransactions(),
     enabled: !!token,
-    retry: 1,
+  });
+};
+
+export const useWithdrawalWindow = () => {
+  const { token } = useAuth();
+  return useQuery({
+    queryKey: ['wallet', 'withdrawal-window'],
+    queryFn: () => walletAPI.getWithdrawalWindow(),
+    enabled: !!token,
+    staleTime: 5 * 60_000,
   });
 };
 
 export const useRequestWithdrawal = () => {
   const queryClient = useQueryClient();
-  const { user, token } = useAuth();
-
   return useMutation({
     mutationFn: (data: WithdrawalRequest) => walletAPI.requestWithdrawal(data),
     onSuccess: () => {
@@ -34,8 +39,6 @@ export const useRequestWithdrawal = () => {
     },
   });
 };
-
-// Admin hooks remain unchanged
 
 // Admin hooks
 export const usePendingWithdrawals = () => {
@@ -49,8 +52,6 @@ export const usePendingWithdrawals = () => {
 
 export const useProcessWithdrawal = () => {
   const queryClient = useQueryClient();
-  const { user } = useAuth();
-
   return useMutation({
     mutationFn: ({ id, action, adminNote }: { id: string; action: 'approve' | 'reject'; adminNote?: string }) =>
       walletAPI.processWithdrawal(id, action, adminNote),
