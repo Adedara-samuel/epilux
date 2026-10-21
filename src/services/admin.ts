@@ -73,9 +73,9 @@ export const adminAffiliatesAPI = {
     return response.data;
   },
 
-  // Create commission
-  createCommission: async (id: string, commissionData: any) => {
-    const response = await api.post(`/api/admin/affiliates/${id}/commission`, commissionData);
+  // Create commission for an affiliate
+  createCommission: async (id: string, commissionData: { amount: number; order?: string; referredUser?: string; note?: string }) => {
+    const response = await api.post(`/api/admin/affiliates/${id}/commissions`, commissionData);
     return response.data;
   },
 };
@@ -136,57 +136,45 @@ export const adminDashboardAPI = {
   },
 };
 
-// Admin Commission Rates API
-export const adminCommissionRatesAPI = {
-  // Get all commission rates
-  getCommissionRates: async (params?: { page?: number; limit?: number; category?: string; isActive?: boolean }) => {
+// Commission settings are a single global record on the backend:
+// { commissionRate, excludedRoles, withdrawalWindow: { startDay, endDay } }
+export interface CommissionSettings {
+  commissionRate: number;
+  excludedRoles: string[];
+  withdrawalWindow?: { startDay: number; endDay: number };
+  updatedAt?: string;
+}
+
+export type CommissionRecordStatus = 'pending' | 'approved' | 'paid' | 'cancelled';
+
+export const adminCommissionSettingsAPI = {
+  // Get the global commission settings
+  getSettings: async (): Promise<{ success: boolean; data: CommissionSettings }> => {
+    const response = await api.get('/api/commission/admin/settings');
+    return response.data;
+  },
+
+  // Update the global commission rate and excluded roles
+  updateSettings: async (data: { rate: number; excludedRoles?: string[] }) => {
+    const response = await api.put('/api/commission/admin/settings', data);
+    return response.data;
+  },
+
+  // Update the withdrawal window (day of month range)
+  updateWithdrawalWindow: async (data: { rate: number; startDay: number; endDay: number }) => {
+    const response = await api.post('/api/admin/commission-rates', data);
+    return response.data;
+  },
+
+  // List commission records with filters
+  getCommissionRecords: async (params?: { page?: number; limit?: number; status?: CommissionRecordStatus; userId?: string; startDate?: string; endDate?: string }) => {
     const response = await api.get('/api/commission/admin/commissions', { params });
     return response.data;
   },
 
-  // Get single commission rate
-  getCommissionRate: async (id: string) => {
-    const response = await api.get(`/api/commission/admin/commissions/${id}`);
-    return response.data;
-  },
-
-  // Create commission rate
-  createCommissionRate: async (data: {
-    name: string;
-    description?: string;
-    rate: number;
-    type: 'percentage' | 'fixed';
-    category: 'product' | 'service' | 'referral' | 'general';
-  }) => {
-    const response = await api.post('/api/commission/admin/commissions', data);
-    return response.data;
-  },
-
-  // Update commission rate
-  updateCommissionRate: async (id: string, data: Partial<{
-    name: string;
-    description?: string;
-    rate: number;
-    type: 'percentage' | 'fixed';
-    category: 'product' | 'service' | 'referral' | 'general';
-    isActive: boolean;
-  }>) => {
-    const response = await api.put(`/api/commission/admin/commissions/${id}`, data);
-    return response.data;
-  },
-
-  // Toggle commission rate status
-  toggleCommissionRateStatus: async (id: string) => {
-    const response = await api.patch(`/api/commission/admin/commissions/${id}/toggle-status`);
-    return response.data;
-  },
-
-  // Delete commission rate
-  deleteCommissionRate: async (id: string) => {
-    const response = await api.delete(`/api/commission/admin/commissions/${id}`);
+  // Change a commission record's status
+  updateRecordStatus: async (id: string, status: CommissionRecordStatus, rejectionReason?: string) => {
+    const response = await api.put(`/api/commission/admin/commissions/${id}/status`, { status, rejectionReason });
     return response.data;
   },
 };
-
-// Alias for backward compatibility
-export const adminAPI = adminCommissionRatesAPI;
