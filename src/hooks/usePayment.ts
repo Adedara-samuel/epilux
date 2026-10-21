@@ -1,64 +1,37 @@
 // src/hooks/usePayment.ts
-import { useMutation } from '@tanstack/react-query';
-import { paymentAPI } from '@/services';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { paymentAPI } from '@/services/payment';
+import type { CreateOrderInput } from '@/services/orders';
 
 // Hook for creating an order
 export const useCreateOrder = () => {
+  const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (orderData: {
-      items: Array<{
-        product: string;
-        quantity: number;
-        price: number;
-      }>;
-      shippingAddress: {
-        address: string;
-        city: string;
-        state: string;
-        country: string;
-      };
-      paymentMethod: string;
-      customerInfo: {
-        name: string;
-        phone: string;
-        email: string;
-      };
-      totalAmount: number;
-    }) => paymentAPI.createOrder(orderData),
+    mutationFn: (orderData: CreateOrderInput) => paymentAPI.createOrder(orderData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ['wallet'] });
+    },
   });
 };
 
 // Hook for initializing payment
 export const useInitializePayment = () => {
   return useMutation({
-    mutationFn: ({ orderId, paymentData }: {
-      orderId: string;
-      paymentData: {
-        // duplicate of service shape including required extras
-        amount: number;
-        email: string;
-        phone: string;
-        name: string;
+    mutationFn: ({ orderId, customer }: { orderId: string; customer?: { email?: string; phone?: string; name?: string } }) =>
+      paymentAPI.initializePayment(orderId, customer),
+  });
+};
 
-        items: Array<{
-          product: string;
-          quantity: number;
-          price: number;
-        }>;
-        shippingAddress: {
-          address: string;
-          city: string;
-          state: string;
-          country: string;
-        };
-        customerInfo: {
-          name: string;
-          phone: string;
-          email: string;
-        };
-        paymentMethod: string;
-        totalAmount: number;
-      };
-    }) => paymentAPI.initializePayment(orderId, paymentData),
+// Hook for verifying a payment after the gateway redirect
+export const useVerifyPayment = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (transactionId: string) => paymentAPI.verifyPayment(transactionId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cart'] });
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ['order'] });
+    },
   });
 };
