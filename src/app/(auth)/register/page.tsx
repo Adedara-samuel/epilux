@@ -1,330 +1,213 @@
-/* eslint-disable @next/next/no-img-element */
-"use client";
+'use client';
 
-// Forces the page to be rendered dynamically on every request,
-// preventing static prerendering which triggers SSR errors.
-export const dynamic = 'force-dynamic';
-
-import React, { useState, useEffect, Suspense } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { toast } from 'sonner';
+import { AlertCircle, ArrowRight, Check, Eye, EyeOff, Gift, Lock, Mail, Phone, User } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { X, User, Mail, Lock, Key, Phone, Eye, EyeOff, DollarSign, Users, Zap, CheckCircle } from 'lucide-react';
+import { Button } from '@/Components/ui/button';
+import { Input } from '@/Components/ui/input';
+import { AuthShell, Field, IconInputWrapper } from '@/Components/auth/auth-shell';
+import { homePathForRole, safeRedirectPath } from '@/lib/auth-session';
+import { cn } from '@/lib/utils';
 
-const programHighlights = [
-    {
-        icon: DollarSign,
-        title: "Fixed Commission per Bag",
-        description: "Earn a fixed commission for every bag of Epilux water sold, redeemed monthly as cash or product.",
-    },
-    {
-        icon: Users,
-        title: "Referral Bonus (5%)",
-        description: "Get 5% bonus from every commission earned by the people you refer. Build a passive income stream!",
-        animation: "animate-bounce",
-    },
-    {
-        icon: Zap,
-        title: "Free Marketing Tools",
-        description: "Get pre-designed flyers, captions, and video templates for WhatsApp, Facebook, and Instagram to boost conversions.",
-    },
-    {
-        icon: CheckCircle,
-        title: "Full Training & Onboarding",
-        description: "Access visual guides, training videos, and a comprehensive FAQ on how commissions and programs work.",
-    },
-];
+// Accept 0803..., 803..., +234803... and 234803...; send the local 0-prefixed form
+const normalizePhone = (value: string) => {
+    const digits = value.replace(/[^\d+]/g, '');
+    if (digits.startsWith('+234')) return `0${digits.slice(4)}`;
+    if (digits.startsWith('234') && digits.length === 13) return `0${digits.slice(3)}`;
+    if (/^[789]\d{9}$/.test(digits)) return `0${digits}`;
+    return digits;
+};
 
-const RegisterForm = () => {
-    const { register: registerMutation, loading } = useAuth();
+const isValidPhone = (value: string) => /^0[789][01]\d{8}$/.test(normalizePhone(value));
+
+const passwordStrength = (password: string) => {
+    let score = 0;
+    if (password.length >= 6) score++;
+    if (password.length >= 10) score++;
+    if (/[A-Z]/.test(password) && /[a-z]/.test(password)) score++;
+    if (/\d/.test(password)) score++;
+    if (/[^A-Za-z0-9]/.test(password)) score++;
+    return Math.min(score, 4);
+};
+
+const strengthLabels = ['Too short', 'Weak', 'Fair', 'Good', 'Strong'];
+const strengthColors = ['bg-destructive', 'bg-destructive', 'bg-warning', 'bg-brand-500', 'bg-success'];
+
+function RegisterForm() {
+    const { user, initializing, register } = useAuth();
     const router = useRouter();
     const searchParams = useSearchParams();
-    const [formData, setFormData] = useState({
+    const redirect = searchParams.get('redirect');
+    const refFromLink = (searchParams.get('ref') || '').trim();
+
+    const [form, setForm] = useState({
         firstName: '',
         lastName: '',
         email: '',
         phone: '',
         password: '',
         confirmPassword: '',
-        referralCode: ''
+        referralCode: refFromLink,
     });
+    const [touched, setTouched] = useState<Record<string, boolean>>({});
     const [showPassword, setShowPassword] = useState(false);
-    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [error, setError] = useState('');
 
-    // Redirect to login on successful registration with redirect parameter
     useEffect(() => {
-        if (registerMutation.isSuccess) {
-            const redirect = searchParams.get('redirect');
-            const plan = searchParams.get('plan');
+        if (refFromLink) setForm((f) => ({ ...f, referralCode: refFromLink }));
+    }, [refFromLink]);
 
-            // If user registered with a plan, create a subscription notification for admins
-            if (plan) {
-                createSubscriptionNotification(plan, formData.firstName, formData.lastName, formData.email);
-            }
+    // Signed in (including right after sign-up): continue
+    useEffect(() => {
+        if (initializing || !user) return;
+        const home = homePathForRole(user.role);
+        router.replace(redirect ? safeRedirectPath(redirect, home) : home);
+    }, [user, initializing, redirect, router]);
 
-            const loginUrl = redirect ? `/login?redirect=${encodeURIComponent(redirect)}` : '/login';
-            router.push(loginUrl);
-        }
-    }, [registerMutation.isSuccess, router, searchParams, formData]);
+    const errors = useMemo(() => {
+        const e: Record<string, string> = {};
+        if (form.firstName.trim().length < 2) e.firstName = 'Enter your first name';
+        if (form.lastName.trim().length < 2) e.lastName = 'Enter your last name';
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) e.email = 'Enter a valid email address';
+        if (!isValidPhone(form.phone)) e.phone = 'Enter a valid Nigerian phone number, e.g. 0803 123 4567';
+        if (form.password.length < 6) e.password = 'Use at least 6 characters';
+        if (form.confirmPassword !== form.password) e.confirmPassword = 'Passwords do not match';
+        return e;
+    }, [form]);
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
-    };
+    const strength = passwordStrength(form.password);
+    const set = (key: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, [key]: e.target.value }));
+    const blur = (key: string) => () => setTouched((t) => ({ ...t, [key]: true }));
+    const show = (key: string) => (touched[key] ? errors[key] : undefined);
 
-    const createSubscriptionNotification = async (plan: string, firstName: string, lastName: string, email: string) => {
-        try {
-            const notificationData = {
-                type: 'subscription',
-                title: `New ${plan.charAt(0).toUpperCase() + plan.slice(1)} Plan Subscription`,
-                message: `${firstName} ${lastName} (${email}) has subscribed to the ${plan} plan.`,
-                priority: 'medium',
-                read: false,
-                timestamp: new Date().toISOString(),
-                details: `Customer: ${firstName} ${lastName}\nEmail: ${email}\nPlan: ${plan.charAt(0).toUpperCase() + plan.slice(1)}\nTime: ${new Date().toLocaleString()}`
-            };
-
-            // For now, we'll store in localStorage as a demo
-            // In production, this would be sent to the backend API
-            const existingNotifications = JSON.parse(localStorage.getItem('adminNotifications') || '[]');
-            existingNotifications.unshift(notificationData);
-            localStorage.setItem('adminNotifications', JSON.stringify(existingNotifications));
-
-            console.log('Subscription notification created for admins');
-        } catch (error) {
-            console.error('Failed to create subscription notification:', error);
-        }
-    };
-
-    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        setError('');
+        setTouched({ firstName: true, lastName: true, email: true, phone: true, password: true, confirmPassword: true });
+        if (Object.keys(errors).length > 0) return;
 
-        if (formData.password !== formData.confirmPassword) {
-            toast.error('Passwords do not match.');
-            return;
-        }
-
-        registerMutation.mutate({
-            email: formData.email,
-            password: formData.password,
-            firstName: formData.firstName,
-            lastName: formData.lastName,
-            phone: formData.phone,
-            referralCode: formData.referralCode
-        } as any, {
-            onSuccess: () => {
-                toast.success('Registration successful! Welcome to Epilux!');
-            },
-            onError: (error: any) => {
-                const errorMessage = error?.response?.data?.message || error?.message || 'Registration failed. Please try again.';
-                toast.error(errorMessage);
-            }
+        register.mutate({
+            firstName: form.firstName.trim(),
+            lastName: form.lastName.trim(),
+            email: form.email.trim(),
+            phone: normalizePhone(form.phone),
+            password: form.password,
+            ...(form.referralCode.trim() ? { referralCode: form.referralCode.trim() } : {}),
+        }, {
+            onSuccess: (data) => toast.success(`Welcome to Epilux${data.user?.firstName ? `, ${data.user.firstName}` : ''}!`),
+            onError: (err) => setError(err.message || 'Registration failed. Please try again.'),
         });
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-4">
-            {/* BLURRED BACKGROUND */}
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md">
-                <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl m-4 flex overflow-hidden transform transition-all duration-300 scale-100">
-                    {/* Left Side: Program Highlights (Value Proposition) */}
-                    <div className="hidden md:block w-1/2 bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 p-10 text-white relative overflow-hidden">
-                        {/* Animated background elements */}
-                        <div className="absolute top-0 left-0 w-full h-full">
-                            <div className="absolute top-10 left-10 w-20 h-20 bg-white/10 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
-                            <div className="absolute top-32 right-16 w-16 h-16 bg-yellow-300/20 rounded-full animate-bounce" style={{ animationDelay: '1s' }}></div>
-                            <div className="absolute bottom-20 left-20 w-12 h-12 bg-blue-300/20 rounded-full animate-bounce" style={{ animationDelay: '2s' }}></div>
-                        </div>
-
-                        <div className="relative z-10">
-                            <h3 className="text-3xl font-extrabold mb-4 border-b border-blue-400 pb-3 animate-fadeIn">
-                                Join the Epilux Partner Program
-                            </h3>
-                            <p className="text-blue-100 mb-8 text-lg animate-fadeIn" style={{ animationDelay: '0.2s' }}>
-                                Start your journey to predictable income by partnering with a premium water brand.
-                            </p>
-                            <ul className="space-y-6">
-                                {programHighlights.map((item, index) => (
-                                    <li key={index} className={`flex items-start gap-4 p-4 rounded-lg bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-300 animate-fadeIn ${item.animation || ''}`} style={{ animationDelay: `${0.3 + index * 0.1}s` }}>
-                                        <item.icon className={`h-6 w-6 text-yellow-300 flex-shrink-0 mt-1 ${item.animation ? 'animate-pulse' : ''}`} />
-                                        <div>
-                                            <p className="font-semibold text-lg text-white">{item.title}</p>
-                                            <p className="text-blue-100 text-sm leading-relaxed">{item.description}</p>
-                                        </div>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-
-                        <img
-                            src="/images/logo.png"
-                            alt="Epilux Water"
-                            className="absolute bottom-0 -right-20 opacity-20 h-40 w-auto animate-pulse"
-                        />
+        <AuthShell
+            wide
+            title="Create your account"
+            subtitle="Join Epilux to order water and earn on every purchase."
+            footer={
+                <>
+                    Already have an account?{' '}
+                    <Link href={redirect ? `/login?redirect=${encodeURIComponent(redirect)}` : '/login'} className="font-semibold text-white underline-offset-4 hover:underline">
+                        Sign in
+                    </Link>
+                </>
+            }
+        >
+            <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+                {error && (
+                    <div className="animate-shake flex items-start gap-2.5 rounded-xl border border-destructive/20 bg-destructive/5 p-3.5 text-sm text-destructive" role="alert">
+                        <AlertCircle className="mt-0.5 size-4 shrink-0" />
+                        <span>{error}</span>
                     </div>
+                )}
 
-                    {/* Right Side: Registration Form */}
-                    <div className="w-full md:w-1/2 p-8 sm:p-10 relative bg-gradient-to-br from-white via-gray-50 to-blue-50">
-                        {/* Floating decorative elements */}
-                        <div className="absolute top-8 right-8 w-16 h-16 bg-blue-100 rounded-full opacity-20 animate-float"></div>
-                        <div className="absolute bottom-16 left-8 w-12 h-12 bg-purple-100 rounded-full opacity-20 animate-float" style={{ animationDelay: '1s' }}></div>
-
-                        <button
-                            onClick={() => router.back()}
-                            className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 transition-colors rounded-full p-2 hover:bg-gray-100 z-10"
-                        >
-                            <X className="h-6 w-6" />
-                        </button>
-
-                        <div className="relative z-10">
-                            <div className="text-center mb-8">
-                                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg animate-bounceIn">
-                                    <User className="w-8 h-8 text-white" />
-                                </div>
-                                <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2 animate-fadeIn">
-                                    Create Your Account
-                                </h2>
-                                <p className="text-gray-500 animate-fadeIn" style={{ animationDelay: '0.2s' }}>
-                                    It only takes a minute to get started.
-                                </p>
-                            </div>
-
-                            <form onSubmit={handleSubmit} className="space-y-5 animate-fadeIn" style={{ animationDelay: '0.4s' }}>
-                                {/* First Name */}
-                                <div className="relative group">
-                                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
-                                    <input
-                                        type="text"
-                                        name="firstName"
-                                        placeholder="First Name"
-                                        value={formData.firstName}
-                                        onChange={handleChange}
-                                        required
-                                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 bg-white/80 backdrop-blur-sm hover:border-gray-400"
-                                    />
-                                </div>
-
-                                {/* Last Name */}
-                                <div className="relative group">
-                                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
-                                    <input
-                                        type="text"
-                                        name="lastName"
-                                        placeholder="Last Name"
-                                        value={formData.lastName}
-                                        onChange={handleChange}
-                                        required
-                                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 bg-white/80 backdrop-blur-sm hover:border-gray-400"
-                                    />
-                                </div>
-
-                                {/* Email */}
-                                <div className="relative group">
-                                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
-                                    <input
-                                        type="email"
-                                        name="email"
-                                        placeholder="Email Address"
-                                        value={formData.email}
-                                        onChange={handleChange}
-                                        required
-                                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 bg-white/80 backdrop-blur-sm hover:border-gray-400"
-                                    />
-                                </div>
-
-                                {/* Phone Number */}
-                                <div className="relative group">
-                                    <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
-                                    <input
-                                        type="tel"
-                                        name="phone"
-                                        placeholder="Phone Number"
-                                        value={formData.phone}
-                                        onChange={handleChange}
-                                        required
-                                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 bg-white/80 backdrop-blur-sm hover:border-gray-400"
-                                    />
-                                </div>
-
-                                {/* Referral Code (Optional) */}
-                                <div className="relative group">
-                                    <Key className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
-                                    <input
-                                        type="text"
-                                        name="referralCode"
-                                        placeholder="Referral Code (Optional)"
-                                        value={formData.referralCode}
-                                        onChange={handleChange}
-                                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 bg-white/80 backdrop-blur-sm hover:border-gray-400"
-                                    />
-                                </div>
-
-                                {/* Password */}
-                                <div className="relative group">
-                                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
-                                    <input
-                                        type={showPassword ? "text" : "password"}
-                                        name="password"
-                                        placeholder="Password"
-                                        value={formData.password}
-                                        onChange={handleChange}
-                                        required
-                                        minLength={6}
-                                        className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 bg-white/80 backdrop-blur-sm hover:border-gray-400"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowPassword(!showPassword)}
-                                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-blue-500 transition-colors p-1"
-                                    >
-                                        {showPassword ? <EyeOff className="h-5 w-5 cursor-pointer" /> : <Eye className="h-5 w-5 cursor-pointer" />}
-                                    </button>
-                                </div>
-
-                                {/* Confirm Password */}
-                                <div className="relative group">
-                                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
-                                    <input
-                                        type={showConfirmPassword ? "text" : "password"}
-                                        name="confirmPassword"
-                                        placeholder="Confirm Password"
-                                        value={formData.confirmPassword}
-                                        onChange={handleChange}
-                                        required
-                                        minLength={6}
-                                        className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200 bg-white/80 backdrop-blur-sm hover:border-gray-400"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-blue-500 transition-colors p-1"
-                                    >
-                                        {showConfirmPassword ? <EyeOff className="h-5 w-5 cursor-pointer" /> : <Eye className="h-5 w-5 cursor-pointer" />}
-                                    </button>
-                                </div>
-
-                                <button
-                                    type="submit"
-                                    disabled={loading}
-                                    className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold py-3 rounded-xl transition-all shadow-lg hover:shadow-xl mt-6 transform hover:scale-105 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none"
-                                >
-                                    {loading ? 'Creating Account...' : 'Complete Registration'}
-                                </button>
-                            </form>
-                            <p className="text-center text-sm text-gray-500 mt-6 animate-fadeIn" style={{ animationDelay: '0.6s' }}>
-                                Already a partner? <a href="/login" className="text-blue-600 hover:text-blue-700 font-medium transition-colors">Sign in here</a>
-                            </p>
-                        </div>
+                {refFromLink && (
+                    <div className="flex items-center gap-3 rounded-xl border border-success/25 bg-success/10 p-3 text-sm">
+                        <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-success/15 text-success"><Gift className="size-4" /></span>
+                        <p className="text-foreground/80">You were invited by a friend. Your referral is applied automatically.</p>
                     </div>
+                )}
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                    <Field label="First name" htmlFor="firstName" error={show('firstName')}>
+                        <IconInputWrapper icon={User}>
+                            <Input id="firstName" autoComplete="given-name" value={form.firstName} onChange={set('firstName')} onBlur={blur('firstName')} placeholder="Ada" className="h-12 rounded-xl pl-11" aria-invalid={!!show('firstName')} />
+                        </IconInputWrapper>
+                    </Field>
+                    <Field label="Last name" htmlFor="lastName" error={show('lastName')}>
+                        <IconInputWrapper icon={User}>
+                            <Input id="lastName" autoComplete="family-name" value={form.lastName} onChange={set('lastName')} onBlur={blur('lastName')} placeholder="Okafor" className="h-12 rounded-xl pl-11" aria-invalid={!!show('lastName')} />
+                        </IconInputWrapper>
+                    </Field>
                 </div>
-            </div>
-        </div>
-    );
-};
 
-export default function App() {
+                <Field label="Email address" htmlFor="email" error={show('email')}>
+                    <IconInputWrapper icon={Mail}>
+                        <Input id="email" type="email" inputMode="email" autoComplete="email" value={form.email} onChange={set('email')} onBlur={blur('email')} placeholder="you@example.com" className="h-12 rounded-xl pl-11" aria-invalid={!!show('email')} />
+                    </IconInputWrapper>
+                </Field>
+
+                <Field label="Phone number" htmlFor="phone" error={show('phone')} hint="We'll use this to coordinate your deliveries.">
+                    <IconInputWrapper icon={Phone}>
+                        <Input id="phone" type="tel" inputMode="tel" autoComplete="tel" value={form.phone} onChange={set('phone')} onBlur={blur('phone')} placeholder="0803 123 4567" className="h-12 rounded-xl pl-11" aria-invalid={!!show('phone')} />
+                    </IconInputWrapper>
+                </Field>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                    <Field label="Password" htmlFor="password" error={show('password')}>
+                        <IconInputWrapper icon={Lock}>
+                            <Input id="password" type={showPassword ? 'text' : 'password'} autoComplete="new-password" value={form.password} onChange={set('password')} onBlur={blur('password')} placeholder="At least 6 characters" className="h-12 rounded-xl pl-11 pr-12" aria-invalid={!!show('password')} />
+                            <button type="button" onClick={() => setShowPassword((v) => !v)} className="absolute right-2 top-1/2 grid size-9 -translate-y-1/2 place-items-center rounded-lg text-muted-foreground hover:bg-muted" aria-label={showPassword ? 'Hide password' : 'Show password'}>
+                                {showPassword ? <EyeOff className="size-[18px]" /> : <Eye className="size-[18px]" />}
+                            </button>
+                        </IconInputWrapper>
+                    </Field>
+                    <Field label="Confirm password" htmlFor="confirmPassword" error={show('confirmPassword')}>
+                        <IconInputWrapper icon={Lock}>
+                            <Input id="confirmPassword" type={showPassword ? 'text' : 'password'} autoComplete="new-password" value={form.confirmPassword} onChange={set('confirmPassword')} onBlur={blur('confirmPassword')} placeholder="Repeat password" className="h-12 rounded-xl pl-11" aria-invalid={!!show('confirmPassword')} />
+                            {form.confirmPassword && form.confirmPassword === form.password && (
+                                <Check className="absolute right-3.5 top-1/2 size-[18px] -translate-y-1/2 text-success" />
+                            )}
+                        </IconInputWrapper>
+                    </Field>
+                </div>
+
+                {form.password && (
+                    <div className="animate-fade-in space-y-1.5" aria-live="polite">
+                        <div className="flex gap-1.5">
+                            {[0, 1, 2, 3].map((i) => (
+                                <span key={i} className={cn('h-1.5 flex-1 rounded-full bg-muted transition-colors duration-300', i < strength && strengthColors[strength])} />
+                            ))}
+                        </div>
+                        <p className="text-xs text-muted-foreground">Password strength: <span className="font-semibold text-foreground">{strengthLabels[strength]}</span></p>
+                    </div>
+                )}
+
+                <Field label="Referral code (optional)" htmlFor="referralCode" hint={refFromLink ? undefined : 'Have a code from a friend? Enter it here.'}>
+                    <IconInputWrapper icon={Gift}>
+                        <Input id="referralCode" value={form.referralCode} onChange={set('referralCode')} readOnly={!!refFromLink} placeholder="e.g. 115251E20BF2" className={cn('h-12 rounded-xl pl-11 uppercase tracking-wider', refFromLink && 'bg-muted')} />
+                    </IconInputWrapper>
+                </Field>
+
+                <Button type="submit" variant="brand" size="xl" className="group mt-2 w-full rounded-xl" loading={register.isPending}>
+                    {register.isPending ? 'Creating your account…' : (
+                        <>
+                            Create account
+                            <ArrowRight className="size-4 transition-transform duration-300 group-hover:translate-x-1" />
+                        </>
+                    )}
+                </Button>
+            </form>
+        </AuthShell>
+    );
+}
+
+export default function RegisterPage() {
     return (
-        <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+        <Suspense fallback={null}>
             <RegisterForm />
         </Suspense>
     );
