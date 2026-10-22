@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { Facebook, Instagram, Mail, MessageCircle, Send, Twitter, Youtube } from 'lucide-react';
 
 const COLUMNS = [
-    { title: 'Shop', links: [{ href: '/products', label: 'All water' }, { href: '/products?category=sachet', label: 'Sachet water' }, { href: '/products?category=bottled', label: 'Bottled water' }, { href: '/bulk-sales', label: 'Bulk orders' }] },
+    { title: 'Shop', links: [{ href: '/products', label: 'All water' }, { href: '/offers', label: 'Offers' }, { href: '/bulk-sales', label: 'Bulk orders' }, { href: '/subscriptions', label: 'Regular delivery' }] },
     { title: 'Earn', links: [{ href: '/affiliate-reg', label: 'Refer & earn' }, { href: '/products/wallet', label: 'Your wallet' }, { href: '/reseller', label: 'Resell Epilux' }] },
     { title: 'Company', links: [{ href: '/about', label: 'About us' }, { href: '/contact-us', label: 'Contact' }, { href: '/account/help', label: 'Help centre' }] },
 ];
@@ -51,7 +51,13 @@ export default function SiteFooter() {
             <div className="border-t border-border/60">
                 <div className="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-5 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
                     <p>© {new Date().getFullYear()} Epilux Water. All rights reserved.</p>
-                    <p>Payments secured by Flutterwave</p>
+                    <p className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                        <span>Payments secured by Flutterwave</span>
+                        <span aria-hidden className="hidden sm:inline">·</span>
+                        <a href="https://sapok.vercel.app" target="_blank" rel="noopener noreferrer" className="font-medium text-foreground/80 underline-offset-4 transition-colors hover:text-primary hover:underline">
+                            Developed by Sapok
+                        </a>
+                    </p>
                 </div>
             </div>
         </footer>

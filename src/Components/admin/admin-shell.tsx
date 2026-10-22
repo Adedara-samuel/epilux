@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
-    BadgePercent, Banknote, ExternalLink, LayoutDashboard, LogOut, Menu, MessageSquare, Package, Settings, ShieldAlert, ShoppingBag, Truck, Users,
+    BadgePercent, Banknote, ExternalLink, Gift, LayoutDashboard, LogOut, Menu, MessageSquare, Package, Settings, ShieldAlert, ShoppingBag, Truck, Users,
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTitle } from '@/Components/ui/sheet';
 import { Button } from '@/Components/ui/button';
@@ -37,6 +37,7 @@ function useNav(): Item[] {
         { label: 'Orders', href: '/admin/orders', icon: Package, badge: badges.orders },
         { label: 'Withdrawals', href: '/admin/withdrawals', icon: Banknote, badge: badges.withdrawals },
         { label: 'Products', href: '/admin/products', icon: ShoppingBag },
+        { label: 'Offers', href: '/admin/offers', icon: Gift },
         { label: 'Users', href: '/admin/users', icon: Users },
         { label: 'Marketers', href: '/admin/marketers', icon: Truck },
         { label: 'Commissions', href: '/admin/commissions', icon: BadgePercent },
@@ -117,7 +118,9 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 function BottomNav({ onOpenMenu }: { onOpenMenu: () => void }) {
     const pathname = usePathname();
     const nav = useNav();
-    const items = [nav[0], nav[1], nav[2], nav[7]];
+    const items = ['/admin/dashboard', '/admin/orders', '/admin/withdrawals', '/admin/notifications']
+        .map((href) => nav.find((n) => n.href === href))
+        .filter((n): n is Item => !!n);
     return (
         <nav className="glass fixed inset-x-0 bottom-0 z-30 border-t border-border/70 pb-[env(safe-area-inset-bottom)] lg:hidden" aria-label="Admin shortcuts">
             <div className="mx-auto grid max-w-md grid-cols-5">

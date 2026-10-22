@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { productsAPI } from '@/services/products';
+import { useLiveOffers } from '@/hooks/useOffers';
 import { homePathForRole } from '@/lib/auth-session';
 import SiteHeader from '@/Components/site/site-header';
 import SiteFooter from '@/Components/site/site-footer';
@@ -65,6 +66,31 @@ function HeroVisual() {
                 </div>
             </div>
         </div>
+    );
+}
+
+// Shown only while an admin has an offer live
+function LiveOfferBanner() {
+    const { data: offers = [] } = useLiveOffers();
+    const offer = offers[0];
+    if (!offer) return null;
+    return (
+        <section className="mx-auto max-w-7xl px-4 pt-14 sm:px-6 lg:px-8">
+            <Reveal>
+                <Link href={`/offers/${offer.slug}`} className="group relative flex flex-col gap-5 overflow-hidden rounded-[2rem] bg-gradient-to-r from-amber-400 via-orange-400 to-rose-400 p-6 text-white shadow-lift sm:flex-row sm:items-center sm:p-8">
+                    <span aria-hidden className="absolute -right-10 -top-16 size-56 rounded-full bg-white/15 blur-2xl" />
+                    <span className="relative grid size-14 shrink-0 place-items-center rounded-2xl bg-white/20 ring-1 ring-white/30"><Gift className="size-7" /></span>
+                    <span className="relative min-w-0 flex-1">
+                        {offer.badge && <span className="text-xs font-bold uppercase tracking-wider text-white/90">{offer.badge}</span>}
+                        <span className="block text-2xl font-extrabold">{offer.title}</span>
+                        <span className="block text-white/90">{offer.subtitle || `${offer.bundleSize} units for ${formatNaira(offer.bundlePrice)}`}{offer.savings > 0 ? ` · save ${formatNaira(offer.savings)}` : ''}</span>
+                    </span>
+                    <span className="relative inline-flex items-center gap-2 self-start rounded-xl bg-white px-4 py-2.5 font-semibold text-orange-600 shadow-soft transition-transform group-hover:translate-x-1 sm:self-auto">
+                        See offer <ArrowRight className="size-4" />
+                    </span>
+                </Link>
+            </Reveal>
+        </section>
     );
 }
 
@@ -178,6 +204,7 @@ export default function HomePage() {
                     </div>
                 </section>
 
+                <LiveOfferBanner />
                 <FeaturedProducts />
 
                 {/* How it works */}
