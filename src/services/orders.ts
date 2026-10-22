@@ -2,7 +2,10 @@
 import { api } from './base';
 
 export interface CreateOrderInput {
-  items: { product: string; quantity: number }[];
+  // Either cart items, or an offer slug + number of bundles (the server prices both)
+  items?: { product: string; quantity: number }[];
+  offer?: string;
+  bundles?: number;
   shippingAddress: {
     address: string;
     city: string;

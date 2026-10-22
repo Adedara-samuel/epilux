@@ -1,9 +1,9 @@
 /* eslint-disable @next/next/no-img-element */
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { Checkbox } from '@/Components/ui/checkbox';
 import { RadioCard, RadioGroup } from '@/Components/ui/radio-group';
@@ -14,7 +14,9 @@ import { useCartSummary, useClearCart } from '@/hooks/useCart';
 import { useCreateOrder, useInitializePayment } from '@/hooks/usePayment';
 import { useUserAddresses } from '@/hooks/useUser';
 import { useWalletBalance } from '@/hooks/useWallet';
+import { useOffer } from '@/hooks/useOffers';
 import { userAPI } from '@/services/user';
+import { calculateDeliveryFee } from '@/services/delivery';
 import { getErrorMessage } from '@/services/base';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
@@ -38,9 +40,40 @@ function FieldLabel({ htmlFor, children }: { htmlFor: string; children: React.Re
 }
 
 export default function CheckoutPage() {
+    return (
+        <Suspense fallback={null}>
+            <CheckoutContent />
+        </Suspense>
+    );
+}
+
+const MAX_BUNDLES = 50;
+
+function CheckoutContent() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { user } = useAuth();
-    const { lines, subtotal, deliveryFee, total, isLoading: cartLoading } = useCartSummary();
+    const cart = useCartSummary();
+
+    // Offer checkout (?offer=<slug>&bundles=<n>) replaces the cart with one bundle line.
+    // The server re-prices it from the offer; these figures are for display only.
+    const offerSlug = searchParams.get('offer');
+    const bundles = Math.min(MAX_BUNDLES, Math.max(1, parseInt(searchParams.get('bundles') || '1', 10) || 1));
+    const { data: offer, isLoading: offerLoading, isError: offerError } = useOffer(offerSlug);
+    const offerMode = !!offerSlug;
+    const offerLines = offer?.isLive && offer.product ? [{
+        productId: offer.product._id,
+        name: `${offer.title} · ${bundles * offer.bundleSize} × ${offer.product.name}`,
+        quantity: bundles * offer.bundleSize,
+        lineTotal: offer.bundlePrice * bundles,
+        image: offer.image?.url || offer.product.images?.find((i) => i.isPrimary)?.url || offer.product.images?.[0]?.url,
+    }] : [];
+    const offerSubtotal = offer ? offer.bundlePrice * bundles : 0;
+    const lines = offerMode ? offerLines : cart.lines;
+    const subtotal = offerMode ? offerSubtotal : cart.subtotal;
+    const deliveryFee = offerMode ? calculateDeliveryFee(offerSubtotal) : cart.deliveryFee;
+    const total = offerMode ? offerSubtotal + deliveryFee : cart.total;
+    const cartLoading = offerMode ? offerLoading : cart.isLoading;
     const { data: addressData } = useUserAddresses();
     const { data: wallet } = useWalletBalance();
     const createOrder = useCreateOrder();
@@ -113,7 +146,9 @@ export default function CheckoutPage() {
 
             const instructions = [form.instructions.trim(), `Contact: ${form.name.trim()} ${phone}`].filter(Boolean).join(' · ');
             const order = await createOrder.mutateAsync({
-                items: lines.map((l) => ({ product: l.productId, quantity: l.quantity })),
+                ...(offerMode
+                    ? { offer: offerSlug as string, bundles }
+                    : { items: lines.map((l) => ({ product: l.productId, quantity: l.quantity })) }),
                 shippingAddress: {
                     address: form.address.trim(),
                     city: form.city.trim(),
@@ -127,7 +162,8 @@ export default function CheckoutPage() {
             const orderId: string = order?.data?.orderId;
 
             if (payment === 'wallet') {
-                await clearCart.mutateAsync().catch(() => {});
+                // Offer orders are bought straight from the offer page; leave the cart alone
+                if (!offerMode) await clearCart.mutateAsync().catch(() => {});
                 toast.success('Order placed and paid from your wallet!');
                 router.push(`/account/orders/${orderId}?placed=1`);
                 return;
@@ -160,6 +196,14 @@ export default function CheckoutPage() {
         );
     }
 
+    if (offerMode && (offerError || !offer?.isLive || !offer.product)) {
+        return (
+            <Panel className="mx-auto max-w-xl">
+                <EmptyState icon={ShoppingCart} title="This offer isn’t available" description={offer?.status === 'scheduled' ? 'It hasn’t started yet. Check back soon.' : 'It may have ended. Have a look at our other products.'} action={{ label: 'Browse products', href: '/products' }} />
+            </Panel>
+        );
+    }
+
     if (lines.length === 0) {
         return (
             <Panel className="mx-auto max-w-xl">
@@ -173,8 +217,8 @@ export default function CheckoutPage() {
     return (
         <div className="pb-24 lg:pb-0">
             <CheckoutSteps current={1} />
-            <Link href="/cart" className="mb-4 inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground">
-                <ArrowLeft className="size-4" /> Back to cart
+            <Link href={offerMode ? `/offers/${offerSlug}` : '/cart'} className="mb-4 inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground">
+                <ArrowLeft className="size-4" /> {offerMode ? 'Back to offer' : 'Back to cart'}
             </Link>
             <PageHeader title="Checkout" description="Confirm where we should deliver and how you'd like to pay." />
 
@@ -285,6 +329,9 @@ export default function CheckoutPage() {
                         {lines.length > summary.length && <li className="text-xs text-muted-foreground">+ {lines.length - summary.length} more</li>}
                     </ul>
                     <dl className="mt-5 space-y-3 border-t border-border/70 pt-5 text-sm">
+                        {offerMode && offer && offer.savings > 0 && (
+                            <div className="flex justify-between text-emerald-600"><dt>Offer saving</dt><dd className="font-semibold tabular-nums">−{formatNaira(offer.savings * bundles)}</dd></div>
+                        )}
                         <div className="flex justify-between"><dt className="text-muted-foreground">Subtotal</dt><dd className="font-semibold tabular-nums">{formatNaira(subtotal)}</dd></div>
                         <div className="flex justify-between"><dt className="text-muted-foreground">Delivery</dt><dd className="font-semibold tabular-nums">{deliveryFee === 0 ? <span className="text-success">Free</span> : formatNaira(deliveryFee)}</dd></div>
                         <div className="flex items-center justify-between border-t border-border/70 pt-4">
