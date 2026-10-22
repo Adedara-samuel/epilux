@@ -4,11 +4,12 @@
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Checkbox } from '@/Components/ui/checkbox';
 import { RadioCard, RadioGroup } from '@/Components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/ui/select';
-import { ArrowLeft, CreditCard, Lock, MapPin, ShieldCheck, ShoppingCart, Wallet } from 'lucide-react';
+import { ArrowLeft, Check, CreditCard, Lock, MapPin, Pencil, ShieldCheck, ShoppingCart, Wallet } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useCartSummary, useClearCart } from '@/hooks/useCart';
 import { useCreateOrder, useInitializePayment } from '@/hooks/usePayment';
@@ -74,7 +75,8 @@ function CheckoutContent() {
     const deliveryFee = offerMode ? calculateDeliveryFee(offerSubtotal) : cart.deliveryFee;
     const total = offerMode ? offerSubtotal + deliveryFee : cart.total;
     const cartLoading = offerMode ? offerLoading : cart.isLoading;
-    const { data: addressData } = useUserAddresses();
+    const { data: addressData, isFetched: addressesFetched } = useUserAddresses();
+    const queryClient = useQueryClient();
     const { data: wallet } = useWalletBalance();
     const createOrder = useCreateOrder();
     const initPayment = useInitializePayment();
@@ -82,26 +84,47 @@ function CheckoutContent() {
 
     const saved = addressData?.addresses?.[0];
     const [form, setForm] = useState({ name: '', email: '', phone: '', address: '', city: '', state: 'Lagos', landmark: '', instructions: '' });
+    // 'saved' = deliver to the saved address (no typing), 'edit' = change the saved one,
+    // 'new' = a different address for this order (or the first address ever)
+    const [addressMode, setAddressMode] = useState<'saved' | 'edit' | 'new'>('new');
     const [saveAddress, setSaveAddress] = useState(true);
     const [payment, setPayment] = useState<PaymentChoice>('flutterwave');
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [submitting, setSubmitting] = useState(false);
-    const [prefilled, setPrefilled] = useState(false);
+    const [profileFilled, setProfileFilled] = useState(false);
+    const [addressFilled, setAddressFilled] = useState(false);
 
-    // Prefill once from the profile and saved address
+    // Contact details come from the profile as soon as it loads
     useEffect(() => {
-        if (prefilled || !user) return;
-        setForm((f) => ({
-            ...f,
-            name: fullName(user),
-            email: user.email || '',
-            phone: user.profile?.phone || '',
-            address: saved?.street || f.address,
-            city: saved?.city || f.city,
-            state: saved?.state || f.state,
-        }));
-        if (saved || user) setPrefilled(true);
-    }, [user, saved, prefilled]);
+        if (profileFilled || !user) return;
+        setForm((f) => ({ ...f, name: f.name || fullName(user), email: f.email || user.email || '', phone: f.phone || user.profile?.phone || '' }));
+        setProfileFilled(true);
+    }, [user, profileFilled]);
+
+    // The saved address loads separately; wait for it before deciding what to show
+    useEffect(() => {
+        if (addressFilled || !addressesFetched) return;
+        if (saved?.street) {
+            setForm((f) => ({ ...f, address: saved.street, city: saved.city || '', state: saved.state || 'Lagos' }));
+            setAddressMode('saved');
+        }
+        setAddressFilled(true);
+    }, [saved, addressesFetched, addressFilled]);
+
+    const chooseSavedAddress = () => {
+        if (!saved) return;
+        setForm((f) => ({ ...f, address: saved.street, city: saved.city || '', state: saved.state || 'Lagos' }));
+        setErrors({});
+        setAddressMode('saved');
+    };
+    const editSavedAddress = () => { setSaveAddress(true); setAddressMode('edit'); };
+    const chooseDifferentAddress = () => {
+        setForm((f) => ({ ...f, address: '', city: '', state: saved?.state || 'Lagos' }));
+        // A one-off address shouldn't replace the saved one unless the customer asks
+        setSaveAddress(false);
+        setAddressMode('new');
+        setTimeout(() => document.getElementById('address')?.focus(), 50);
+    };
 
     const walletBalance = Number(wallet?.availableBalance) || 0;
     const walletCovers = walletBalance >= total && total > 0;
@@ -124,6 +147,8 @@ function CheckoutContent() {
 
     const placeOrder = async () => {
         if (!validate()) {
+            // A saved address that is incomplete needs editing to be fixed
+            if (addressMode === 'saved') setAddressMode('edit');
             toast.error('Please check your delivery details');
             document.getElementById('delivery')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
             return;
@@ -140,8 +165,16 @@ function CheckoutContent() {
             if (phone !== (user?.profile?.phone || '')) {
                 userAPI.updateProfile({ phone }).catch(() => {});
             }
-            if (saveAddress) {
-                userAPI.addAddress({ street: form.address.trim(), city: form.city.trim(), state: form.state, country: 'Nigeria' }).catch(() => {});
+            // Remember the address for next time (the saved one is already stored)
+            if (addressMode !== 'saved' && saveAddress) {
+                try {
+                    await userAPI.addAddress({ street: form.address.trim(), city: form.city.trim(), state: form.state, country: 'Nigeria' });
+                    queryClient.invalidateQueries({ queryKey: ['user', 'addresses'] });
+                    queryClient.invalidateQueries({ queryKey: ['addresses'] });
+                } catch {
+                    // Not worth failing the order over; the customer can save it in Settings
+                    toast.message('We couldn’t save this address for next time, but your order will still go through.');
+                }
             }
 
             const instructions = [form.instructions.trim(), `Contact: ${form.name.trim()} ${phone}`].filter(Boolean).join(' · ');
@@ -234,6 +267,32 @@ function CheckoutContent() {
                             </div>
                         </div>
 
+                        {!addressFilled ? (
+                            <div className="skeleton-shimmer h-32 rounded-2xl" />
+                        ) : addressMode === 'saved' ? (
+                            <div className="rounded-2xl border-2 border-primary/40 bg-accent/40 p-4 sm:p-5">
+                                <div className="flex items-start gap-3">
+                                    <span className="mt-0.5 grid size-6 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground"><Check className="size-4" /></span>
+                                    <div className="min-w-0 flex-1">
+                                        <p className="text-xs font-semibold uppercase tracking-wider text-primary">Deliver to your saved address</p>
+                                        <p className="mt-1 font-semibold">{form.address}</p>
+                                        <p className="text-sm text-muted-foreground">{[form.city, form.state].filter(Boolean).join(', ')}</p>
+                                        <p className="mt-2 text-sm text-muted-foreground">{form.name || 'Add your name'} · {form.phone || <span className="text-destructive">add a phone number</span>}</p>
+                                    </div>
+                                </div>
+                                <div className="mt-4 flex flex-wrap gap-2 pl-9">
+                                    <Button type="button" variant="outline" size="sm" onClick={editSavedAddress}><Pencil /> Change</Button>
+                                    <Button type="button" variant="ghost" size="sm" onClick={chooseDifferentAddress}><MapPin /> Deliver somewhere else</Button>
+                                </div>
+                            </div>
+                        ) : (
+                        <>
+                        {saved?.street && (
+                            <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-muted/60 px-4 py-3 text-sm">
+                                <span className="text-muted-foreground">{addressMode === 'edit' ? 'Editing your saved address' : 'Delivering to a different address for this order'}</span>
+                                <Button type="button" variant="ghost" size="sm" onClick={chooseSavedAddress}>Use {saved.street.length > 28 ? 'my saved address' : saved.street}</Button>
+                            </div>
+                        )}
                         <div className="grid gap-4 sm:grid-cols-2">
                             <div>
                                 <FieldLabel htmlFor="name">Full name</FieldLabel>
@@ -264,6 +323,16 @@ function CheckoutContent() {
                                     </SelectContent>
                                 </Select>
                             </div>
+                        </div>
+                        <label htmlFor="save-address" className="mt-5 flex cursor-pointer items-center gap-3 text-sm">
+                            <Checkbox id="save-address" checked={saveAddress} onCheckedChange={(v) => setSaveAddress(v === true)} />
+                            {addressMode === 'edit' ? 'Update my saved address' : saved?.street ? 'Make this my saved address' : 'Save this address for next time'}
+                        </label>
+                        </>
+                        )}
+
+                        {/* Per-delivery details, asked every time */}
+                        <div className="mt-5 grid gap-4 sm:grid-cols-2">
                             <div className="sm:col-span-2">
                                 <FieldLabel htmlFor="landmark">Nearest landmark <span className="font-normal text-muted-foreground">(optional)</span></FieldLabel>
                                 <Input id="landmark" placeholder="e.g. Opposite the filling station" value={form.landmark} onChange={set('landmark')} className="h-12 rounded-xl" />
@@ -273,11 +342,6 @@ function CheckoutContent() {
                                 <Textarea id="instructions" rows={2} maxLength={300} placeholder="Gate code, best time to deliver…" value={form.instructions} onChange={set('instructions')} className="rounded-xl" />
                             </div>
                         </div>
-
-                        <label htmlFor="save-address" className="mt-5 flex cursor-pointer items-center gap-3 text-sm">
-                            <Checkbox id="save-address" checked={saveAddress} onCheckedChange={(v) => setSaveAddress(v === true)} />
-                            Save this address for next time
-                        </label>
                     </Panel>
 
                     {/* Payment */}
