@@ -5,8 +5,9 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import {
-    ArrowDownLeft, ArrowUpRight, CalendarClock, Eye, EyeOff, Gift, Lock, ReceiptText, RotateCcw, ShoppingBag, Wallet as WalletIcon,
+    ArrowDownLeft, ArrowUpRight, BadgeCheck, CalendarClock, Eye, EyeOff, Gift, Info, Loader2, Lock, ReceiptText, RotateCcw, ShoppingBag, Wallet as WalletIcon,
 } from 'lucide-react';
+import { useAccountLookup } from '@/hooks/useBanks';
 import { useRequestWithdrawal, useWalletBalance, useWalletTransactions, useWithdrawalWindow } from '@/hooks/useWallet';
 import { getErrorMessage } from '@/services/base';
 import type { WalletTransaction } from '@/services/wallet';
@@ -47,9 +48,18 @@ function WithdrawDialog({ open, onOpenChange, available }: { open: boolean; onOp
     const [bank, setBank] = useState<{ name: string; code?: string } | null>(null);
     const [accountNumber, setAccountNumber] = useState('');
     const [accountName, setAccountName] = useState('');
+    const [nameEdited, setNameEdited] = useState(false);
     const [error, setError] = useState('');
 
     const value = Number(amount) || 0;
+
+    // Advisory check of the account name; never holds up the request
+    const lookup = useAccountLookup(accountNumber, bank?.code);
+    const resolved = lookup.data?.verified ? lookup.data.accountName : null;
+    useEffect(() => {
+        if (resolved && !nameEdited) setAccountName(resolved);
+    }, [resolved, nameEdited]);
+    const lookupReady = /^\d{10}$/.test(accountNumber) && !!bank?.code;
 
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -63,7 +73,7 @@ function WithdrawDialog({ open, onOpenChange, available }: { open: boolean; onOp
         withdraw.mutate({ amount: value, bankName: bank.name, bankCode: bank.code, accountNumber, accountName: accountName.trim() }, {
             onSuccess: () => {
                 toast.success(`Withdrawal of ${formatNaira(value)} requested. You'll be paid once it's approved.`);
-                setAmount(''); setAccountNumber(''); setAccountName('');
+                setAmount(''); setAccountNumber(''); setAccountName(''); setNameEdited(false);
                 onOpenChange(false);
             },
             onError: (err) => setError(getErrorMessage(err, 'Could not request withdrawal')),
@@ -98,9 +108,24 @@ function WithdrawDialog({ open, onOpenChange, available }: { open: boolean; onOp
                         </div>
                         <div className="space-y-1.5">
                             <Label htmlFor="wd-name">Account name</Label>
-                            <Input id="wd-name" value={accountName} onChange={(e) => setAccountName(e.target.value)} placeholder="As it appears at the bank" className="h-12 rounded-xl" />
+                            <Input id="wd-name" value={accountName} onChange={(e) => { setAccountName(e.target.value); setNameEdited(true); }} placeholder="As it appears at the bank" className="h-12 rounded-xl" />
                         </div>
                     </div>
+                    {lookupReady && (
+                        <div aria-live="polite" className="-mt-1 text-sm">
+                            {lookup.isFetching ? (
+                                <p className="flex items-center gap-2 text-muted-foreground"><Loader2 className="size-4 animate-spin" /> Checking the account with the bank… you can still continue.</p>
+                            ) : resolved ? (
+                                <p className="flex items-center gap-2 text-emerald-600"><BadgeCheck className="size-4" /> Verified: <span className="font-semibold">{resolved}</span>
+                                    {nameEdited && accountName.trim().toLowerCase() !== resolved.toLowerCase() && (
+                                        <button type="button" className="ml-1 font-semibold underline underline-offset-2" onClick={() => { setAccountName(resolved); setNameEdited(false); }}>Use this name</button>
+                                    )}
+                                </p>
+                            ) : lookup.isFetched ? (
+                                <p className="flex items-start gap-2 text-muted-foreground"><Info className="mt-0.5 size-4 shrink-0" /> We couldn’t confirm this account automatically. Please double-check the number and name. You can still request the withdrawal.</p>
+                            ) : null}
+                        </div>
+                    )}
                     <Button type="submit" variant="brand" size="lg" className="w-full rounded-xl" loading={withdraw.isPending}>
                         Request {value > 0 ? formatNaira(value) : 'withdrawal'}
                     </Button>

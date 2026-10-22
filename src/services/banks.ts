@@ -1,58 +1,42 @@
-export interface NigerianBank {
-  name: string;
-  slug: string;
+// src/services/banks.ts
+import { api } from './base';
+
+export interface Bank {
   code: string;
-  longcode: string;
-  gateway: string | null;
-  pay_with_bank: boolean;
-  active: boolean;
-  country: string;
-  currency: string;
-  type: string;
-  id: number;
-  createdAt: string;
-  updatedAt: string;
+  name: string;
 }
 
+export type AccountLookup =
+  | { verified: true; accountName: string }
+  | { verified: false; reason?: 'invalid_input' | 'not_configured' | 'not_found' | 'unavailable' | 'rate_limited' | string };
+
+// Used if the bank list can't be loaded (codes are CBN/NIP codes)
+const FALLBACK_BANKS: Bank[] = [
+  ['044', 'Access Bank'], ['050', 'Ecobank Nigeria'], ['070', 'Fidelity Bank'], ['011', 'First Bank of Nigeria'],
+  ['214', 'First City Monument Bank'], ['058', 'Guaranty Trust Bank'], ['082', 'Keystone Bank'], ['50515', 'Moniepoint MFB'],
+  ['999992', 'OPay'], ['999991', 'PalmPay'], ['076', 'Polaris Bank'], ['221', 'Stanbic IBTC Bank'], ['232', 'Sterling Bank'],
+  ['032', 'Union Bank of Nigeria'], ['033', 'United Bank for Africa'], ['035', 'Wema Bank'], ['057', 'Zenith Bank'],
+].map(([code, name]) => ({ code, name }));
+
 export const banksAPI = {
-  // Get all Nigerian banks from Paystack API
-  // Plain fetch, NOT the app's API client: that client attaches the user's
-  // session token, which must never be sent to a third party.
-  getNigerianBanks: async (): Promise<NigerianBank[]> => {
+  // All Nigerian banks (served by our backend from Flutterwave, the same provider that verifies accounts)
+  getNigerianBanks: async (): Promise<Bank[]> => {
     try {
-      const response = await fetch('https://api.paystack.co/bank?country=nigeria&perPage=100', { credentials: 'omit' });
-      if (!response.ok) throw new Error(`Bank list request failed (${response.status})`);
-      const body = await response.json();
-      const banks: NigerianBank[] = (body?.data || []).filter((b: NigerianBank) => b.active !== false);
-      return banks.length ? banks.sort((a, b) => a.name.localeCompare(b.name)) : getFallbackBanks();
+      const response = await api.get('/api/wallet/banks');
+      const banks: Bank[] = response.data?.data || [];
+      return banks.length ? banks : FALLBACK_BANKS;
     } catch {
-      // Fallback to static list if the API is unavailable
-      return getFallbackBanks();
+      return FALLBACK_BANKS;
+    }
+  },
+
+  // Name on the account, if the bank can confirm it. Never throws: a failed check just isn't verified.
+  resolveAccount: async (accountNumber: string, bankCode: string): Promise<AccountLookup> => {
+    try {
+      const response = await api.post('/api/wallet/resolve-account', { accountNumber, bankCode }, { timeout: 12000 });
+      return response.data?.data || { verified: false, reason: 'unavailable' };
+    } catch {
+      return { verified: false, reason: 'unavailable' };
     }
   },
 };
-
-// Fallback static list of Nigerian banks
-const getFallbackBanks = (): NigerianBank[] => [
-  { name: "Access Bank", slug: "access-bank", code: "044", longcode: "044150149", gateway: null, pay_with_bank: false, active: true, country: "Nigeria", currency: "NGN", type: "nuban", id: 1, createdAt: "2016-07-14T10:04:29.000Z", updatedAt: "2020-02-18T20:24:17.000Z" },
-  { name: "Citibank Nigeria", slug: "citibank-nigeria", code: "023", longcode: "023150005", gateway: null, pay_with_bank: false, active: true, country: "Nigeria", currency: "NGN", type: "nuban", id: 2, createdAt: "2016-07-14T10:04:29.000Z", updatedAt: "2020-02-18T20:24:17.000Z" },
-  { name: "Diamond Bank", slug: "diamond-bank", code: "063", longcode: "063150162", gateway: null, pay_with_bank: false, active: true, country: "Nigeria", currency: "NGN", type: "nuban", id: 3, createdAt: "2016-07-14T10:04:29.000Z", updatedAt: "2020-02-18T20:24:17.000Z" },
-  { name: "Ecobank Nigeria", slug: "ecobank-nigeria", code: "050", longcode: "050150010", gateway: null, pay_with_bank: false, active: true, country: "Nigeria", currency: "NGN", type: "nuban", id: 4, createdAt: "2016-07-14T10:04:29.000Z", updatedAt: "2020-02-18T20:24:17.000Z" },
-  { name: "Fidelity Bank", slug: "fidelity-bank", code: "070", longcode: "070150003", gateway: null, pay_with_bank: false, active: true, country: "Nigeria", currency: "NGN", type: "nuban", id: 5, createdAt: "2016-07-14T10:04:29.000Z", updatedAt: "2020-02-18T20:24:17.000Z" },
-  { name: "First Bank of Nigeria", slug: "first-bank-of-nigeria", code: "011", longcode: "011151003", gateway: null, pay_with_bank: false, active: true, country: "Nigeria", currency: "NGN", type: "nuban", id: 6, createdAt: "2016-07-14T10:04:29.000Z", updatedAt: "2020-02-18T20:24:17.000Z" },
-  { name: "First City Monument Bank", slug: "first-city-monument-bank", code: "214", longcode: "214150018", gateway: null, pay_with_bank: false, active: true, country: "Nigeria", currency: "NGN", type: "nuban", id: 7, createdAt: "2016-07-14T10:04:29.000Z", updatedAt: "2020-02-18T20:24:17.000Z" },
-  { name: "Guaranty Trust Bank", slug: "guaranty-trust-bank", code: "058", longcode: "058152036", gateway: null, pay_with_bank: false, active: true, country: "Nigeria", currency: "NGN", type: "nuban", id: 8, createdAt: "2016-07-14T10:04:29.000Z", updatedAt: "2020-02-18T20:24:17.000Z" },
-  { name: "Heritage Bank", slug: "heritage-bank", code: "030", longcode: "030159992", gateway: null, pay_with_bank: false, active: true, country: "Nigeria", currency: "NGN", type: "nuban", id: 9, createdAt: "2016-07-14T10:04:29.000Z", updatedAt: "2020-02-18T20:24:17.000Z" },
-  { name: "Keystone Bank", slug: "keystone-bank", code: "082", longcode: "082150017", gateway: null, pay_with_bank: false, active: true, country: "Nigeria", currency: "NGN", type: "nuban", id: 10, createdAt: "2016-07-14T10:04:29.000Z", updatedAt: "2020-02-18T20:24:17.000Z" },
-  { name: "Polaris Bank", slug: "polaris-bank", code: "076", longcode: "076151006", gateway: null, pay_with_bank: false, active: true, country: "Nigeria", currency: "NGN", type: "nuban", id: 11, createdAt: "2016-07-14T10:04:29.000Z", updatedAt: "2020-02-18T20:24:17.000Z" },
-  { name: "Providus Bank", slug: "providus-bank", code: "101", longcode: "101152838", gateway: null, pay_with_bank: false, active: true, country: "Nigeria", currency: "NGN", type: "nuban", id: 12, createdAt: "2016-07-14T10:04:29.000Z", updatedAt: "2020-02-18T20:24:17.000Z" },
-  { name: "Stanbic IBTC Bank", slug: "stanbic-ibtc-bank", code: "221", longcode: "221159522", gateway: null, pay_with_bank: false, active: true, country: "Nigeria", currency: "NGN", type: "nuban", id: 13, createdAt: "2016-07-14T10:04:29.000Z", updatedAt: "2020-02-18T20:24:17.000Z" },
-  { name: "Standard Chartered Bank", slug: "standard-chartered-bank", code: "068", longcode: "068150015", gateway: null, pay_with_bank: false, active: true, country: "Nigeria", currency: "NGN", type: "nuban", id: 14, createdAt: "2016-07-14T10:04:29.000Z", updatedAt: "2020-02-18T20:24:17.000Z" },
-  { name: "Sterling Bank", slug: "sterling-bank", code: "232", longcode: "232150016", gateway: null, pay_with_bank: false, active: true, country: "Nigeria", currency: "NGN", type: "nuban", id: 15, createdAt: "2016-07-14T10:04:29.000Z", updatedAt: "2020-02-18T20:24:17.000Z" },
-  { name: "Suntrust Bank", slug: "suntrust-bank", code: "100", longcode: "100152049", gateway: null, pay_with_bank: false, active: true, country: "Nigeria", currency: "NGN", type: "nuban", id: 16, createdAt: "2016-07-14T10:04:29.000Z", updatedAt: "2020-02-18T20:24:17.000Z" },
-  { name: "Union Bank of Nigeria", slug: "union-bank-of-nigeria", code: "032", longcode: "032080474", gateway: null, pay_with_bank: false, active: true, country: "Nigeria", currency: "NGN", type: "nuban", id: 17, createdAt: "2016-07-14T10:04:29.000Z", updatedAt: "2020-02-18T20:24:17.000Z" },
-  { name: "United Bank for Africa", slug: "united-bank-for-africa", code: "033", longcode: "033153513", gateway: null, pay_with_bank: false, active: true, country: "Nigeria", currency: "NGN", type: "nuban", id: 18, createdAt: "2016-07-14T10:04:29.000Z", updatedAt: "2020-02-18T20:24:17.000Z" },
-  { name: "Unity Bank", slug: "unity-bank", code: "215", longcode: "215154097", gateway: null, pay_with_bank: false, active: true, country: "Nigeria", currency: "NGN", type: "nuban", id: 19, createdAt: "2016-07-14T10:04:29.000Z", updatedAt: "2020-02-18T20:24:17.000Z" },
-  { name: "Wema Bank", slug: "wema-bank", code: "035", longcode: "035150103", gateway: null, pay_with_bank: false, active: true, country: "Nigeria", currency: "NGN", type: "nuban", id: 20, createdAt: "2016-07-14T10:04:29.000Z", updatedAt: "2020-02-18T20:24:17.000Z" },
-  { name: "Zenith Bank", slug: "zenith-bank", code: "057", longcode: "057150013", gateway: null, pay_with_bank: false, active: true, country: "Nigeria", currency: "NGN", type: "nuban", id: 21, createdAt: "2016-07-14T10:04:29.000Z", updatedAt: "2020-02-18T20:24:17.000Z" }
-];

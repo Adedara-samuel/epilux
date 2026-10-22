@@ -70,6 +70,15 @@ function WithdrawalCard({ w, onAction }: { w: AdminWithdrawal; onAction: (w: Adm
                         <dt className="text-muted-foreground">Name</dt>
                         <dd className="truncate font-medium">{w.accountName || '—'}</dd>
                     </dl>
+                    {w.verification?.verified ? (
+                        <p className={`mt-2 text-xs font-medium ${w.verification.nameMatches === false ? 'text-amber-600' : 'text-emerald-600'}`}>
+                            {w.verification.nameMatches === false
+                                ? `⚠ Bank says this account belongs to ${w.verification.resolvedName}`
+                                : `✓ Bank confirmed: ${w.verification.resolvedName}`}
+                        </p>
+                    ) : w.verification ? (
+                        <p className="mt-2 text-xs text-muted-foreground">Account not verified automatically: check before paying</p>
+                    ) : null}
                 </div>
 
                 <div className="flex flex-row items-center justify-between gap-3 md:flex-col md:items-end">

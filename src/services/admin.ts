@@ -104,6 +104,8 @@ export interface AdminWithdrawal {
   bankName?: string;
   accountNumber?: string;
   accountName?: string;
+  // Bank lookup made when the request was submitted (advisory)
+  verification?: { verified: boolean; resolvedName?: string; nameMatches?: boolean } | null;
   adminNote?: string;
   requestedAt: string;
   processedAt?: string;
