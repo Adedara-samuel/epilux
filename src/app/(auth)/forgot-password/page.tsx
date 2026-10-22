@@ -1,130 +1,77 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @next/next/no-img-element */
-// app/forgot-password/page.tsx
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { useForgotPassword } from '@/hooks';
+import { AlertCircle, ArrowLeft, ArrowRight, Mail, MailCheck } from 'lucide-react';
+import { useForgotPassword } from '@/hooks/useForgotPassword';
+import { Button } from '@/Components/ui/button';
+import { Input } from '@/Components/ui/input';
+import { AuthShell, Field, IconInputWrapper } from '@/Components/auth/auth-shell';
 
 export default function ForgotPasswordPage() {
     const [email, setEmail] = useState('');
-    const [message, setMessage] = useState('');
     const [error, setError] = useState('');
-    const router = useRouter();
+    const [sentTo, setSentTo] = useState('');
+    const forgotPassword = useForgotPassword();
 
-    const forgotPasswordMutation = useForgotPassword();
-
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!email) return;
-
         setError('');
-        setMessage('');
-
-        forgotPasswordMutation.mutate({ email }, {
-            onSuccess: (data) => {
-                setMessage(data.message || 'Password reset email sent. Please check your inbox.');
-            },
-            onError: (err: any) => {
-                console.error('Error sending password reset email:', err);
-                setError(err.message || 'Failed to send password reset email. Please try again.');
-            },
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+            setError('Please enter a valid email address');
+            return;
+        }
+        forgotPassword.mutate({ email: email.trim() }, {
+            onSuccess: () => setSentTo(email.trim()),
+            onError: (err: Error) => setError(err.message || 'We could not send the reset link. Please try again.'),
         });
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-                className="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden p-8 sm:p-10"
-            >
-                <div className="text-center mb-8">
-                    <Link href="/" className="inline-block mb-6">
-                        <img
-                            src="/images/logo.png"
-                            alt="Epilux Water Logo"
-                            width={120}
-                            height={120}
-                            className="h-16 w-16 mx-auto"
-                        />
-                    </Link>
-                    <h1 className="text-2xl font-bold text-gray-900 mb-2">Forgot Password</h1>
-                    <p className="text-gray-500">Enter your email to reset your password</p>
+        <AuthShell
+            title={sentTo ? 'Check your inbox' : 'Forgot your password?'}
+            subtitle={sentTo ? undefined : "Enter your email and we'll send you a link to reset it."}
+            footer={
+                <Link href="/login" className="inline-flex items-center gap-1.5 font-semibold text-white underline-offset-4 hover:underline">
+                    <ArrowLeft className="size-4" /> Back to sign in
+                </Link>
+            }
+        >
+            {sentTo ? (
+                <div className="animate-fade-in text-center">
+                    <span className="mx-auto grid size-16 place-items-center rounded-2xl bg-success/10 text-success">
+                        <MailCheck className="size-8" />
+                    </span>
+                    <p className="mt-5 text-muted-foreground">
+                        If an account exists for <span className="font-semibold text-foreground">{sentTo}</span>, a password reset link is on its way. It expires in 1 hour.
+                    </p>
+                    <Button variant="outline" size="lg" className="mt-6 w-full rounded-xl" onClick={() => setSentTo('')}>
+                        Use a different email
+                    </Button>
                 </div>
-
-                <div className="space-y-4">
-                    {message && (
-                        <motion.div
-                            initial={{ opacity: 0, y: -10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="p-3 bg-green-50 text-green-600 rounded-lg text-sm"
-                        >
-                            {message}
-                        </motion.div>
-                    )}
-
+            ) : (
+                <form onSubmit={handleSubmit} className="space-y-5" noValidate>
                     {error && (
-                        <motion.div
-                            initial={{ opacity: 0, y: -10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="p-3 bg-red-50 text-red-600 rounded-lg text-sm"
-                        >
-                            {error}
-                        </motion.div>
-                    )}
-
-                    <form onSubmit={handleSubmit} className="space-y-5">
-                        <div>
-                            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                                Email Address
-                            </label>
-                            <input
-                                id="email"
-                                name="email"
-                                type="email"
-                                autoComplete="email"
-                                required
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-                                placeholder="your@email.com"
-                            />
+                        <div className="animate-shake flex items-start gap-2.5 rounded-xl border border-destructive/20 bg-destructive/5 p-3.5 text-sm text-destructive" role="alert">
+                            <AlertCircle className="mt-0.5 size-4 shrink-0" />
+                            <span>{error}</span>
                         </div>
-
-                        <motion.button
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            type="submit"
-                            disabled={forgotPasswordMutation.isPending || !email}
-                            className="w-full py-3 px-4 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-70 flex items-center justify-center cursor-pointer disabled:cursor-not-allowed"
-                        >
-                            {forgotPasswordMutation.isPending ? (
-                                <>
-                                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                    </svg>
-                                    Sending...
-                                </>
-                            ) : (
-                                'Send Reset Link'
-                            )}
-                        </motion.button>
-                    </form>
-
-                    <div className="text-center text-sm text-gray-500 mt-6">
-                        <Link href="/login" className="font-medium text-blue-500 hover:underline">
-                            Back to Login
-                        </Link>
-                    </div>
-                </div>
-            </motion.div>
-        </div>
+                    )}
+                    <Field label="Email address" htmlFor="email">
+                        <IconInputWrapper icon={Mail}>
+                            <Input id="email" type="email" inputMode="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" className="h-12 rounded-xl pl-11" />
+                        </IconInputWrapper>
+                    </Field>
+                    <Button type="submit" variant="brand" size="xl" className="group w-full rounded-xl" loading={forgotPassword.isPending} disabled={!email}>
+                        {forgotPassword.isPending ? 'Sending…' : (
+                            <>
+                                Send reset link
+                                <ArrowRight className="size-4 transition-transform duration-300 group-hover:translate-x-1" />
+                            </>
+                        )}
+                    </Button>
+                </form>
+            )}
+        </AuthShell>
     );
 }

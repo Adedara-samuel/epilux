@@ -1,0 +1,38 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(git -C c:\\\\Users\\\\HomePC\\\\Documents\\\\work\\\\epilux ls-files)",
+      "PowerShell(git -C C:\\\\Users\\\\HomePC\\\\Documents\\\\work\\\\epilux-backend ls-files)",
+      "PowerShell(git -C C:\\\\Users\\\\HomePC\\\\Documents\\\\work\\\\epilux ls-files | Where-Object { $_ -notmatch 'node_modules' }; Write-Output \"-----BACKEND-----\"; git -C C:\\\\Users\\\\HomePC\\\\Documents\\\\work\\\\epilux-backend ls-files | Where-Object { $_ -notmatch 'node_modules' })",
+      "PowerShell(npm install --no-audit --no-fund 2>&1)",
+      "PowerShell(Get-Content vercel.json; $l = Get-Content package-lock.json -Raw | ConvertFrom-Json; foreach\\($p in 'node_modules/react','node_modules/react-dom','node_modules/next','node_modules/react-server-dom-webpack','node_modules/@types/react'\\){ \"$p -> \" + $l.packages.$p.version }; Get-Content .npmrc -ErrorAction SilentlyContinue)",
+      "PowerShell(npm install --legacy-peer-deps --no-audit --no-fund 2>&1)",
+      "PowerShell(node -e \"for \\(const p of ['react','react-dom','next','react-server-dom-webpack']\\) console.log\\(p, require\\('./node_modules/'+p+'/package.json'\\).version\\)\")",
+      "PowerShell(npx tsc --noEmit -p . 2>&1)",
+      "PowerShell(npm run build 2>&1)",
+      "PowerShell(node \"C:\\\\Users\\\\HomePC\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-HomePC-Documents-work-epilux\\\\f3be4b51-bf0b-4daf-b2b1-2a6ee1a503a7\\\\scratchpad\\\\replace-backend-url.mjs\" C:\\\\Users\\\\HomePC\\\\Documents\\\\work\\\\epilux; git diff -U0 -- src | Select-String -Pattern '^[+-][^+-]' | ForEach-Object { $_.Line } | Select-Object -First 140)",
+      "PowerShell(foreach\\($f in 'src\\\\Components\\\\header.tsx','src\\\\Components\\\\admin\\\\AdminHeader.tsx','src\\\\Components\\\\admin\\\\AdminSidebar.tsx','src\\\\Components\\\\affiliate\\\\header.tsx','src\\\\Components\\\\layout\\\\sidebar.tsx','src\\\\app\\\\\\(protected\\)\\\\account\\\\reviews\\\\page.tsx','src\\\\app\\\\admin\\\\products\\\\new\\\\page.tsx','src\\\\app\\\\contact-us\\\\page.tsx','src\\\\app\\\\marketer\\\\page.tsx','src\\\\services\\\\base.ts'\\){ \"== $f\"; Get-Content -LiteralPath $f -TotalCount 4 })",
+      "Bash(seq 1 60)",
+      "Bash(grep -qE 'MongoDB connected|failed|Error|exited' C:/Users/HomePC/AppData/Local/Temp/claude/c--Users-HomePC-Documents-work-epilux/f3be4b51-bf0b-4daf-b2b1-2a6ee1a503a7/tasks/bhfq2kcwx.output)",
+      "Bash(sleep 1)",
+      "Bash(cat C:/Users/HomePC/AppData/Local/Temp/claude/c--Users-HomePC-Documents-work-epilux/f3be4b51-bf0b-4daf-b2b1-2a6ee1a503a7/tasks/bhfq2kcwx.output)",
+      "Bash(echo)",
+      "Bash(curl -s __TRACKED_VAR__/api/products?limit=2)",
+      "Bash(curl -s -w ' [%{http_code}]\\\\n' __TRACKED_VAR__/api/products/696933ad47e83a7f00a95362)",
+      "PowerShell(node C:\\\\Users\\\\HomePC\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-HomePC-Documents-work-epilux\\\\f3be4b51-bf0b-4daf-b2b1-2a6ee1a503a7\\\\scratchpad\\\\inspect-orders.mjs C:/Users/HomePC/Documents/work/epilux-backend)",
+      "Bash(node /c/Users/HomePC/AppData/Local/Temp/claude/c--Users-HomePC-Documents-work-epilux/f3be4b51-bf0b-4daf-b2b1-2a6ee1a503a7/scratchpad/snapshot.mjs C:/Users/HomePC/Documents/work/epilux-backend 691ef658ed49393b88173e50)",
+      "PowerShell(Remove-Item -LiteralPath 'C:\\\\Users\\\\HomePC\\\\Documents\\\\work\\\\epilux\\\\src\\\\app\\\\\\(auth\\)\\\\admin-register' -Recurse -Confirm:$false)",
+      "PowerShell(Remove-Item -LiteralPath 'C:\\\\Users\\\\HomePC\\\\Documents\\\\work\\\\epilux\\\\src\\\\app\\\\api\\\\set-user-role' -Recurse -Confirm:$false)"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\HomePC\\Documents\\work\\epilux-backend\\config",
+      "C:\\Users\\HomePC\\Documents\\work\\epilux-backend",
+      "C:\\Users\\HomePC\\Documents\\work\\epilux-backend\\utils",
+      "C:\\Users\\HomePC\\Documents\\work\\epilux-backend\\controllers",
+      "C:\\Users\\HomePC\\Documents\\work\\epilux-backend\\routes",
+      "C:\\Users\\HomePC\\Documents\\work\\epilux-backend\\services",
+      "C:\\Users\\HomePC\\Documents\\work\\epilux-backend\\models",
+      "C:\\Users\\HomePC\\Documents\\work\\epilux-backend\\middleware"
+    ]
+  }
+}

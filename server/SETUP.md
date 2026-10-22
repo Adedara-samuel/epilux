@@ -30,7 +30,7 @@ JWT_EXPIRE=7d
 JWT_REFRESH_EXPIRE=30d
 
 # CORS Configuration
-CORS_ORIGIN=http://localhost:3000
+CORS_ORIGIN=https://epilux-backend.vercel.app
 ```
 
 ### Optional Environment Variables
@@ -105,7 +105,7 @@ PORT=5001
 MONGODB_URI=mongodb://localhost:27017/epilux_test
 JWT_SECRET=test-jwt-secret-key
 JWT_EXPIRE=1h
-CORS_ORIGIN=http://localhost:3000
+CORS_ORIGIN=https://epilux-backend.vercel.app
 ```
 
 ## Configuration Validation
@@ -175,7 +175,7 @@ npm start
 npm run dev
 
 # Check configuration status
-curl http://localhost:5000/health
+curl https://epilux-backend.vercel.app/health
 ```
 
 ## Troubleshooting

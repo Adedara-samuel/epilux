@@ -1,219 +1,143 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable react/no-unescaped-entities */
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @next/next/no-img-element */
-// app/login/page.tsx
 'use client';
 
-import { useAuth } from '@/hooks/useAuth';
-import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
+import { Suspense, useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { toast } from 'sonner';
+import { AlertCircle, ArrowRight, Eye, EyeOff, Lock, Mail } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { Button } from '@/Components/ui/button';
+import { Input } from '@/Components/ui/input';
+import { AuthShell, Field, IconInputWrapper } from '@/Components/auth/auth-shell';
+import { homePathForRole, safeRedirectPath } from '@/lib/auth-session';
 
-function LoginPage() {
-    const { user, loading: authLoading, login: loginMutation } = useAuth();
+function LoginForm() {
+    const { user, initializing, login } = useAuth();
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const redirect = searchParams.get('redirect');
+
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
 
-    // State to hold the redirect path
-    const [redirectTo, setRedirectTo] = useState<string | null>(null);
-
-    // --- IMPORTANT: Parse redirect parameter first ---
+    // Already signed in (or just signed in): go to the right place
     useEffect(() => {
-        if (typeof window !== 'undefined') {
-            const params = new URLSearchParams(window.location.search);
-            setRedirectTo(params.get('redirect') || '/products');
-        }
-    }, []);
+        if (initializing || !user) return;
+        const home = homePathForRole(user.role);
+        router.replace(redirect ? safeRedirectPath(redirect, home) : home);
+    }, [user, initializing, redirect, router]);
 
-    // Redirect if already logged in (after redirectTo is set and user data is available)
-    useEffect(() => {
-        if (!authLoading && user && redirectTo) {
-            if (!user.emailVerified) {
-                router.replace('/verify-email');
-            } else {
-                const role = user.role;
-                if (role === 'admin') {
-                    router.replace('/admin/dashboard');
-                } else if (role === 'affiliate') {
-                    router.replace('/affiliate/dashboard');
-                } else {
-                    router.replace(redirectTo);
-                }
-            }
-        }
-    }, [user, authLoading, router, redirectTo]);
-
-    // Form validation
-    const isFormValid = email && password && email.includes('@') && password.length >= 6;
-
-    const handleLogin = (e: React.FormEvent) => {
+    const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
-        setIsSubmitting(true);
-
-        loginMutation.mutate({ email, password }, {
-            onSuccess: () => {
-                // Redirect will be handled by the useEffect that watches user state
-                setIsSubmitting(false);
+        if (!email.includes('@')) {
+            setError('Please enter a valid email address');
+            return;
+        }
+        login.mutate({ email: email.trim(), password }, {
+            onSuccess: (data) => {
+                toast.success(`Welcome back${data.user?.firstName ? `, ${data.user.firstName}` : ''}!`);
             },
-            onError: (err: any) => {
-                setError(err.message || "Login failed. Please check your credentials.");
-                setIsSubmitting(false);
-            },
+            onError: (err) => setError(err.message || 'Sign in failed. Please check your details.'),
         });
     };
 
-    if (authLoading || (user && !redirectTo)) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-white">
-                <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                    className="rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"
-                />
-            </div>
-        );
-    }
-
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-                className="w-full max-w-6xl bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col lg:flex-row"
-            >
-                <div className="w-full lg:w-1/2 p-8 sm:p-12">
-                    <div className="text-center mb-10">
-                        <Link href="/" className="inline-block mb-6">
-                            <img
-                                src="/images/logo.png"
-                                alt="Epilux Water Logo"
-                                width={120}
-                                height={120}
-                                className="h-20 w-20"
-                            />
-                        </Link>
-                        <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome Back</h1>
-                        <p className="text-gray-500">Log in to access your dashboard</p>
+        <AuthShell
+            fit
+            title="Welcome back"
+            subtitle="Sign in to order water, track deliveries and see your earnings."
+            footer={
+                <>
+                    New to Epilux?{' '}
+                    <Link href={redirect ? `/register?redirect=${encodeURIComponent(redirect)}` : '/register'} className="font-semibold text-white underline-offset-4 hover:underline">
+                        Create a free account
+                    </Link>
+                </>
+            }
+        >
+            <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+                {error && (
+                    <div className="animate-shake flex items-start gap-2.5 rounded-xl border border-destructive/20 bg-destructive/5 p-3.5 text-sm text-destructive" role="alert">
+                        <AlertCircle className="mt-0.5 size-4 shrink-0" />
+                        <span>{error}</span>
                     </div>
+                )}
 
-                    {error && (
-                        <div className="mb-6 p-3 bg-red-50 text-red-600 rounded-lg text-sm">
-                            {error}
-                        </div>
+                <Field label="Email address" htmlFor="email">
+                    <IconInputWrapper icon={Mail}>
+                        <Input
+                            id="email"
+                            type="email"
+                            autoComplete="email"
+                            inputMode="email"
+                            required
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            placeholder="you@example.com"
+                            className="h-12 rounded-xl pl-11"
+                        />
+                    </IconInputWrapper>
+                </Field>
+
+                <Field
+                    label="Password"
+                    htmlFor="password"
+                    action={<Link href="/forgot-password" className="text-xs font-semibold text-primary hover:underline">Forgot password?</Link>}
+                >
+                    <IconInputWrapper icon={Lock}>
+                        <Input
+                            id="password"
+                            type={showPassword ? 'text' : 'password'}
+                            autoComplete="current-password"
+                            required
+                            minLength={6}
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            placeholder="Enter your password"
+                            className="h-12 rounded-xl pl-11 pr-12"
+                        />
+                        <button
+                            type="button"
+                            onClick={() => setShowPassword((v) => !v)}
+                            className="absolute right-2 top-1/2 grid size-9 -translate-y-1/2 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                            aria-label={showPassword ? 'Hide password' : 'Show password'}
+                        >
+                            {showPassword ? <EyeOff className="size-[18px]" /> : <Eye className="size-[18px]" />}
+                        </button>
+                    </IconInputWrapper>
+                </Field>
+
+                <Button
+                    type="submit"
+                    variant="brand"
+                    size="xl"
+                    className="group w-full rounded-xl"
+                    loading={login.isPending}
+                    disabled={!email || password.length < 6}
+                >
+                    {login.isPending ? 'Signing in…' : (
+                        <>
+                            Sign in
+                            <ArrowRight className="size-4 transition-transform duration-300 group-hover:translate-x-1" />
+                        </>
                     )}
+                </Button>
 
-                    <div className="space-y-6">
-                        <form onSubmit={handleLogin} className="space-y-5">
-                            <div>
-                                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                                    Email Address
-                                </label>
-                                <input
-                                    id="email"
-                                    name="email"
-                                    type="email"
-                                    autoComplete="email"
-                                    required
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    className="w-full px-4 py-3 text-gray-800 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-                                    placeholder="your@email.com"
-                                />
-                            </div>
-
-                            <div>
-                                <div className="flex justify-between items-center mb-1">
-                                    <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                                        Password
-                                    </label>
-                                    <Link href="/forgot-password" className="text-sm text-blue-500 hover:underline">
-                                        Forgot password?
-                                    </Link>
-                                </div>
-                                <input
-                                    id="password"
-                                    name="password"
-                                    type="password"
-                                    autoComplete="current-password"
-                                    required
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    className="w-full text-black px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-                                    placeholder="••••••••"
-                                    minLength={6}
-                                />
-                            </div>
-
-                            <div className="flex items-center">
-                                <input
-                                    id="remember-me"
-                                    name="remember-me"
-                                    type="checkbox"
-                                    className="h-4 w-4 text-blue-500 focus:ring-blue-500 rounded border-gray-300"
-                                />
-                                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700 cursor-pointer">
-                                    Remember me
-                                </label>
-                            </div>
-
-                            <motion.button
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                                type="submit"
-                                disabled={!isFormValid || isSubmitting}
-                                className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-600 disabled:opacity-70 cursor-pointer disabled:cursor-not-allowed flex items-center justify-center"
-                            >
-                                {isSubmitting ? (
-                                    <>
-                                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                        </svg>
-                                        Signing in...
-                                    </>
-                                ) : (
-                                    'Sign in'
-                                )}
-                            </motion.button>
-                        </form>
-
-                        <div className="text-center text-sm text-gray-500">
-                            Don't have an account?{' '}
-                            <Link href="/register" className="font-medium text-blue-600 hover:underline">
-                                Sign up
-                            </Link>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="hidden lg:block w-1/2 relative bg-blue-600">
-                    <img
-                        src="/images/auth-bg.jpg"
-                        alt="Water delivery"
-                        className="object-cover w-full h-full opacity-90"
-                    />
-                    <div className="absolute inset-0 bg-black/40 flex items-end p-12">
-                        <div>
-                            <h2 className="text-2xl font-bold text-white mb-3">Customer Dashboard</h2>
-                            <p className="text-white/90 max-w-md">
-                                Manage your water subscriptions and orders
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </motion.div>
-        </div>
+                <p className="text-center text-xs text-muted-foreground">
+                    By continuing you agree to Epilux&apos;s terms of service and privacy policy.
+                </p>
+            </form>
+        </AuthShell>
     );
 }
 
-export default function App() {
-    return <LoginPage />;
+export default function LoginPage() {
+    return (
+        <Suspense fallback={null}>
+            <LoginForm />
+        </Suspense>
+    );
 }

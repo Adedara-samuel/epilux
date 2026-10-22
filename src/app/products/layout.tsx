@@ -1,30 +1,11 @@
-import { Metadata } from 'next';
-import { SearchProvider } from '@/app/context/search-context';
-import Header from '@/Components/layout/header';
-import ClientSidebarWrapper from '@/Components/layout/client-sibar-wraper';
+import type { Metadata } from 'next';
+import AppShell from '@/Components/layout/app-shell';
 
 export const metadata: Metadata = {
-    title: 'All Products | Epilux Water - Order Premium Water',
-    description: 'Browse and order from our wide range of premium sachet water, bottled water, dispensers, and accessories.',
+    title: 'Shop',
+    description: 'Browse and order premium sachet water, bottled water and more, delivered to your door.',
 };
 
-export default function ProductsLayout({
-    children,
-}: {
-    children: React.ReactNode;
-}) {
-    return (
-        <SearchProvider>
-            <div className="flex flex-col min-h-screen">
-                <div className="flex flex-1">
-                    <ClientSidebarWrapper />
-                    
-                    <main className="flex-1 lg:ml-64">
-                        <Header />
-                        {children}
-                    </main>
-                </div>
-            </div>
-        </SearchProvider>
-    );
+export default function ProductsLayout({ children }: { children: React.ReactNode }) {
+    return <AppShell>{children}</AppShell>;
 }

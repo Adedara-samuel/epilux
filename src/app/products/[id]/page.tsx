@@ -1,139 +1,367 @@
 /* eslint-disable @next/next/no-img-element */
-// app/products/[id]/page.tsx
-'use client'; // Convert to client component
+'use client';
 
-import { notFound, useParams } from 'next/navigation';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import Link from 'next/link';
+import { useParams, useRouter } from 'next/navigation';
+import { AnimatePresence, motion } from 'framer-motion';
 import { toast } from 'sonner';
-import { useCartStore } from '@/app/context/cart-context';
+import {
+    ArrowLeft, Check, ChevronLeft, ChevronRight, Gift, Loader2, MessageSquare, PackageX,
+    ShieldCheck, ShoppingBag, ShoppingCart, Star, Truck,
+} from 'lucide-react';
+import { useAddProductReview, useProduct, useProductReviews } from '@/hooks/useProducts';
+import { useAddToCart } from '@/hooks/useCart';
+import { useAuth } from '@/hooks/useAuth';
+import { getErrorMessage } from '@/services/base';
 import { Button } from '@/Components/ui/button';
-import { useProduct } from '@/hooks/useProducts';
+import { Textarea } from '@/Components/ui/textarea';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/Components/ui/dialog';
+import { EmptyState, Panel, Pill, QuantityStepper } from '@/Components/ui/kit';
+import { Reveal } from '@/Components/motion';
+import { formatDate, formatNaira, initials } from '@/lib/format';
+import { handleImageError, resolveImageUrl } from '@/lib/images';
+import { MIN_ORDER_QUANTITY } from '@/lib/constants';
+import { FREE_DELIVERY_THRESHOLD } from '@/services/delivery';
+import { cn } from '@/lib/utils';
+
+type ProductImage = { url: string; isPrimary?: boolean; altText?: string };
+type Review = { _id: string; rating: number; comment: string; createdAt: string; user?: { firstName?: string; lastName?: string } };
+
+function Stars({ value, size = 'size-4' }: { value: number; size?: string }) {
+    return (
+        <span className="inline-flex items-center gap-0.5" aria-label={`${value.toFixed(1)} out of 5`}>
+            {[1, 2, 3, 4, 5].map((i) => (
+                <Star key={i} className={cn(size, i <= Math.round(value) ? 'fill-amber-400 text-amber-400' : 'text-border')} />
+            ))}
+        </span>
+    );
+}
+
+function Gallery({ images, name }: { images: ProductImage[]; name: string }) {
+    const [index, setIndex] = useState(0);
+    const [direction, setDirection] = useState(1);
+    const list = images.length ? images : [{ url: '' }];
+    const go = (next: number) => {
+        setDirection(next > index ? 1 : -1);
+        setIndex((next + list.length) % list.length);
+    };
+
+    return (
+        <div className="space-y-3">
+            <div className="relative aspect-[4/3] overflow-hidden rounded-[1.75rem] border border-border/70 bg-gradient-to-br from-brand-50 via-white to-sky-50 shadow-soft sm:aspect-square">
+                <AnimatePresence initial={false} custom={direction} mode="popLayout">
+                    <motion.img
+                        key={index}
+                        src={resolveImageUrl(list[index])}
+                        alt={list[index].altText || name}
+                        onError={handleImageError}
+                        className="absolute inset-0 h-full w-full cursor-grab object-cover active:cursor-grabbing"
+                        custom={direction}
+                        initial={{ opacity: 0, x: direction * 60 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: direction * -60 }}
+                        transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+                        drag={list.length > 1 ? 'x' : false}
+                        dragConstraints={{ left: 0, right: 0 }}
+                        dragElastic={0.2}
+                        onDragEnd={(_, info) => {
+                            if (info.offset.x < -60) go(index + 1);
+                            if (info.offset.x > 60) go(index - 1);
+                        }}
+                    />
+                </AnimatePresence>
+                {list.length > 1 && (
+                    <>
+                        <button onClick={() => go(index - 1)} className="absolute left-3 top-1/2 grid size-10 -translate-y-1/2 place-items-center rounded-full bg-white/90 shadow-md backdrop-blur hover:bg-white" aria-label="Previous image">
+                            <ChevronLeft className="size-5" />
+                        </button>
+                        <button onClick={() => go(index + 1)} className="absolute right-3 top-1/2 grid size-10 -translate-y-1/2 place-items-center rounded-full bg-white/90 shadow-md backdrop-blur hover:bg-white" aria-label="Next image">
+                            <ChevronRight className="size-5" />
+                        </button>
+                        <div className="absolute inset-x-0 bottom-3 flex justify-center gap-1.5">
+                            {list.map((_, i) => (
+                                <span key={i} className={cn('h-1.5 rounded-full bg-white/90 shadow transition-all duration-300', i === index ? 'w-6' : 'w-1.5 opacity-60')} />
+                            ))}
+                        </div>
+                    </>
+                )}
+            </div>
+            {list.length > 1 && (
+                <div className="flex gap-2 overflow-x-auto no-scrollbar">
+                    {list.map((img, i) => (
+                        <button
+                            key={i}
+                            onClick={() => go(i)}
+                            className={cn('size-18 shrink-0 overflow-hidden rounded-2xl border-2 transition-all', i === index ? 'border-primary shadow-brand' : 'border-transparent opacity-70 hover:opacity-100')}
+                            aria-label={`Show image ${i + 1}`}
+                        >
+                            <img src={resolveImageUrl(img)} alt="" onError={handleImageError} className="h-full w-full object-cover" />
+                        </button>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+}
+
+function ReviewDialog({ open, onOpenChange, productId }: { open: boolean; onOpenChange: (v: boolean) => void; productId: string }) {
+    const [rating, setRating] = useState(5);
+    const [hover, setHover] = useState(0);
+    const [comment, setComment] = useState('');
+    const addReview = useAddProductReview();
+
+    const submit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (comment.trim().length < 3) {
+            toast.error('Please write a few words about the product');
+            return;
+        }
+        addReview.mutate({ productId, reviewData: { rating, comment: comment.trim() } }, {
+            onSuccess: () => {
+                toast.success('Thanks! Your review will appear once it has been approved.');
+                setComment('');
+                setRating(5);
+                onOpenChange(false);
+            },
+            onError: (err) => toast.error(getErrorMessage(err, 'Could not submit your review')),
+        });
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="max-w-md rounded-3xl">
+                <DialogHeader>
+                    <DialogTitle>Write a review</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={submit} className="space-y-5">
+                    <div>
+                        <p className="mb-2 text-sm font-semibold">Your rating</p>
+                        <div className="flex gap-1" onMouseLeave={() => setHover(0)}>
+                            {[1, 2, 3, 4, 5].map((star) => (
+                                <motion.button
+                                    key={star}
+                                    type="button"
+                                    whileTap={{ scale: 0.85 }}
+                                    whileHover={{ scale: 1.15 }}
+                                    onMouseEnter={() => setHover(star)}
+                                    onClick={() => setRating(star)}
+                                    aria-label={`${star} star${star > 1 ? 's' : ''}`}
+                                >
+                                    <Star className={cn('size-8 transition-colors', star <= (hover || rating) ? 'fill-amber-400 text-amber-400' : 'text-border')} />
+                                </motion.button>
+                            ))}
+                        </div>
+                    </div>
+                    <div>
+                        <label htmlFor="review-comment" className="mb-2 block text-sm font-semibold">Your review</label>
+                        <Textarea id="review-comment" value={comment} onChange={(e) => setComment(e.target.value)} rows={4} maxLength={1000} placeholder="How was the taste, packaging and delivery?" className="rounded-xl" />
+                    </div>
+                    <div className="flex gap-2">
+                        <Button type="button" variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>Cancel</Button>
+                        <Button type="submit" className="flex-1" loading={addReview.isPending}>Submit review</Button>
+                    </div>
+                </form>
+            </DialogContent>
+        </Dialog>
+    );
+}
 
 export default function ProductDetailPage() {
-    const params = useParams();
-    const id = params.id as string;
-    const [quantity, setQuantity] = useState<number>(1);
-    const { addToCart } = useCartStore();
+    const { id } = useParams<{ id: string }>();
+    const router = useRouter();
+    const { user } = useAuth();
+    const { data, isLoading, isError } = useProduct(id);
+    const { data: reviewsData } = useProductReviews(id);
+    const addToCart = useAddToCart();
+    const [reviewOpen, setReviewOpen] = useState(false);
+    const [added, setAdded] = useState(false);
 
-    // Use API to fetch product
-    const { data: productData, isLoading, error } = useProduct(id);
+    const product = data?.product || data?.data;
+    const stock = Number(product?.stock) || 0;
+    const minQty = Math.min(MIN_ORDER_QUANTITY, Math.max(1, stock || 1));
+    const [quantity, setQuantity] = useState(MIN_ORDER_QUANTITY);
+    const qty = Math.min(Math.max(quantity, minQty), Math.max(stock, minQty));
 
-    const product = productData?.product;
+    const reviews: Review[] = useMemo(() => reviewsData?.data || reviewsData?.reviews || [], [reviewsData]);
+    const rating = product?.averageRating || (reviews.length ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length : 0);
+    const images: ProductImage[] = useMemo(() => {
+        const list: ProductImage[] = product?.images || [];
+        return [...list].sort((a, b) => Number(!!b.isPrimary) - Number(!!a.isPrimary));
+    }, [product]);
 
-    // Handle loading and error states
+    const add = (thenCheckout = false) => {
+        addToCart.mutate({ productId: id, quantity: qty }, {
+            onSuccess: () => {
+                setAdded(true);
+                setTimeout(() => setAdded(false), 1800);
+                if (thenCheckout) router.push('/cart');
+                else toast.success(`${qty} × ${product?.name} added to your cart`, { action: { label: 'View cart', onClick: () => router.push('/cart') } });
+            },
+            onError: (err) => toast.error(getErrorMessage(err, 'Could not add to cart')),
+        });
+    };
+
     if (isLoading) {
         return (
-            <div className="container mx-auto px-4 py-12 text-center">
-                <h1 className="text-2xl font-bold text-gray-700">Loading Product...</h1>
+            <div className="grid gap-8 lg:grid-cols-2">
+                <div className="skeleton-shimmer aspect-square rounded-[1.75rem]" />
+                <div className="space-y-4">
+                    <div className="skeleton-shimmer h-5 w-24 rounded-md" />
+                    <div className="skeleton-shimmer h-10 w-3/4 rounded-lg" />
+                    <div className="skeleton-shimmer h-8 w-40 rounded-lg" />
+                    <div className="skeleton-shimmer h-24 w-full rounded-xl" />
+                    <div className="skeleton-shimmer h-12 w-full rounded-xl" />
+                </div>
             </div>
         );
     }
 
-    if (error || !product) {
-        notFound(); // Renders Next.js not-found page if product isn't found
+    if (isError || !product) {
+        return (
+            <EmptyState
+                icon={PackageX}
+                title="Product not available"
+                description="This product may have been removed or is no longer on sale."
+                action={{ label: 'Back to shop', href: '/products' }}
+            />
+        );
     }
 
-    const handleAddToCart = () => {
-        addToCart(product, quantity); // Pass quantity to addToCart
-        toast.success(`${quantity} ${product.name}${quantity > 1 ? 's' : ''} added to cart!`);
-    };
+    const available = stock > 0;
 
     return (
-        <div className="container mx-auto px-4 py-12">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 bg-white p-8 rounded-lg shadow-xl">
-                <div className="relative h-96 lg:h-[500px] rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center">
-                    <img
-                        src={product.image}
-                        alt={product.name}
-                        className="object-contain"
-                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 50vw"
-                    />
-                </div>
+        <div className="pb-24 lg:pb-0">
+            <Link href="/products" className="animate-fade-in mb-5 inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground">
+                <ArrowLeft className="size-4" /> Back to shop
+            </Link>
 
-                <div>
-                    <h1 className="text-4xl font-extrabold text-blue-800 mb-3">{product.name}</h1>
-                    {product.category && (
-                        <p className="text-lg text-gray-500 mb-4">Category: {product.category.charAt(0).toUpperCase() + product.category.slice(1)}</p>
-                    )}
+            <div className="grid gap-8 lg:grid-cols-2 lg:gap-12">
+                <Reveal immediate>
+                    <Gallery images={images} name={product.name} />
+                </Reveal>
 
-                    {product.tags && product.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mb-4">
-                            {product.tags.map((tag: string) => (
-                                <span
-                                    key={tag}
-                                    className="px-3 py-1 text-sm font-medium rounded-full bg-blue-500/10 text-blue-600 border border-blue-200"
-                                >
-                                    {tag}
-                                </span>
-                            ))}
-                        </div>
-                    )}
-
-                    <div className="flex items-center gap-4 mb-6">
-                        <span className="text-3xl font-bold text-blue-700">
-                            ₦{product.price.toLocaleString()}
-                        </span>
-                        {product.originalPrice && (
-                            <span className="text-xl text-gray-500 line-through">
-                                ₦{product.originalPrice.toLocaleString()}
-                            </span>
-                        )}
-                    </div>
-
-                    <p className="text-gray-700 leading-relaxed mb-6">{product.description}</p>
-
-                    <div className="mb-6 bg-green-50 p-3 rounded-md border border-green-200">
-                        <h3 className="font-semibold text-green-700 mb-1">Affiliate Commission:</h3>
-                        <p className="text-green-800 font-bold text-lg">
-                            ₦{product.affiliateCommission.toLocaleString()} per unit
-                        </p>
-                    </div>
-
-                    <div className="flex items-end gap-4 mb-8">
-                        <div className="w-32">
-                            <label htmlFor="quantity" className="block text-sm font-medium text-gray-700 mb-1">
-                                Quantity
-                            </label>
-                            <select
-                                id="quantity"
-                                value={quantity}
-                                onChange={(e) => setQuantity(parseInt(e.target.value))}
-                                className="block w-full rounded-md border-gray-300 py-2 pl-3 pr-10 text-base focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
-                            >
-                                {[...Array(product.stock > 10 ? 10 : product.stock)].map((_, i) => ( // Limit to 10 or stock if less
-                                    <option key={i + 1} value={i + 1}>
-                                        {i + 1}
-                                    </option>
-                                ))}
-                            </select>
-                            {product.stock <= 10 && product.stock > 0 && (
-                                <p className="text-sm text-yellow-600 mt-1">Only {product.stock} left in stock!</p>
-                            )}
-                            {product.stock === 0 && (
-                                <p className="text-sm text-red-600 mt-1">Out of stock</p>
+                <div className="animate-fade-in space-y-6" style={{ animationDelay: '80ms' }}>
+                    <div>
+                        <div className="flex flex-wrap items-center gap-2">
+                            {product.category && <Pill tone="brand" className="capitalize">{product.category}</Pill>}
+                            {available ? (
+                                <Pill tone={stock < 20 ? 'warning' : 'success'} dot>{stock < 20 ? `Only ${stock} left` : 'In stock'}</Pill>
+                            ) : (
+                                <Pill tone="danger" dot>Out of stock</Pill>
                             )}
                         </div>
-
-                        <Button
-                            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md text-lg transition-colors"
-                            onClick={handleAddToCart}
-                            disabled={product.stock === 0} // Disable if out of stock
-                        >
-                            Add to Cart
-                        </Button>
+                        <h1 className="mt-3 text-3xl font-extrabold leading-tight tracking-tight sm:text-4xl">{product.name}</h1>
+                        <a href="#reviews" className="mt-2 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+                            <Stars value={rating} />
+                            {reviews.length ? <span>{rating.toFixed(1)} · {reviews.length} review{reviews.length > 1 ? 's' : ''}</span> : <span>No reviews yet</span>}
+                        </a>
                     </div>
 
-                    <div className="mt-8 pt-6 border-t border-gray-200">
-                        <h3 className="font-semibold text-xl text-gray-800 mb-3">Product Specifications</h3>
-                        <ul className="text-base text-gray-700 space-y-2">
-                            <li><strong className="font-medium">SKU:</strong> {product.id.toUpperCase()}</li>
-                            <li><strong className="font-medium">Category:</strong> {product.category.charAt(0).toUpperCase() + product.category.slice(1)}</li>
-                            <li><strong className="font-medium">Availability:</strong> {product.stock > 0 ? `${product.stock} units in stock` : 'Out of Stock'}</li>
-                            <li><strong className="font-medium">Delivery:</strong> Free delivery on orders above ₦10,000</li>
-                        </ul>
+                    <div className="flex items-end gap-3">
+                        <p className="text-4xl font-extrabold tracking-tight tabular-nums">{formatNaira(product.price)}</p>
+                        <p className="pb-1.5 text-sm text-muted-foreground">per unit</p>
+                    </div>
+
+                    {product.description && <p className="leading-relaxed text-muted-foreground">{product.description}</p>}
+
+                    {available && (
+                        <Panel className="space-y-4 p-5">
+                            <div className="flex flex-wrap items-center justify-between gap-4">
+                                <div>
+                                    <p className="text-sm font-semibold">Quantity</p>
+                                    <p className="text-xs text-muted-foreground">Minimum order {minQty} units</p>
+                                </div>
+                                <QuantityStepper value={qty} onChange={setQuantity} min={minQty} max={stock} />
+                            </div>
+                            <div className="flex items-center justify-between border-t border-border/60 pt-4">
+                                <span className="text-sm text-muted-foreground">Total</span>
+                                <motion.span key={qty} initial={{ scale: 0.9, opacity: 0.5 }} animate={{ scale: 1, opacity: 1 }} className="text-xl font-extrabold tabular-nums">
+                                    {formatNaira(product.price * qty)}
+                                </motion.span>
+                            </div>
+                            <div className="hidden gap-3 sm:flex">
+                                <Button size="lg" variant="outline" className="flex-1" onClick={() => add(false)} disabled={addToCart.isPending}>
+                                    {added ? <><Check /> Added</> : <><ShoppingCart /> Add to cart</>}
+                                </Button>
+                                <Button size="lg" variant="brand" className="flex-1" onClick={() => add(true)} loading={addToCart.isPending}>
+                                    <ShoppingBag /> Buy now
+                                </Button>
+                            </div>
+                        </Panel>
+                    )}
+
+                    <div className="grid gap-3 sm:grid-cols-3">
+                        {[
+                            { icon: Truck, title: 'Doorstep delivery', text: `Free from ${formatNaira(FREE_DELIVERY_THRESHOLD)}` },
+                            { icon: Gift, title: 'Earn rewards', text: 'Paid when you confirm delivery' },
+                            { icon: ShieldCheck, title: 'Secure checkout', text: 'Protected by Flutterwave' },
+                        ].map(({ icon: Icon, title, text }) => (
+                            <div key={title} className="rounded-2xl border border-border/70 bg-card p-4">
+                                <Icon className="size-5 text-primary" />
+                                <p className="mt-2 text-sm font-semibold">{title}</p>
+                                <p className="text-xs text-muted-foreground">{text}</p>
+                            </div>
+                        ))}
                     </div>
                 </div>
             </div>
+
+            {/* Reviews */}
+            <section id="reviews" className="mt-14 scroll-mt-24">
+                <div className="mb-5 flex items-center justify-between gap-4">
+                    <div>
+                        <h2 className="text-2xl font-extrabold tracking-tight">Customer reviews</h2>
+                        <p className="text-sm text-muted-foreground">{reviews.length ? `${rating.toFixed(1)} out of 5 from ${reviews.length} review${reviews.length > 1 ? 's' : ''}` : 'Be the first to share your experience'}</p>
+                    </div>
+                    {user && <Button variant="outline" onClick={() => setReviewOpen(true)}><MessageSquare /> Write a review</Button>}
+                </div>
+                {reviews.length === 0 ? (
+                    <Panel className="p-2">
+                        <EmptyState icon={Star} title="No reviews yet" description="Tried this product? Your review helps other customers." />
+                    </Panel>
+                ) : (
+                    <div className="grid gap-4 md:grid-cols-2">
+                        {reviews.map((review, i) => (
+                            <Reveal key={review._id} delay={Math.min(i, 6) * 0.05}>
+                                <Panel className="h-full p-5">
+                                    <div className="flex items-center gap-3">
+                                        <span className="grid size-10 place-items-center rounded-full bg-gradient-brand text-sm font-bold text-white">
+                                            {initials(review.user?.firstName, review.user?.lastName)}
+                                        </span>
+                                        <div className="min-w-0 flex-1">
+                                            <p className="truncate font-semibold">{[review.user?.firstName, review.user?.lastName?.charAt(0)].filter(Boolean).join(' ') || 'Customer'}{review.user?.lastName ? '.' : ''}</p>
+                                            <p className="text-xs text-muted-foreground">{formatDate(review.createdAt)}</p>
+                                        </div>
+                                        <Stars value={review.rating} size="size-3.5" />
+                                    </div>
+                                    <p className="mt-3 text-sm leading-relaxed text-foreground/85">{review.comment}</p>
+                                </Panel>
+                            </Reveal>
+                        ))}
+                    </div>
+                )}
+            </section>
+
+            {/* Sticky mobile purchase bar (sits above the bottom navigation) */}
+            {available && (
+                <div className="glass fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-20 border-t border-border/70 px-4 py-3 sm:hidden">
+                    <div className="flex items-center gap-3">
+                        <div className="min-w-0">
+                            <p className="text-xs text-muted-foreground">{qty} × {formatNaira(product.price)}</p>
+                            <p className="font-extrabold tabular-nums">{formatNaira(product.price * qty)}</p>
+                        </div>
+                        <Button variant="outline" size="icon" className="ml-auto shrink-0" onClick={() => add(false)} disabled={addToCart.isPending} aria-label="Add to cart">
+                            {addToCart.isPending ? <Loader2 className="animate-spin" /> : added ? <Check /> : <ShoppingCart />}
+                        </Button>
+                        <Button variant="brand" className="shrink-0" onClick={() => add(true)} disabled={addToCart.isPending}>
+                            Buy now
+                        </Button>
+                    </div>
+                </div>
+            )}
+
+            <ReviewDialog open={reviewOpen} onOpenChange={setReviewOpen} productId={id} />
         </div>
     );
 }

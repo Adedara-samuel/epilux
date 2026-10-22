@@ -1,0 +1,20 @@
+/* Dialog/modal enter/exit helpers */
+.dialog-animate-enter {
+    animation: fadeInScale 240ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.dialog-animate-exit {
+    animation: fadeOutScale 180ms ease-in both;
+}
+
+@keyframes fadeOutScale {
+    from {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    to {
+        opacity: 0;
+        transform: scale(0.98);
+    }
+}

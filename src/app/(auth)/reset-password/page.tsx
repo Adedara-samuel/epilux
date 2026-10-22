@@ -1,220 +1,111 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @next/next/no-img-element */
-// app/reset-password/page.tsx
 'use client';
 
-import axios from 'axios';
-import { useState, useEffect, Suspense } from 'react';
+import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { motion } from 'framer-motion';
 import Link from 'next/link';
+import { toast } from 'sonner';
+import { AlertCircle, ArrowLeft, Check, Eye, EyeOff, KeyRound, Lock } from 'lucide-react';
+import { api, getErrorMessage } from '@/services/base';
+import { Button } from '@/Components/ui/button';
+import { Input } from '@/Components/ui/input';
+import { AuthShell, Field, IconInputWrapper } from '@/Components/auth/auth-shell';
 
-function ResetPasswordContent() {
-    const [token, setToken] = useState('');
-    const [newPassword, setNewPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [message, setMessage] = useState('');
-    const [error, setError] = useState('');
-    const [isValidToken, setIsValidToken] = useState(true);
-
+function ResetPasswordForm() {
     const router = useRouter();
     const searchParams = useSearchParams();
+    const token = searchParams.get('token') || '';
 
-    useEffect(() => {
-        const tokenFromUrl = searchParams.get('token');
-        if (tokenFromUrl) {
-            setToken(tokenFromUrl);
-        } else {
-            setIsValidToken(false);
-            setError('Invalid reset link. Please request a new password reset.');
-        }
-    }, [searchParams]);
+    const [password, setPassword] = useState('');
+    const [confirm, setConfirm] = useState('');
+    const [show, setShow] = useState(false);
+    const [error, setError] = useState('');
+    const [submitting, setSubmitting] = useState(false);
+    const [done, setDone] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        
-        if (!token || !newPassword || !confirmPassword) {
-            setError('Please fill in all fields');
-            return;
-        }
-
-        if (newPassword !== confirmPassword) {
-            setError('Passwords do not match');
-            return;
-        }
-
-        if (newPassword.length < 6) {
-            setError('Password must be at least 6 characters long');
-            return;
-        }
-
-        setIsSubmitting(true);
         setError('');
-        setMessage('');
+        if (password.length < 6) return setError('Password must be at least 6 characters long');
+        if (password !== confirm) return setError('Passwords do not match');
 
+        setSubmitting(true);
         try {
-            const response = await axios.post('/api/auth/reset-password', {
-                token,
-                newPassword,
-                confirmPassword
-            });
-
-            setMessage(response.data.message);
-            
-            // Redirect to login after successful reset
-            setTimeout(() => {
-                router.push('/login');
-            }, 3000);
-            
-        } catch (err: any) {
-            console.error('Error resetting password:', err);
-            setError(err.response?.data?.message || 'Failed to reset password. Please try again.');
+            await api.post('/api/auth/reset-password', { token, password });
+            setDone(true);
+            toast.success('Password updated. Please sign in.');
+            setTimeout(() => router.push('/login'), 2500);
+        } catch (err) {
+            setError(getErrorMessage(err, 'Failed to reset password. Please try again.'));
         } finally {
-            setIsSubmitting(false);
+            setSubmitting(false);
         }
     };
 
-    if (!isValidToken) {
+    const footer = (
+        <Link href="/login" className="inline-flex items-center gap-1.5 font-semibold text-white underline-offset-4 hover:underline">
+            <ArrowLeft className="size-4" /> Back to sign in
+        </Link>
+    );
+
+    if (!token) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-white p-4">
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5 }}
-                    className="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden p-8 sm:p-10 text-center"
-                >
-                    <div className="mb-6">
-                        <svg className="w-16 h-16 text-red-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <h1 className="text-2xl font-bold text-gray-900 mb-2">Invalid Reset Link</h1>
-                        <p className="text-gray-500 mb-6">{error}</p>
-                        <Link href="/forgot-password" className="inline-block px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-lg transition-colors">
-                            Request New Reset Link
-                        </Link>
-                    </div>
-                </motion.div>
-            </div>
+            <AuthShell title="Link not valid" footer={footer}>
+                <div className="text-center">
+                    <span className="mx-auto grid size-16 place-items-center rounded-2xl bg-destructive/10 text-destructive"><KeyRound className="size-8" /></span>
+                    <p className="mt-5 text-muted-foreground">This password reset link is missing or incomplete. Request a new one to continue.</p>
+                    <Button asChild variant="brand" size="lg" className="mt-6 w-full rounded-xl">
+                        <Link href="/forgot-password">Request a new link</Link>
+                    </Button>
+                </div>
+            </AuthShell>
+        );
+    }
+
+    if (done) {
+        return (
+            <AuthShell title="Password updated" footer={footer}>
+                <div className="animate-fade-in text-center">
+                    <span className="mx-auto grid size-16 place-items-center rounded-2xl bg-success/10 text-success"><Check className="size-8" /></span>
+                    <p className="mt-5 text-muted-foreground">Your password has been changed. Taking you to sign in…</p>
+                </div>
+            </AuthShell>
         );
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-white p-4">
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-                className="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden p-8 sm:p-10"
-            >
-                <div className="text-center mb-8">
-                    <Link href="/" className="inline-block mb-6">
-                        <img
-                            src="/images/logo.png"
-                            alt="Epilux Water Logo"
-                            width={120}
-                            height={120}
-                            className="h-16 w-16 mx-auto"
-                        />
-                    </Link>
-                    <h1 className="text-2xl font-bold text-gray-900 mb-2">Reset Password</h1>
-                    <p className="text-gray-500">Enter your new password below</p>
-                </div>
-
-                <div className="space-y-4">
-                    {message && (
-                        <motion.div
-                            initial={{ opacity: 0, y: -10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="p-3 bg-green-50 text-green-600 rounded-lg text-sm"
-                        >
-                            {message}
-                        </motion.div>
-                    )}
-
-                    {error && (
-                        <motion.div
-                            initial={{ opacity: 0, y: -10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="p-3 bg-red-50 text-red-600 rounded-lg text-sm"
-                        >
-                            {error}
-                        </motion.div>
-                    )}
-
-                    <form onSubmit={handleSubmit} className="space-y-5">
-                        <div>
-                            <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                                New Password
-                            </label>
-                            <input
-                                id="newPassword"
-                                name="newPassword"
-                                type="password"
-                                autoComplete="new-password"
-                                required
-                                value={newPassword}
-                                onChange={(e) => setNewPassword(e.target.value)}
-                                className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-                                placeholder="••••••••"
-                                minLength={6}
-                            />
-                        </div>
-
-                        <div>
-                            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                                Confirm New Password
-                            </label>
-                            <input
-                                id="confirmPassword"
-                                name="confirmPassword"
-                                type="password"
-                                autoComplete="new-password"
-                                required
-                                value={confirmPassword}
-                                onChange={(e) => setConfirmPassword(e.target.value)}
-                                className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-                                placeholder="••••••••"
-                                minLength={6}
-                            />
-                        </div>
-
-                        <motion.button
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            type="submit"
-                            disabled={isSubmitting || !newPassword || !confirmPassword}
-                            className="w-full py-3 px-4 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-70 flex items-center justify-center cursor-pointer disabled:cursor-not-allowed"
-                        >
-                            {isSubmitting ? (
-                                <>
-                                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                    </svg>
-                                    Resetting...
-                                </>
-                            ) : (
-                                'Reset Password'
-                            )}
-                        </motion.button>
-                    </form>
-
-                    <div className="text-center text-sm text-gray-500 mt-6">
-                        <Link href="/login" className="font-medium text-blue-500 hover:underline">
-                            Back to Login
-                        </Link>
+        <AuthShell title="Set a new password" subtitle="Choose a strong password you haven't used before." footer={footer}>
+            <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+                {error && (
+                    <div className="animate-shake flex items-start gap-2.5 rounded-xl border border-destructive/20 bg-destructive/5 p-3.5 text-sm text-destructive" role="alert">
+                        <AlertCircle className="mt-0.5 size-4 shrink-0" />
+                        <span>{error}</span>
                     </div>
-                </div>
-            </motion.div>
-        </div>
+                )}
+                <Field label="New password" htmlFor="password">
+                    <IconInputWrapper icon={Lock}>
+                        <Input id="password" type={show ? 'text' : 'password'} autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 6 characters" className="h-12 rounded-xl pl-11 pr-12" />
+                        <button type="button" onClick={() => setShow((v) => !v)} className="absolute right-2 top-1/2 grid size-9 -translate-y-1/2 place-items-center rounded-lg text-muted-foreground hover:bg-muted" aria-label={show ? 'Hide password' : 'Show password'}>
+                            {show ? <EyeOff className="size-[18px]" /> : <Eye className="size-[18px]" />}
+                        </button>
+                    </IconInputWrapper>
+                </Field>
+                <Field label="Confirm new password" htmlFor="confirm">
+                    <IconInputWrapper icon={Lock}>
+                        <Input id="confirm" type={show ? 'text' : 'password'} autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} placeholder="Repeat password" className="h-12 rounded-xl pl-11" />
+                    </IconInputWrapper>
+                </Field>
+                <Button type="submit" variant="brand" size="xl" className="w-full rounded-xl" loading={submitting}>
+                    {submitting ? 'Updating…' : 'Update password'}
+                </Button>
+            </form>
+        </AuthShell>
     );
-};
+}
 
 export default function ResetPasswordPage() {
     return (
-        <Suspense fallback={<div>Loading...</div>}>
-            <ResetPasswordContent />
+        <Suspense fallback={null}>
+            <ResetPasswordForm />
         </Suspense>
     );
 }

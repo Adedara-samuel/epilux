@@ -14,6 +14,7 @@ router.get('/dashboard/stats', authenticate, authorize('admin'), adminController
 router.get('/users', authenticate, authorize('admin'), adminController.getUsers);
 router.get('/users/:id', authenticate, authorize('admin'), adminController.getUser);
 router.put('/users/:id', authenticate, authorize('admin'), adminController.updateUser);
+router.put('/users/:id/suspend', authenticate, authorize('admin'), adminController.suspendUser);
 router.delete('/users/:id', authenticate, authorize('admin'), adminController.deleteUser);
 
 // Product management routes
@@ -37,6 +38,9 @@ router.put('/affiliates/:id/status', authenticate, authorize('admin'), adminCont
 router.get('/affiliates/:id/commissions', authenticate, authorize('admin'), adminController.getAffiliateCommissions);
 router.post('/affiliates/:id/commission', authenticate, authorize('admin'), adminController.createCommission);
 router.put('/commissions/:id/status', authenticate, authorize('admin'), adminController.updateCommissionStatus);
+
+// Commission records management routes
+router.get('/commissions', authenticate, authorize('admin'), adminController.getAllCommissions);
 
 // Withdrawal management routes
 router.get('/withdrawals', authenticate, authorize('admin'), adminController.getWithdrawals);

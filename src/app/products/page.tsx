@@ -1,183 +1,206 @@
-/* eslint-disable react/no-unescaped-entities */
-/* eslint-disable @typescript-eslint/no-unused-vars */
-// app/products/page.tsx
 'use client';
 
-import { useState, useMemo, useEffect, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { Suspense, useMemo } from 'react';
+import Link from 'next/link';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { motion } from 'framer-motion';
+import { ArrowRight, Gift, PackageSearch, ShieldCheck, Sparkles, Truck, Wallet, X } from 'lucide-react';
+import { useCategories, useProducts } from '@/hooks/useProducts';
+import { useAuth } from '@/hooks/useAuth';
+import { useWalletBalance } from '@/hooks/useWallet';
 import ProductGrid from '@/Components/products/product-grid';
-import { useSearchStore } from '@/stores/search-store';
-import { useProducts, useCategories, useBrands } from '@/hooks/useProducts';
+import { EmptyState, ErrorState } from '@/Components/ui/kit';
+import { Reveal } from '@/Components/motion';
+import { formatNaira } from '@/lib/format';
+import { FREE_DELIVERY_THRESHOLD } from '@/services/delivery';
+import { cn } from '@/lib/utils';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/ui/select';
+import type { Product } from '@/types/product';
 
-// Note: Metadata export is moved to app/layout.tsx for client components.
-// If you need dynamic titles based on filters, you'd update the document title client-side.
+const SORTS = [
+    { value: 'newest', label: 'Newest' },
+    { value: 'price-asc', label: 'Price: low to high' },
+    { value: 'price-desc', label: 'Price: high to low' },
+    { value: 'name', label: 'Name A–Z' },
+] as const;
 
-function ProductsPage() {
-    const searchParams = useSearchParams();
-    const initialCategory = searchParams.get('category') || 'all';
-    const { searchQuery } = useSearchStore(); // Get searchQuery from store
+const greeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
+};
 
-    const [selectedCategory, setSelectedCategory] = useState<string>(initialCategory);
-    // Removed [searchQuery, setSearchQuery] useState and handleSearch function
+const label = (c: string) => c.charAt(0).toUpperCase() + c.slice(1).replace(/[-_]/g, ' ');
 
-    // Update category state if URL param changes
-    useEffect(() => {
-        setSelectedCategory(searchParams.get('category') || 'all');
-    }, [searchParams]);
-
-    const handleCategoryChange = (categoryValue: string) => {
-        setSelectedCategory(categoryValue);
-        // Optionally update URL for persistence/sharing
-        const newSearchParams = new URLSearchParams(searchParams.toString());
-        if (categoryValue === 'all') {
-            newSearchParams.delete('category');
-        } else {
-            newSearchParams.set('category', categoryValue);
-        }
-        window.history.pushState(null, '', `?${newSearchParams.toString()}`);
-    };
-
-    // Use API for products
-    const { data: productsData, isLoading } = useProducts({
-        category: selectedCategory !== 'all' ? selectedCategory : undefined,
-        search: searchQuery || undefined,
-    });
-
-    const products = productsData?.products || [];
-
-    // Get categories and brands for filters
-    const { data: categoriesData } = useCategories();
-    const { data: brandsData } = useBrands();
-
-    const categories = categoriesData?.categories || [];
-    const brands = brandsData?.brands || [];
+function ShopHero() {
+    const { user } = useAuth();
+    const { data: wallet } = useWalletBalance();
 
     return (
-        <div className="min-h-screen bg-gray-50">
-            {/* Hero Section */}
-            <div className="bg-white border-b border-gray-200 py-16">
-                <div className="container mx-auto px-4 text-center">
-                    <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
-                        Our Premium Water Products
-                    </h1>
-                    <p className="text-xl md:text-2xl text-gray-600 max-w-4xl mx-auto leading-relaxed">
-                        Discover our complete range of high-quality drinking water solutions, from individual sachets to bulk dispensers
+        <section className="aurora relative mb-6 overflow-hidden rounded-[1.75rem] px-5 py-6 text-white shadow-lift sm:px-8 sm:py-9">
+            <span aria-hidden className="aurora-blob one !h-80 !w-80 !opacity-40" />
+            <span aria-hidden className="aurora-blob three !opacity-30" />
+            <div className="relative grid gap-6 lg:grid-cols-[1.4fr_1fr] lg:items-center">
+                <div className="animate-fade-in">
+                    <p className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white/90 ring-1 ring-white/20 backdrop-blur">
+                        <Sparkles className="size-3.5 text-amber-200" /> Earn rewards on every delivered order
                     </p>
+                    <h1 className="mt-4 text-[1.7rem] font-extrabold leading-tight tracking-tight text-white sm:text-4xl">
+                        {greeting()}{user?.firstName ? `, ${user.firstName}` : ''} 👋
+                    </h1>
+                    <p className="mt-2 max-w-lg text-sm text-white/75 sm:text-base">
+                        <span className="hidden sm:inline">Fresh, safe drinking water delivered by a dedicated marketer. </span>Free delivery on orders from {formatNaira(FREE_DELIVERY_THRESHOLD)}.
+                    </p>
+                    <div className="mt-5 flex flex-wrap gap-2">
+                        <a href="#catalogue" className="inline-flex h-10 items-center gap-2 rounded-xl bg-white px-4 text-sm font-semibold text-brand-700 shadow-lg shadow-black/10 transition-transform hover:-translate-y-0.5">
+                            Shop now <ArrowRight className="size-4" />
+                        </a>
+                        <Link href="/products/referrals" className="inline-flex h-10 items-center gap-2 rounded-xl bg-white/10 px-4 text-sm font-semibold text-white ring-1 ring-white/25 backdrop-blur transition-colors hover:bg-white/15">
+                            <Gift className="size-4" /> Invite & earn
+                        </Link>
+                    </div>
+                </div>
+
+                <div className="animate-fade-in grid grid-cols-2 gap-3" style={{ animationDelay: '120ms' }}>
+                    <Link href="/products/wallet" className="group flex items-center gap-3 rounded-2xl bg-white/10 p-3 ring-1 ring-white/15 backdrop-blur transition-colors hover:bg-white/15 sm:block sm:p-4">
+                        <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-emerald-400/20 text-emerald-200"><Wallet className="size-5" /></span>
+                        <div className="min-w-0 sm:mt-3">
+                            <p className="text-xs text-white/70">Wallet</p>
+                            <p className="truncate font-extrabold tabular-nums text-white sm:text-lg">{formatNaira(wallet?.availableBalance)}</p>
+                        </div>
+                    </Link>
+                    <Link href="/account/orders" className="group flex items-center gap-3 rounded-2xl bg-white/10 p-3 ring-1 ring-white/15 backdrop-blur transition-colors hover:bg-white/15 sm:block sm:p-4">
+                        <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-sky-300/20 text-sky-100"><Truck className="size-5" /></span>
+                        <div className="min-w-0 sm:mt-3">
+                            <p className="text-xs text-white/70">Deliveries</p>
+                            <p className="truncate font-extrabold text-white sm:text-lg">Track orders</p>
+                        </div>
+                    </Link>
                 </div>
             </div>
-
-            <div className="container mx-auto px-4 py-12">
-                {/* Category Filter */}
-                <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-6 mb-8">
-                    <div className="flex items-center justify-between mb-6">
-                        <h2 className="text-2xl font-bold text-gray-800">Filter by Category</h2>
-                        <span className="text-sm text-gray-600 bg-gray-100 px-3 py-1 rounded-full">
-                            {products.length} products found
-                        </span>
-                    </div>
-
-                    <div className="flex flex-wrap gap-3">
-                        {[
-                            { name: 'All Products', value: 'all', icon: '🏷️' },
-                            { name: 'Sachet Water', value: 'sachet', icon: '💧' },
-                            { name: 'Bottled Water', value: 'bottled', icon: '🥤' },
-                            { name: 'Water Dispensers', value: 'dispenser', icon: '🏢' },
-                            { name: 'Accessories', value: 'accessories', icon: '🔧' },
-                            { name: 'Bulk Orders', value: 'bulk', icon: '📦' },
-                        ].map((category) => (
-                            <button
-                                key={category.value}
-                                onClick={() => handleCategoryChange(category.value)}
-                                className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all duration-300 ${
-                                    selectedCategory === category.value
-                                        ? 'bg-blue-600 text-white shadow-md'
-                                        : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 hover:shadow-sm'
-                                }`}
-                            >
-                                <span className="text-lg">{category.icon}</span>
-                                {category.name}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Products Section */}
-                <div className="mb-8">
-                    <div className="flex items-center justify-between mb-6">
-                        <h2 className="text-3xl font-bold text-gray-800">
-                            {selectedCategory === 'all'
-                                ? 'All Products'
-                                : `${selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)} Products`
-                            }
-                        </h2>
-                        <div className="text-sm text-gray-600">
-                            Showing {products.length} of {products.length} products
-                        </div>
-                    </div>
-
-                    {isLoading ? (
-                        <div className="flex items-center justify-center py-16">
-                            <div className="text-center">
-                                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                                <p className="text-lg text-gray-700">Loading premium products...</p>
-                            </div>
-                        </div>
-                    ) : products.length > 0 ? (
-                        <ProductGrid products={products} />
-                    ) : (
-                        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-12 text-center">
-                            <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                                <span className="text-4xl">🔍</span>
-                            </div>
-                            <h3 className="text-2xl font-bold text-gray-800 mb-3">No products found</h3>
-                            <p className="text-gray-600 mb-6 max-w-md mx-auto">
-                                We couldn't find any products in this category. Try selecting a different category or check back later.
-                            </p>
-                            <button
-                                onClick={() => handleCategoryChange('all')}
-                                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg shadow-md hover:shadow-lg transition-all duration-300"
-                            >
-                                View All Products
-                            </button>
-                        </div>
-                    )}
-                </div>
-
-                {/* Features Section */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-16">
-                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 text-center">
-                        <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-                            <span className="text-2xl">🚚</span>
-                        </div>
-                        <h3 className="text-lg font-bold text-gray-900 mb-2">Free Delivery</h3>
-                        <p className="text-gray-600 text-sm">Free delivery on orders above ₦10,000. Fast and reliable service.</p>
-                    </div>
-
-                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 text-center">
-                        <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-                            <span className="text-2xl">✅</span>
-                        </div>
-                        <h3 className="text-lg font-bold text-gray-900 mb-2">Quality Guaranteed</h3>
-                        <p className="text-gray-600 text-sm">All our products meet the highest quality standards and regulations.</p>
-                    </div>
-
-                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 text-center">
-                        <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-                            <span className="text-2xl">💳</span>
-                        </div>
-                        <h3 className="text-lg font-bold text-gray-900 mb-2">Secure Payments</h3>
-                        <p className="text-gray-600 text-sm">Multiple payment options with bank-grade security and encryption.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
+        </section>
     );
 }
 
-export default function App() {
+function ShopContent() {
+    const router = useRouter();
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
+    const category = searchParams.get('category') || '';
+    const search = searchParams.get('search') || '';
+    const sort = (searchParams.get('sort') || 'newest') as (typeof SORTS)[number]['value'];
+
+    const { data, isLoading, isError, refetch } = useProducts({ category: category || undefined, search: search || undefined });
+    const { data: categoriesData } = useCategories();
+    const categories: string[] = (categoriesData as { categories?: string[] } | undefined)?.categories || [];
+
+    const setParam = (key: string, value: string | null) => {
+        const params = new URLSearchParams(searchParams.toString());
+        if (value) params.set(key, value); else params.delete(key);
+        router.replace(`${pathname}${params.toString() ? `?${params}` : ''}`, { scroll: false });
+    };
+
+    const products = useMemo(() => {
+        const list: (Product & { createdAt?: string })[] = (data?.products || []).map((p: Product & { _id?: string }) => ({ ...p, id: p.id || p._id }));
+        const sorted = [...list];
+        if (sort === 'price-asc') sorted.sort((a, b) => a.price - b.price);
+        if (sort === 'price-desc') sorted.sort((a, b) => b.price - a.price);
+        if (sort === 'name') sorted.sort((a, b) => a.name.localeCompare(b.name));
+        // Keep in-stock items first
+        return sorted.sort((a, b) => Number(b.stock > 0) - Number(a.stock > 0));
+    }, [data, sort]);
+
+    const chips = ['', ...categories];
+
     return (
-        <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading products...</div>}>
-            <ProductsPage />
+        <>
+            <ShopHero />
+
+            <section id="catalogue" className="scroll-mt-24">
+                <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <h2 className="text-xl font-extrabold tracking-tight sm:text-2xl">
+                            {search ? <>Results for “{search}”</> : category ? `${label(category)} water` : 'All products'}
+                        </h2>
+                        <p className="text-sm text-muted-foreground">
+                            {isLoading ? 'Loading…' : `${products.length} ${products.length === 1 ? 'product' : 'products'}`}
+                        </p>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <span id="sort-label">Sort</span>
+                        <Select value={sort} onValueChange={(value) => setParam('sort', value === 'newest' ? null : value)}>
+                            <SelectTrigger aria-labelledby="sort-label" className="h-10 w-48 font-medium"><SelectValue /></SelectTrigger>
+                            <SelectContent align="end">
+                                {SORTS.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
+
+                {/* Category chips */}
+                <div className="-mx-4 mb-6 overflow-x-auto px-4 no-scrollbar sm:mx-0 sm:px-0">
+                    <div className="flex w-max gap-2">
+                        {chips.map((c) => {
+                            const active = c === category;
+                            return (
+                                <button
+                                    key={c || 'all'}
+                                    onClick={() => setParam('category', c || null)}
+                                    className={cn('relative h-10 rounded-full px-4 text-sm font-semibold transition-colors', active ? 'text-white' : 'bg-card text-muted-foreground ring-1 ring-border hover:text-foreground')}
+                                >
+                                    {active && <motion.span layoutId="category-chip" className="absolute inset-0 rounded-full bg-primary shadow-brand" transition={{ type: 'spring', stiffness: 500, damping: 38 }} />}
+                                    <span className="relative">{c ? label(c) : 'All'}</span>
+                                </button>
+                            );
+                        })}
+                        {search && (
+                            <button onClick={() => setParam('search', null)} className="flex h-10 items-center gap-1.5 rounded-full bg-accent px-4 text-sm font-semibold text-accent-foreground">
+                                “{search}” <X className="size-4" />
+                            </button>
+                        )}
+                    </div>
+                </div>
+
+                {isError ? (
+                    <ErrorState description="We couldn't load products. Check your connection and try again." onRetry={() => refetch()} />
+                ) : isLoading ? (
+                    <ProductGrid products={[]} loading />
+                ) : products.length === 0 ? (
+                    <EmptyState
+                        icon={PackageSearch}
+                        title="No products found"
+                        description={search ? 'Try a different search term or browse all products.' : 'Nothing in this category yet. Check back soon.'}
+                        action={{ label: 'View all products', onClick: () => router.replace(pathname) }}
+                    />
+                ) : (
+                    <ProductGrid products={products} />
+                )}
+            </section>
+
+            <Reveal className="mt-12 grid gap-3 sm:grid-cols-3">
+                {[
+                    { icon: Truck, title: 'Free delivery', text: `On orders from ${formatNaira(FREE_DELIVERY_THRESHOLD)}` },
+                    { icon: ShieldCheck, title: 'Quality guaranteed', text: 'Treated, sealed and safe to drink' },
+                    { icon: Wallet, title: 'Rewards in your wallet', text: 'Paid when you confirm delivery' },
+                ].map(({ icon: Icon, title, text }) => (
+                    <div key={title} className="flex items-center gap-4 rounded-2xl border border-border/70 bg-card p-4 shadow-soft">
+                        <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-accent text-primary"><Icon className="size-5" /></span>
+                        <div>
+                            <p className="font-semibold">{title}</p>
+                            <p className="text-sm text-muted-foreground">{text}</p>
+                        </div>
+                    </div>
+                ))}
+            </Reveal>
+        </>
+    );
+}
+
+export default function ProductsPage() {
+    return (
+        <Suspense fallback={<ProductGrid products={[]} loading />}>
+            <ShopContent />
         </Suspense>
     );
 }

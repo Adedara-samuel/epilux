@@ -1,255 +1,186 @@
-/* eslint-disable react/no-unescaped-entities */
 /* eslint-disable @next/next/no-img-element */
-// app/cart/page.tsx
 'use client';
-import { useCartStore } from '@/stores/cart-store';
-import EmptyState from '@/Components/empty-state';
-import { Button } from '@/Components/ui/button';
-import { Input } from '@/Components/ui/input';
-import { Minus, Plus, Trash2 } from 'lucide-react';
+
 import Link from 'next/link';
-
-// You might need to create this EmptyState component if you don't have it:
-// components/empty-state.tsx
-// 'use client';
-// import Link from 'next/link';
-// import { Button } from './ui/button';
-//
-// interface EmptyStateProps {
-//   title: string;
-//   description: string;
-//   actionText: string;
-//   actionLink: string;
-// }
-//
-// export default function EmptyState({ title, description, actionText, actionLink }: EmptyStateProps) {
-//   return (
-//     <div className="container mx-auto px-4 py-12 text-center bg-white rounded-lg shadow-md mt-8">
-//       <h2 className="text-3xl font-bold mb-4 text-blue-800">{title}</h2>
-//       <p className="text-lg text-gray-600 mb-6">{description}</p>
-//       <Button asChild className="bg-blue-600 hover:bg-blue-700 text-white">
-//         <Link href={actionLink}>{actionText}</Link>
-//       </Button>
-//     </div>
-//   );
-// }
-
+import { useRouter } from 'next/navigation';
+import { AnimatePresence, motion } from 'framer-motion';
+import { toast } from 'sonner';
+import { ArrowRight, Loader2, ShieldCheck, ShoppingBag, ShoppingCart, Trash2, Truck } from 'lucide-react';
+import { useCartSummary, useClearCart, useRemoveFromCart, useUpdateCartItem } from '@/hooks/useCart';
+import { getErrorMessage } from '@/services/base';
+import { FREE_DELIVERY_THRESHOLD } from '@/services/delivery';
+import { Button } from '@/Components/ui/button';
+import { EmptyState, ErrorState, PageHeader, Panel, QuantityStepper } from '@/Components/ui/kit';
+import { formatNaira } from '@/lib/format';
+import { handleImageError, resolveImageUrl } from '@/lib/images';
+import { MIN_ORDER_QUANTITY } from '@/lib/constants';
+import { CheckoutSteps } from '@/Components/orders/checkout-steps';
+import { Progress } from '@/Components/ui/progress';
 
 export default function CartPage() {
-    const { cart, removeFromCart, updateQuantity, clearCart, totalItems, totalPrice } = useCartStore();
-    const subtotal = totalPrice;
-    const deliveryFee = subtotal >= 10000 ? 0 : 1500; // Adjusted for >= 10,000 for consistency
+    const router = useRouter();
+    const { lines, subtotal, itemCount, deliveryFee, total, isLoading, isError, refetch } = useCartSummary();
+    const updateItem = useUpdateCartItem();
+    const removeItem = useRemoveFromCart();
+    const clearCart = useClearCart();
 
-    if (cart.length === 0) {
-        return <EmptyState
-            title="Your cart is empty"
-            description="Looks like you haven't added any items to your cart yet."
-            actionText="Browse Products"
-            actionLink="/products"
-        />;
+    const toFreeDelivery = Math.max(0, FREE_DELIVERY_THRESHOLD - subtotal);
+    const progress = Math.min(100, (subtotal / FREE_DELIVERY_THRESHOLD) * 100);
+    const busyId = (updateItem.isPending && updateItem.variables?.itemId) || (removeItem.isPending && removeItem.variables) || null;
+
+    const changeQty = (productId: string, quantity: number) => {
+        updateItem.mutate({ itemId: productId, quantity }, {
+            onError: (err) => toast.error(getErrorMessage(err, 'Could not update quantity')),
+        });
+    };
+
+    const remove = (productId: string, name: string) => {
+        removeItem.mutate(productId, {
+            onSuccess: () => toast.success(`${name} removed from your cart`),
+            onError: (err) => toast.error(getErrorMessage(err, 'Could not remove item')),
+        });
+    };
+
+    if (isError) {
+        return <ErrorState description="We couldn't load your cart." onRetry={() => refetch()} />;
+    }
+
+    if (isLoading) {
+        return (
+            <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
+                <div className="space-y-3">{[0, 1, 2].map((i) => <div key={i} className="skeleton-shimmer h-32 rounded-3xl" />)}</div>
+                <div className="skeleton-shimmer h-80 rounded-3xl" />
+            </div>
+        );
+    }
+
+    if (lines.length === 0) {
+        return (
+            <Panel className="mx-auto max-w-xl">
+                <EmptyState
+                    icon={ShoppingCart}
+                    title="Your cart is empty"
+                    description="Add some fresh water to get started. Delivery is free on orders from ₦10,000."
+                    action={{ label: 'Browse products', href: '/products' }}
+                />
+            </Panel>
+        );
     }
 
     return (
-        <div className="min-h-screen bg-gray-50">
-            <div className="container mx-auto px-4 py-12">
-                {/* Header */}
-                <div className="text-center mb-8">
-                    <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-                        Your Shopping Cart
-                    </h1>
-                    <p className="text-lg text-gray-600">
-                        {totalItems > 0 ? `${totalItems} items in your cart` : 'Your cart is waiting for products'}
-                    </p>
-                </div>
+        <div>
+            <CheckoutSteps current={0} />
+            <PageHeader
+                title="Your cart"
+                description={`${itemCount} ${itemCount === 1 ? 'unit' : 'units'} across ${lines.length} ${lines.length === 1 ? 'product' : 'products'}`}
+                actions={
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-muted-foreground hover:text-destructive"
+                        onClick={() => clearCart.mutate(undefined, { onSuccess: () => toast.success('Cart cleared') })}
+                        loading={clearCart.isPending}
+                    >
+                        <Trash2 /> Clear cart
+                    </Button>
+                }
+            />
 
-                <div className="flex flex-col lg:flex-row gap-8">
-                    {/* Cart Items */}
-                    <div className="lg:w-2/3">
-                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                            <div className="p-6 border-b border-gray-100">
-                                <h2 className="text-2xl font-bold text-gray-900">Cart Items</h2>
-                                <p className="text-gray-600 mt-1">Review and manage your selected products</p>
-                            </div>
+            <div className="grid gap-6 lg:grid-cols-[1fr_380px] lg:items-start">
+                <div className="space-y-3">
+                    {/* Free delivery progress */}
+                    <Panel className="animate-fade-in p-4">
+                        <div className="flex items-center gap-3">
+                            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-accent text-primary"><Truck className="size-5" /></span>
+                            <p className="text-sm">
+                                {toFreeDelivery > 0
+                                    ? <>Add <span className="font-bold">{formatNaira(toFreeDelivery)}</span> more for <span className="font-bold text-primary">free delivery</span></>
+                                    : <span className="font-semibold text-success">You&apos;ve unlocked free delivery 🎉</span>}
+                            </p>
+                        </div>
+                        <Progress value={progress} className="mt-3" aria-label="Progress towards free delivery" />
+                    </Panel>
 
-                            <div className="p-6">
-                                {cart.length > 0 ? (
-                                    <div className="space-y-6">
-                                        {cart.map((item) => (
-                                            <div key={item.id} className="bg-gray-50 rounded-lg p-6 border border-gray-200 hover:shadow-md transition-all duration-300">
-                                                <div className="flex flex-col sm:flex-row gap-6 items-center">
-                                                    <div className="w-24 h-24 sm:w-32 sm:h-32 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
-                                                        <img
-                                                            src={item.image}
-                                                            alt={item.name}
-                                                            className="w-full h-full object-cover"
-                                                        />
-                                                    </div>
-
-                                                    <div className="flex-1 w-full">
-                                                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
-                                                            <div>
-                                                                <h3 className="text-xl font-bold text-gray-800 mb-1">{item.name}</h3>
-                                                                <p className="text-gray-600">₦{item.price.toLocaleString()} per unit</p>
-                                                            </div>
-                                                            <div className="text-2xl font-bold text-gray-900 mt-2 sm:mt-0">
-                                                                ₦{(item.price * item.quantity).toLocaleString()}
-                                                            </div>
-                                                        </div>
-
-                                                        <div className="flex items-center justify-between">
-                                                            <div className="flex items-center gap-4">
-                                                                <div className="flex items-center bg-white rounded-xl border border-gray-200 shadow-sm">
-                                                                    <Button
-                                                                        variant="ghost"
-                                                                        size="icon"
-                                                                        onClick={() => updateQuantity(item.id, Math.max(1, item.quantity - 1))}
-                                                                        className="text-gray-600 hover:bg-gray-100 hover:text-blue-600 rounded-l-xl"
-                                                                    >
-                                                                        <Minus size={18} />
-                                                                    </Button>
-                                                                    <Input
-                                                                        type="number"
-                                                                        value={item.quantity}
-                                                                        onChange={(e) => updateQuantity(item.id, parseInt(e.target.value) || 1)}
-                                                                        className="w-16 text-center border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 text-lg font-semibold"
-                                                                        min="1"
-                                                                        max={item.stock}
-                                                                    />
-                                                                    <Button
-                                                                        variant="ghost"
-                                                                        size="icon"
-                                                                        onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                                                                        className="text-gray-600 hover:bg-gray-100 hover:text-blue-600 rounded-r-xl"
-                                                                    >
-                                                                        <Plus size={18} />
-                                                                    </Button>
-                                                                </div>
-
-                                                                <span className="text-sm text-gray-500">
-                                                                    {item.stock > 10 ? 'In stock' : item.stock > 0 ? `Only ${item.stock} left` : 'Out of stock'}
-                                                                </span>
-                                                            </div>
-
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                onClick={() => removeFromCart(item.id)}
-                                                                className="text-red-500 hover:bg-red-50 hover:text-red-700 p-3 rounded-xl hover:shadow-md transition-all duration-300"
-                                                            >
-                                                                <Trash2 size={20} />
-                                                            </Button>
-                                                        </div>
-                                                    </div>
+                    <AnimatePresence initial={false}>
+                        {lines.map((line) => {
+                            const minQty = Math.min(MIN_ORDER_QUANTITY, Math.max(1, line.stock || line.quantity));
+                            const busy = busyId === line.productId;
+                            return (
+                                <motion.div
+                                    key={line.productId}
+                                    layout
+                                    initial={{ opacity: 0, y: 12 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, x: -40, height: 0, marginTop: 0 }}
+                                    transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                                >
+                                    <Panel className="flex gap-4 p-3 sm:p-4">
+                                        <Link href={`/products/${line.productId}`} className="size-24 shrink-0 overflow-hidden rounded-2xl bg-gradient-to-br from-brand-50 to-sky-50 sm:size-28">
+                                            <img src={resolveImageUrl(line.image)} alt={line.name} onError={handleImageError} className="h-full w-full object-cover" />
+                                        </Link>
+                                        <div className="flex min-w-0 flex-1 flex-col">
+                                            <div className="flex items-start justify-between gap-2">
+                                                <div className="min-w-0">
+                                                    <Link href={`/products/${line.productId}`} className="line-clamp-2 font-bold leading-snug hover:text-primary">{line.name}</Link>
+                                                    <p className="mt-0.5 text-sm text-muted-foreground">{formatNaira(line.price)} each</p>
                                                 </div>
+                                                <button
+                                                    onClick={() => remove(line.productId, line.name)}
+                                                    className="grid size-9 shrink-0 place-items-center rounded-xl text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                                                    aria-label={`Remove ${line.name}`}
+                                                    disabled={busy}
+                                                >
+                                                    <Trash2 className="size-4" />
+                                                </button>
                                             </div>
-                                        ))}
-
-                                        <div className="flex justify-end pt-6 border-t border-gray-100">
-                                            <Button
-                                                variant="outline"
-                                                onClick={clearCart}
-                                                className="border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-400 px-6 py-3 rounded-lg font-medium transition-colors"
-                                            >
-                                                <Trash2 className="w-4 h-4 mr-2" />
-                                                Clear All Items
-                                            </Button>
+                                            <div className="mt-auto flex flex-wrap items-end justify-between gap-3 pt-3">
+                                                <div className="flex items-center gap-2">
+                                                    <QuantityStepper
+                                                        value={line.quantity}
+                                                        onChange={(q) => changeQty(line.productId, q)}
+                                                        min={minQty}
+                                                        max={Math.max(line.stock, line.quantity)}
+                                                        size="sm"
+                                                        disabled={busy}
+                                                    />
+                                                    {busy && <Loader2 className="size-4 animate-spin text-muted-foreground" />}
+                                                </div>
+                                                <p className="text-lg font-extrabold tabular-nums">{formatNaira(line.lineTotal)}</p>
+                                            </div>
+                                            {line.stock > 0 && line.stock < 20 && <p className="mt-1.5 text-xs font-medium text-amber-600">Only {line.stock} left in stock</p>}
                                         </div>
-                                    </div>
-                                ) : (
-                                    <div className="text-center py-16">
-                                        <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                                            <span className="text-4xl">🛒</span>
-                                        </div>
-                                        <h3 className="text-2xl font-bold text-gray-800 mb-3">Your cart is empty</h3>
-                                        <p className="text-gray-600 mb-8 max-w-md mx-auto">
-                                            Looks like you haven't added any items to your cart yet. Discover our premium water products!
-                                        </p>
-                                        <Button asChild className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg shadow-md hover:shadow-lg transition-colors">
-                                            <Link href="/products">Start Shopping</Link>
-                                        </Button>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
+                                    </Panel>
+                                </motion.div>
+                            );
+                        })}
+                    </AnimatePresence>
 
-                    {/* Order Summary */}
-                    {cart.length > 0 && (
-                        <div className="lg:w-1/3">
-                            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sticky top-8">
-                                <div className="flex items-center gap-3 mb-6">
-                                    <div className="p-3 bg-blue-100 rounded-lg">
-                                        <span className="text-2xl">📋</span>
-                                    </div>
-                                    <div>
-                                        <h2 className="text-2xl font-bold text-gray-900">Order Summary</h2>
-                                        <p className="text-gray-600 text-sm">Review your order details</p>
-                                    </div>
-                                </div>
-
-                                <div className="space-y-4 mb-6">
-                                    <div className="flex justify-between items-center py-3 border-b border-gray-100">
-                                        <span className="text-gray-700 font-medium">Subtotal ({totalItems} items)</span>
-                                        <span className="font-semibold text-gray-800">₦{subtotal.toLocaleString()}</span>
-                                    </div>
-
-                                    <div className="flex justify-between items-center py-3 border-b border-gray-100">
-                                        <span className="text-gray-700 font-medium">Delivery Fee</span>
-                                        <span className="font-semibold text-gray-800">
-                                            {deliveryFee === 0 ? (
-                                                <span className="text-green-600 font-bold">FREE</span>
-                                            ) : (
-                                                `₦${deliveryFee.toLocaleString()}`
-                                            )}
-                                        </span>
-                                    </div>
-
-                                    {deliveryFee === 0 && (
-                                        <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                                            <p className="text-green-800 text-sm flex items-center gap-2">
-                                                <span className="text-lg">🎉</span>
-                                                Congratulations! You qualify for free delivery.
-                                            </p>
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="bg-blue-600 rounded-lg p-4 mb-6">
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-white font-bold text-lg">Total</span>
-                                        <span className="text-white font-bold text-2xl">₦{(subtotal + deliveryFee).toLocaleString()}</span>
-                                    </div>
-                                </div>
-
-                                <Button asChild className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-6 rounded-lg shadow-md hover:shadow-lg transition-colors text-lg">
-                                    <Link href="/checkout">
-                                        Proceed to Checkout
-                                    </Link>
-                                </Button>
-
-                                <div className="mt-6 text-center">
-                                    <Link
-                                        href="/products"
-                                        className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium transition-colors"
-                                    >
-                                        <span>Continue Shopping</span>
-                                        <span className="text-xl">→</span>
-                                    </Link>
-                                </div>
-
-                                <div className="mt-6 p-4 bg-blue-50 rounded-xl">
-                                    <div className="flex items-center gap-3 text-sm text-blue-800">
-                                        <span className="text-lg">🔒</span>
-                                        <div>
-                                            <p className="font-medium">Secure Checkout</p>
-                                            <p className="text-blue-600">SSL encrypted & protected</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    )}
+                    <Link href="/products" className="inline-flex items-center gap-1.5 pt-1 text-sm font-semibold text-primary hover:underline">
+                        <ShoppingBag className="size-4" /> Continue shopping
+                    </Link>
                 </div>
+
+                {/* Summary */}
+                <Panel className="animate-fade-in p-5 sm:p-6 lg:sticky lg:top-24" style={{ animationDelay: '80ms' }}>
+                    <h2 className="text-lg font-bold">Order summary</h2>
+                    <dl className="mt-5 space-y-3 text-sm">
+                        <div className="flex justify-between"><dt className="text-muted-foreground">Subtotal</dt><dd className="font-semibold tabular-nums">{formatNaira(subtotal)}</dd></div>
+                        <div className="flex justify-between">
+                            <dt className="text-muted-foreground">Delivery</dt>
+                            <dd className="font-semibold tabular-nums">{deliveryFee === 0 ? <span className="text-success">Free</span> : formatNaira(deliveryFee)}</dd>
+                        </div>
+                        <div className="flex items-center justify-between border-t border-border/70 pt-4">
+                            <dt className="text-base font-bold">Total</dt>
+                            <dd className="text-2xl font-extrabold tracking-tight tabular-nums">{formatNaira(total)}</dd>
+                        </div>
+                    </dl>
+                    <Button variant="brand" size="xl" className="group mt-6 w-full rounded-xl" onClick={() => router.push('/checkout')} disabled={updateItem.isPending || removeItem.isPending}>
+                        Checkout <ArrowRight className="transition-transform group-hover:translate-x-1" />
+                    </Button>
+                    <p className="mt-4 flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
+                        <ShieldCheck className="size-3.5" /> Secure payment with Flutterwave
+                    </p>
+                </Panel>
             </div>
         </div>
     );

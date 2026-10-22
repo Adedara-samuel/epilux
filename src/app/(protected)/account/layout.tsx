@@ -1,33 +1,10 @@
-'use client';
+import type { Metadata } from 'next';
+import AppShell from '@/Components/layout/app-shell';
 
-import { Suspense } from 'react';
-import { SearchProvider } from '@/app/context/search-context';
-import Header from '@/Components/layout/header';
-import ClientSidebarWrapper from '@/Components/layout/client-sibar-wraper';
+export const metadata: Metadata = {
+    title: 'My account',
+};
 
-export const dynamic = 'force-dynamic';
-
-export default function ProductsLayout({
-    children,
-}: {
-    children: React.ReactNode;
-}) {
-    return (
-        <SearchProvider>
-            <div className="flex flex-col min-h-screen">
-                <div className="flex flex-1">
-                    <Suspense fallback={<div>Loading sidebar...</div>}>
-                        <ClientSidebarWrapper />
-                    </Suspense>
-
-                    <main className="flex-1 lg:ml-64">
-                        <Suspense fallback={<div>Loading header...</div>}>
-                            <Header />
-                        </Suspense>
-                        {children}
-                    </main>
-                </div>
-            </div>
-        </SearchProvider>
-    );
+export default function AccountLayout({ children }: { children: React.ReactNode }) {
+    return <AppShell>{children}</AppShell>;
 }

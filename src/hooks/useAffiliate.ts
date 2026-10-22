@@ -1,66 +1,70 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { affiliateAPI } from '@/services/affiliate';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from './useAuth';
 
+// The session token comes from useAuth().token (it is not stored on the user).
+// Queries only run once signed in.
+
 export const useAffiliateProfile = () => {
-  const { user } = useAuth();
-  return useQuery({
-    queryKey: ['affiliate', 'profile'],
-    queryFn: () => affiliateAPI.getProfile(user?.token || ''),
-    enabled: !!user?.token && user.role === 'affiliate',
-  });
+	const { token } = useAuth();
+	return useQuery({
+		queryKey: ['affiliate', 'profile'],
+		queryFn: () => affiliateAPI.getProfile(token || ''),
+		enabled: !!token,
+	});
 };
 
 export const useUpdateAffiliateProfile = () => {
-  const queryClient = useQueryClient();
-  const { user } = useAuth();
+	const queryClient = useQueryClient();
+	const { token } = useAuth();
 
-  return useMutation({
-    mutationFn: (profileData: any) =>
-      affiliateAPI.updateProfile(user?.token || '', profileData),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['affiliate', 'profile'] });
-    },
-  });
+	return useMutation({
+		mutationFn: (profileData: any) =>
+			affiliateAPI.updateProfile(token || '', profileData),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ['affiliate', 'profile'] });
+		},
+	});
 };
 
 export const useAffiliateSales = () => {
-  const { user } = useAuth();
-  return useQuery({
-    queryKey: ['affiliate', 'sales'],
-    queryFn: () => affiliateAPI.getSales(user?.token || ''),
-    enabled: !!user?.token && user.role === 'affiliate',
-  });
+	const { token } = useAuth();
+	return useQuery({
+		queryKey: ['affiliate', 'sales'],
+		queryFn: () => affiliateAPI.getSales(token || ''),
+		enabled: !!token,
+	});
 };
 
 export const useAffiliateReferrals = () => {
-  const { user } = useAuth();
-  return useQuery({
-    queryKey: ['affiliate', 'referrals'],
-    queryFn: () => affiliateAPI.getReferrals(user?.token || ''),
-    enabled: !!user?.token && user.role === 'affiliate',
-  });
+	const { token } = useAuth();
+	return useQuery({
+		queryKey: ['affiliate', 'referrals'],
+		queryFn: () => affiliateAPI.getReferrals(token || ''),
+		enabled: !!token,
+		retry: 1,
+	});
 };
 
 export const useAffiliateDashboard = () => {
-  const { user } = useAuth();
-  return useQuery({
-    queryKey: ['affiliate', 'dashboard'],
-    queryFn: () => affiliateAPI.getDashboard(user?.token || ''),
-    enabled: !!user?.token && user.role === 'affiliate',
-  });
+	const { token } = useAuth();
+	return useQuery({
+		queryKey: ['affiliate', 'dashboard'],
+		queryFn: () => affiliateAPI.getDashboard(token || ''),
+		enabled: !!token,
+	});
 };
 
 export const useRecordAffiliateSale = () => {
-  const queryClient = useQueryClient();
-  const { user } = useAuth();
+	const queryClient = useQueryClient();
+	const { token } = useAuth();
 
-  return useMutation({
-    mutationFn: (saleData: any) =>
-      affiliateAPI.recordSale(user?.token || '', saleData),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['affiliate'] });
-    },
-  });
+	return useMutation({
+		mutationFn: (saleData: any) =>
+			affiliateAPI.recordSale(token || '', saleData),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ['affiliate'] });
+		},
+	});
 };

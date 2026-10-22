@@ -21,6 +21,130 @@ class EmailService {
         }
     }
 
+    async sendContactEmail(contactData) {
+        const { name, email, phone, subject, message, inquiryType } = contactData;
+
+        if (!this.isConfigured) {
+            // Mock email service for development
+            console.log('MOCK EMAIL - Contact Form Submission');
+            console.log('From:', `${name} <${email}>`);
+            console.log('Phone:', phone);
+            console.log('Subject:', subject);
+            console.log('Inquiry Type:', inquiryType);
+            console.log('Message:', message);
+            console.log('--- End Mock Email ---');
+            return true;
+        }
+
+        const mailOptions = {
+            from: config.EMAIL_FROM || `"${config.APP_NAME}" <${config.SMTP_USER}>`,
+            to: 'epiluxcompany@gmail.com', // Send to the specified email
+            subject: `Contact Form: ${subject}`,
+            html: `
+                <!DOCTYPE html>
+                <html lang="en">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>Contact Form Submission</title>
+                    <style>
+                        body {
+                            font-family: Arial, sans-serif;
+                            line-height: 1.6;
+                            color: #333;
+                            max-width: 600px;
+                            margin: 0 auto;
+                            padding: 20px;
+                        }
+                        .header {
+                            text-align: center;
+                            margin-bottom: 30px;
+                        }
+                        .logo {
+                            max-width: 150px;
+                            height: auto;
+                        }
+                        .content {
+                            background: #f9f9f9;
+                            padding: 30px;
+                            border-radius: 8px;
+                            margin-bottom: 20px;
+                        }
+                        .field {
+                            margin-bottom: 15px;
+                        }
+                        .label {
+                            font-weight: bold;
+                            color: #555;
+                        }
+                        .value {
+                            margin-top: 5px;
+                        }
+                        .message {
+                            background: white;
+                            padding: 15px;
+                            border-radius: 5px;
+                            border-left: 4px solid #007bff;
+                            margin-top: 10px;
+                        }
+                        .footer {
+                            text-align: center;
+                            font-size: 12px;
+                            color: #666;
+                            margin-top: 20px;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <img src="${config.LOGO_URL || 'https://via.placeholder.com/150'}" alt="${config.APP_NAME}" class="logo">
+                    </div>
+                    <div class="content">
+                        <h2>New Contact Form Submission</h2>
+                        <div class="field">
+                            <div class="label">Name:</div>
+                            <div class="value">${name}</div>
+                        </div>
+                        <div class="field">
+                            <div class="label">Email:</div>
+                            <div class="value">${email}</div>
+                        </div>
+                        <div class="field">
+                            <div class="label">Phone:</div>
+                            <div class="value">${phone || 'Not provided'}</div>
+                        </div>
+                        <div class="field">
+                            <div class="label">Inquiry Type:</div>
+                            <div class="value">${inquiryType}</div>
+                        </div>
+                        <div class="field">
+                            <div class="label">Subject:</div>
+                            <div class="value">${subject}</div>
+                        </div>
+                        <div class="field">
+                            <div class="label">Message:</div>
+                            <div class="message">${message.replace(/\n/g, '<br>')}</div>
+                        </div>
+                    </div>
+                    <div class="footer">
+                        <p>&copy; ${new Date().getFullYear()} ${config.APP_NAME}. All rights reserved.</p>
+                        <p>This message was sent from the contact form on your website.</p>
+                    </div>
+                </body>
+                </html>
+            `
+        };
+
+        try {
+            await this.transporter.sendMail(mailOptions);
+            console.log(`Contact form email sent from ${email} to epiluxcompany@gmail.com`);
+            return true;
+        } catch (error) {
+            console.error('Error sending contact email:', error);
+            throw error;
+        }
+    }
+
     async sendPasswordResetEmail(user, resetToken) {
         const resetUrl = `${config.FRONTEND_URL}/reset-password?token=${resetToken.token}`;
         

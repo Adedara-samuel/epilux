@@ -1,358 +1,227 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable @typescript-eslint/no-explicit-any */
-// app/settings/page.tsx
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import { Suspense, useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useMutation } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import { Eye, EyeOff, KeyRound, MapPin, ShieldAlert, Trash2, User } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
+import { useChangePassword, useUpdateProfile } from '@/hooks/useUser';
+import { useAddAddress, useAddresses, useDeleteAddress } from '@/hooks/useAddresses';
+import { userAPI } from '@/services/user';
+import { getErrorMessage } from '@/services/base';
+import { authSession } from '@/lib/auth-session';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/Components/ui/form';
-import { Loader2, User, Key } from 'lucide-react';
-import { toast } from 'sonner';
-import { useUpdateProfile, useChangePassword } from '@/hooks';
+import { Label } from '@/Components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/Components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/ui/select';
+import {
+    AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/Components/ui/alert-dialog';
+import { PageHeader, Panel, PanelHeader } from '@/Components/ui/kit';
 
-// Zod schemas for validation
-const profileSchema = z.object({
-    firstName: z.string().min(2, 'First name must be at least 2 characters').max(50, 'Name too long').optional(),
-    lastName: z.string().min(2, 'Last name must be at least 2 characters').max(50, 'Name too long').optional(),
-});
+const STATES = [
+    'Abia', 'Abuja (FCT)', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue', 'Borno', 'Cross River', 'Delta', 'Ebonyi',
+    'Edo', 'Ekiti', 'Enugu', 'Gombe', 'Imo', 'Jigawa', 'Kaduna', 'Kano', 'Katsina', 'Kebbi', 'Kogi', 'Kwara', 'Lagos', 'Nasarawa',
+    'Niger', 'Ogun', 'Ondo', 'Osun', 'Oyo', 'Plateau', 'Rivers', 'Sokoto', 'Taraba', 'Yobe', 'Zamfara',
+];
 
-const passwordSchema = z.object({
-    currentPassword: z.string().min(6, 'Current password is required'),
-    newPassword: z.string().min(6, 'New password must be at least 6 characters'),
-    confirmNewPassword: z.string().min(6, 'Confirm new password is required'),
-}).refine((data) => data.newPassword === data.confirmNewPassword, {
-    message: "Passwords don't match",
-    path: ["confirmNewPassword"],
-});
+function Field({ id, label, children, hint }: { id: string; label: string; children: React.ReactNode; hint?: string }) {
+    return (
+        <div className="space-y-1.5">
+            <Label htmlFor={id}>{label}</Label>
+            {children}
+            {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
+        </div>
+    );
+}
 
-
-export default function SettingsPage() {
-    const { user, loading: authLoading, logout } = useAuth();
-    const router = useRouter();
-
-    const updateProfileMutation = useUpdateProfile();
-    const changePasswordMutation = useChangePassword();
-
-    // Forms for different sections
-    const profileForm = useForm<z.infer<typeof profileSchema>>({
-        resolver: zodResolver(profileSchema),
-        defaultValues: {
-            firstName: user?.firstName || '',
-            lastName: user?.lastName || '',
-        },
-    });
-
-    const passwordForm = useForm<z.infer<typeof passwordSchema>>({
-        resolver: zodResolver(passwordSchema),
-        defaultValues: {
-            currentPassword: '',
-            newPassword: '',
-            confirmNewPassword: '',
-        },
-    });
-
+function ProfileTab() {
+    const { user, updateUser } = useAuth();
+    const update = useUpdateProfile();
+    const [form, setForm] = useState({ firstName: '', lastName: '', phone: '' });
 
     useEffect(() => {
-        if (!authLoading && !user) {
-            router.push('/login?redirect=/settings');
-        }
-        if (user) {
-            profileForm.reset({ firstName: user.firstName || '', lastName: user.lastName || '' });
-        }
-    }, [user, authLoading, router, profileForm]);
+        if (user) setForm({ firstName: user.firstName || '', lastName: user.lastName || '', phone: user.profile?.phone || '' });
+    }, [user]);
 
-
-    const handleProfileUpdate = async (values: z.infer<typeof profileSchema>) => {
-        if (!user) return;
-        updateProfileMutation.mutate(values, {
+    const save = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (form.firstName.trim().length < 2 || form.lastName.trim().length < 2) return toast.error('Please enter your first and last name');
+        update.mutate({ firstName: form.firstName.trim(), lastName: form.lastName.trim(), phone: form.phone.trim() }, {
             onSuccess: () => {
-                toast.success("Profile updated successfully!");
+                updateUser({ firstName: form.firstName.trim(), lastName: form.lastName.trim(), profile: { ...(user?.profile || {}), phone: form.phone.trim() } });
+                toast.success('Profile updated');
             },
-            onError: (error: any) => {
-                console.error("Error updating profile:", error);
-                toast.error(`Failed to update profile: ${error.message}`);
-            },
+            onError: (err) => toast.error(getErrorMessage(err, 'Could not update your profile')),
         });
     };
-
-    const handlePasswordChange = async (values: z.infer<typeof passwordSchema>) => {
-        if (!user) return;
-
-        changePasswordMutation.mutate({
-            currentPassword: values.currentPassword,
-            newPassword: values.newPassword,
-        }, {
-            onSuccess: () => {
-                toast.success("Password updated successfully!");
-                passwordForm.reset();
-            },
-            onError: (error: any) => {
-                console.error("Error updating password:", error);
-                toast.error(`Failed to update password: ${error.message}`);
-            },
-        });
-    };
-
-
-
-    if (authLoading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-100">
-                <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
-                <p className="ml-3 text-lg text-gray-700">Loading settings...</p>
-            </div>
-        );
-    }
-
-    if (!user) {
-        return (
-            <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 p-4">
-                <h2 className="text-2xl font-bold text-gray-800 mb-4">Access Denied</h2>
-                <p className="text-lg text-gray-700 text-center">Please log in to manage your account settings.</p>
-            </div>
-        );
-    }
 
     return (
-        <div className="min-h-screen bg-gray-50">
-            <div className="container mx-auto px-4 py-12">
-                {/* Header */}
-                <div className="text-center mb-12">
-                    <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-4">
-                        Account Settings
-                    </h1>
-                    <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-                        Manage your personal information, security settings, and account preferences
-                    </p>
-                </div>
+        <Panel>
+            <PanelHeader title="Personal details" description="Your name and phone are shared with your marketer for deliveries." />
+            <form onSubmit={save} className="grid gap-4 p-5 sm:grid-cols-2 sm:p-6">
+                <Field id="firstName" label="First name"><Input id="firstName" className="h-12 rounded-xl" value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} /></Field>
+                <Field id="lastName" label="Last name"><Input id="lastName" className="h-12 rounded-xl" value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} /></Field>
+                <Field id="email" label="Email" hint="Contact support to change your email."><Input id="email" className="h-12 rounded-xl" value={user?.email || ''} disabled /></Field>
+                <Field id="phone" label="Phone number"><Input id="phone" type="tel" inputMode="tel" className="h-12 rounded-xl" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="0803 123 4567" /></Field>
+                <div className="sm:col-span-2"><Button type="submit" loading={update.isPending}>Save changes</Button></div>
+            </form>
+        </Panel>
+    );
+}
 
-                <div className="max-w-4xl mx-auto space-y-8">
-                    {/* Profile Information Card */}
-                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                        <div className="p-8 border-b border-gray-100">
-                            <div className="flex items-center gap-4">
-                                <div className="p-3 bg-blue-100 rounded-lg">
-                                    <User className="h-6 w-6 text-blue-600" />
-                                </div>
-                                <div>
-                                    <h2 className="text-2xl font-bold text-gray-900">Profile Information</h2>
-                                    <p className="text-gray-600">Update your personal details</p>
-                                </div>
-                            </div>
-                        </div>
+function AddressTab() {
+    const { data, isLoading } = useAddresses();
+    const save = useAddAddress();
+    const remove = useDeleteAddress();
+    const current = data?.addresses?.[0];
+    const [form, setForm] = useState({ street: '', city: '', state: 'Lagos' });
 
-                        <div className="p-8">
-                            <Form {...profileForm}>
-                                <form onSubmit={profileForm.handleSubmit(handleProfileUpdate)} className="space-y-6">
-                                    <div className="bg-gray-50/50 rounded-xl p-6 border border-gray-100">
-                                        <h3 className="text-lg font-semibold text-gray-800 mb-4">Email Address</h3>
-                                        <Input
-                                            value={user.email || 'N/A'}
-                                            disabled
-                                            className="bg-white border-gray-200 cursor-not-allowed rounded-xl"
-                                        />
-                                        <p className="text-sm text-gray-500 mt-2">Email cannot be changed here for security reasons.</p>
-                                    </div>
+    useEffect(() => {
+        if (current) setForm({ street: current.street || '', city: current.city || '', state: current.state || 'Lagos' });
+    }, [current]);
 
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <FormField
-                                            control={profileForm.control}
-                                            name="firstName"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel className="text-gray-700 font-medium text-lg">First Name</FormLabel>
-                                                    <FormControl>
-                                                        <Input
-                                                            placeholder="Enter your first name"
-                                                            className="rounded-xl border-gray-200 focus:border-blue-500 focus:ring-blue-500 h-12"
-                                                            {...field}
-                                                        />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                        <FormField
-                                            control={profileForm.control}
-                                            name="lastName"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel className="text-gray-700 font-medium text-lg">Last Name</FormLabel>
-                                                    <FormControl>
-                                                        <Input
-                                                            placeholder="Enter your last name"
-                                                            className="rounded-xl border-gray-200 focus:border-blue-500 focus:ring-blue-500 h-12"
-                                                            {...field}
-                                                        />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                    </div>
+    const submit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (form.street.trim().length < 5 || form.city.trim().length < 2) return toast.error('Please enter your street and city');
+        save.mutate({ street: form.street.trim(), city: form.city.trim(), state: form.state, country: 'Nigeria' }, {
+            onSuccess: () => toast.success('Delivery address saved'),
+            onError: (err) => toast.error(getErrorMessage(err, 'Could not save address')),
+        });
+    };
 
-                                    <Button
-                                        type="submit"
-                                        disabled={profileForm.formState.isSubmitting}
-                                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-6 rounded-lg shadow-md hover:shadow-lg transition-colors text-lg"
-                                    >
-                                        {profileForm.formState.isSubmitting ? (
-                                            <>
-                                                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                                                Updating Profile...
-                                            </>
-                                        ) : (
-                                            'Update Profile'
-                                        )}
-                                    </Button>
-                                </form>
-                            </Form>
-                        </div>
+    return (
+        <Panel>
+            <PanelHeader title="Delivery address" description="Used to pre-fill checkout. You can change it for any order." />
+            {isLoading ? (
+                <div className="p-6"><div className="skeleton-shimmer h-40 rounded-2xl" /></div>
+            ) : (
+                <form onSubmit={submit} className="grid gap-4 p-5 sm:grid-cols-2 sm:p-6">
+                    <div className="sm:col-span-2"><Field id="street" label="Street address"><Input id="street" className="h-12 rounded-xl" value={form.street} onChange={(e) => setForm({ ...form, street: e.target.value })} placeholder="House number and street" /></Field></div>
+                    <Field id="city" label="City / area"><Input id="city" className="h-12 rounded-xl" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} placeholder="e.g. Ikeja" /></Field>
+                    <Field id="state" label="State">
+                        <Select value={form.state} onValueChange={(state) => setForm({ ...form, state })}>
+                            <SelectTrigger id="state" className="h-12"><SelectValue /></SelectTrigger>
+                            <SelectContent>{STATES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                        </Select>
+                    </Field>
+                    <div className="flex flex-wrap gap-2 sm:col-span-2">
+                        <Button type="submit" loading={save.isPending}><MapPin /> Save address</Button>
+                        {current && (
+                            <Button type="button" variant="ghost" className="text-muted-foreground hover:text-destructive" loading={remove.isPending}
+                                onClick={() => remove.mutate('default', { onSuccess: () => { toast.success('Address removed'); setForm({ street: '', city: '', state: 'Lagos' }); } })}>
+                                Remove
+                            </Button>
+                        )}
                     </div>
+                </form>
+            )}
+        </Panel>
+    );
+}
 
-                    {/* Change Password Card */}
-                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                        <div className="p-8 border-b border-gray-100">
-                            <div className="flex items-center gap-4">
-                                <div className="p-3 bg-yellow-100 rounded-lg">
-                                    <Key className="h-6 w-6 text-yellow-600" />
-                                </div>
-                                <div>
-                                    <h2 className="text-2xl font-bold text-gray-900">Security Settings</h2>
-                                    <p className="text-gray-600">Change your password to keep your account secure</p>
-                                </div>
-                            </div>
-                        </div>
+function PasswordTab() {
+    const change = useChangePassword();
+    const [form, setForm] = useState({ currentPassword: '', newPassword: '', confirm: '' });
+    const [show, setShow] = useState(false);
 
-                        <div className="p-8">
-                            <Form {...passwordForm}>
-                                <form onSubmit={passwordForm.handleSubmit(handlePasswordChange)} className="space-y-6">
-                                    <FormField
-                                        control={passwordForm.control}
-                                        name="currentPassword"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel className="text-gray-700 font-medium text-lg">Current Password</FormLabel>
-                                                <FormControl>
-                                                    <Input
-                                                        type="password"
-                                                        placeholder="Enter your current password"
-                                                        className="rounded-xl border-gray-200 focus:border-yellow-500 focus:ring-yellow-500 h-12"
-                                                        {...field}
-                                                    />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
+    const submit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (form.newPassword.length < 6) return toast.error('New password must be at least 6 characters');
+        if (form.newPassword !== form.confirm) return toast.error('New passwords do not match');
+        if (form.newPassword === form.currentPassword) return toast.error('Choose a password different from your current one');
+        change.mutate({ currentPassword: form.currentPassword, newPassword: form.newPassword }, {
+            onSuccess: () => { toast.success('Password changed'); setForm({ currentPassword: '', newPassword: '', confirm: '' }); },
+            onError: (err) => toast.error(getErrorMessage(err, 'Could not change password')),
+        });
+    };
 
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <FormField
-                                            control={passwordForm.control}
-                                            name="newPassword"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel className="text-gray-700 font-medium text-lg">New Password</FormLabel>
-                                                    <FormControl>
-                                                        <Input
-                                                            type="password"
-                                                            placeholder="Enter new password"
-                                                            className="rounded-xl border-gray-200 focus:border-yellow-500 focus:ring-yellow-500 h-12"
-                                                            {...field}
-                                                        />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                        <FormField
-                                            control={passwordForm.control}
-                                            name="confirmNewPassword"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel className="text-gray-700 font-medium text-lg">Confirm New Password</FormLabel>
-                                                    <FormControl>
-                                                        <Input
-                                                            type="password"
-                                                            placeholder="Confirm new password"
-                                                            className="rounded-xl border-gray-200 focus:border-yellow-500 focus:ring-yellow-500 h-12"
-                                                            {...field}
-                                                        />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                    </div>
+    const type = show ? 'text' : 'password';
+    return (
+        <Panel>
+            <PanelHeader title="Change password" action={
+                <Button type="button" variant="ghost" size="icon-sm" onClick={() => setShow((v) => !v)} aria-label={show ? 'Hide passwords' : 'Show passwords'}>{show ? <EyeOff /> : <Eye />}</Button>
+            } />
+            <form onSubmit={submit} className="grid max-w-xl gap-4 p-5 sm:p-6">
+                <Field id="current" label="Current password"><Input id="current" type={type} autoComplete="current-password" className="h-12 rounded-xl" value={form.currentPassword} onChange={(e) => setForm({ ...form, currentPassword: e.target.value })} /></Field>
+                <Field id="new" label="New password"><Input id="new" type={type} autoComplete="new-password" className="h-12 rounded-xl" value={form.newPassword} onChange={(e) => setForm({ ...form, newPassword: e.target.value })} /></Field>
+                <Field id="confirm" label="Confirm new password"><Input id="confirm" type={type} autoComplete="new-password" className="h-12 rounded-xl" value={form.confirm} onChange={(e) => setForm({ ...form, confirm: e.target.value })} /></Field>
+                <div><Button type="submit" loading={change.isPending}><KeyRound /> Update password</Button></div>
+            </form>
+        </Panel>
+    );
+}
 
-                                    <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
-                                        <div className="flex items-start gap-3">
-                                            <div className="p-1 bg-yellow-100 rounded-lg">
-                                                <Key className="h-4 w-4 text-yellow-600" />
-                                            </div>
-                                            <div>
-                                                <h4 className="font-medium text-yellow-800">Password Requirements</h4>
-                                                <ul className="text-sm text-yellow-700 mt-1 space-y-1">
-                                                    <li>• At least 6 characters long</li>
-                                                    <li>• Use a mix of letters and numbers</li>
-                                                    <li>• Avoid common passwords</li>
-                                                </ul>
-                                            </div>
-                                        </div>
-                                    </div>
+function AccountTab() {
+    const [open, setOpen] = useState(false);
+    const router = useRouter();
+    const del = useMutation({
+        mutationFn: userAPI.deleteAccount,
+        onSuccess: () => {
+            authSession.clear();
+            toast.success('Your account has been deleted');
+            router.replace('/');
+            window.location.reload();
+        },
+        onError: (err) => { toast.error(getErrorMessage(err, 'Could not delete your account')); setOpen(false); },
+    });
 
-                                    <Button
-                                        type="submit"
-                                        disabled={passwordForm.formState.isSubmitting}
-                                        className="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-semibold py-4 px-6 rounded-lg shadow-md hover:shadow-lg transition-colors text-lg"
-                                    >
-                                        {passwordForm.formState.isSubmitting ? (
-                                            <>
-                                                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                                                Changing Password...
-                                            </>
-                                        ) : (
-                                            'Change Password'
-                                        )}
-                                    </Button>
-                                </form>
-                            </Form>
-                        </div>
-                    </div>
-
-                    {/* Account Actions */}
-                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
-                        <h2 className="text-2xl font-bold text-gray-900 mb-6">Account Actions</h2>
-                        <div className="space-y-4">
-                            <div className="flex items-center justify-between p-4 border border-gray-200 rounded-xl">
-                                <div>
-                                    <h3 className="font-medium text-gray-800">Export Account Data</h3>
-                                    <p className="text-sm text-gray-600">Download a copy of your account data</p>
-                                </div>
-                                <Button variant="outline" className="rounded-xl">
-                                    Export Data
-                                </Button>
-                            </div>
-
-                            <div className="flex items-center justify-between p-4 border border-red-200 bg-red-50 rounded-xl">
-                                <div>
-                                    <h3 className="font-medium text-red-800">Delete Account</h3>
-                                    <p className="text-sm text-red-600">Permanently delete your account and all data</p>
-                                </div>
-                                <Button variant="outline" className="border-red-300 text-red-600 hover:bg-red-50 rounded-xl">
-                                    Delete Account
-                                </Button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+    return (
+        <Panel className="border-destructive/30">
+            <PanelHeader title="Delete account" description="Permanently remove your account and personal data." />
+            <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+                <p className="flex items-start gap-3 text-sm text-muted-foreground">
+                    <ShieldAlert className="mt-0.5 size-5 shrink-0 text-destructive" />
+                    You can delete your account once your wallet is empty and you have no deliveries in progress. This can&apos;t be undone.
+                </p>
+                <Button variant="destructive" onClick={() => setOpen(true)}><Trash2 /> Delete account</Button>
             </div>
+            <AlertDialog open={open} onOpenChange={setOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete your account?</AlertDialogTitle>
+                        <AlertDialogDescription>Your profile, saved address and order history will be removed permanently.</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Keep my account</AlertDialogCancel>
+                        <Button variant="destructive" onClick={() => del.mutate()} loading={del.isPending}>Delete permanently</Button>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </Panel>
+    );
+}
+
+function SettingsContent() {
+    const searchParams = useSearchParams();
+    const router = useRouter();
+    const tab = searchParams.get('tab') || 'profile';
+
+    return (
+        <div className="max-w-4xl">
+            <PageHeader title="Settings" description="Manage your profile, address and security." />
+            <Tabs value={tab} onValueChange={(t) => router.replace(`/settings?tab=${t}`, { scroll: false })}>
+                <TabsList className="grid w-full grid-cols-4 sm:inline-flex sm:w-fit [&_svg]:hidden sm:[&_svg]:block">
+                    <TabsTrigger value="profile"><User /> Profile</TabsTrigger>
+                    <TabsTrigger value="address"><MapPin /> Address</TabsTrigger>
+                    <TabsTrigger value="password"><KeyRound /> Password</TabsTrigger>
+                    <TabsTrigger value="account"><ShieldAlert /> Account</TabsTrigger>
+                </TabsList>
+                <TabsContent value="profile"><ProfileTab /></TabsContent>
+                <TabsContent value="address"><AddressTab /></TabsContent>
+                <TabsContent value="password"><PasswordTab /></TabsContent>
+                <TabsContent value="account"><AccountTab /></TabsContent>
+            </Tabs>
         </div>
+    );
+}
+
+export default function SettingsPage() {
+    return (
+        <Suspense fallback={null}>
+            <SettingsContent />
+        </Suspense>
     );
 }
