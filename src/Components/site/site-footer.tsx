@@ -54,7 +54,7 @@ export default function SiteFooter() {
                     <p className="flex flex-wrap items-center gap-x-3 gap-y-1">
                         <span>Payments secured by Flutterwave</span>
                         <span aria-hidden className="hidden sm:inline">·</span>
-                        <a href="https://sapok.vercel.app" target="_blank" rel="noopener noreferrer" className="font-medium text-foreground/80 underline-offset-4 transition-colors hover:text-primary hover:underline">
+                        <a href="https://sapoktech.vercel.app/" target="_blank" rel="noopener noreferrer" className="font-medium text-foreground/80 underline-offset-4 transition-colors hover:text-primary hover:underline">
                             Developed by Sapok
                         </a>
                     </p>
