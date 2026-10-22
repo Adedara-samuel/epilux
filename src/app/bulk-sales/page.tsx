@@ -1,374 +1,140 @@
-/* eslint-disable react/no-unescaped-entities */
-/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @next/next/no-img-element */
 'use client';
 
-import { useState } from 'react';
-import { Button } from '@/Components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/Components/ui/card';
-import { Badge } from '@/Components/ui/badge';
-import { Input } from '@/Components/ui/input';
-import { Label } from '@/Components/ui/label';
-import { Textarea } from '@/Components/ui/textarea';
-import { Truck, Package, Users, Building, Calculator, CheckCircle, Phone, Mail } from 'lucide-react';
 import Link from 'next/link';
+import { useQuery } from '@tanstack/react-query';
+import { ArrowRight, Building2, CalendarDays, GraduationCap, MessagesSquare, PartyPopper, Store, Truck, Wallet } from 'lucide-react';
+import SiteShell, { PageHero } from '@/Components/site/site-shell';
+import { InquiryForm } from '@/Components/site/inquiry-form';
+import { productsAPI } from '@/services/products';
+import { Button } from '@/Components/ui/button';
+import { Panel, PanelHeader } from '@/Components/ui/kit';
+import { Reveal, Stagger, StaggerItem } from '@/Components/motion';
+import { formatNaira } from '@/lib/format';
+import { handleImageError, productImageUrl } from '@/lib/images';
+import { FREE_DELIVERY_THRESHOLD } from '@/services/delivery';
+
+type Product = { _id: string; name: string; price: number; category?: string; images?: { url: string; isPrimary?: boolean }[]; primaryImage?: string | null };
+
+const USES = [
+    { icon: Building2, title: 'Offices', text: 'Keep the team supplied week after week.' },
+    { icon: PartyPopper, title: 'Events', text: 'Weddings, parties, conferences and church programmes.' },
+    { icon: GraduationCap, title: 'Schools', text: 'Clean drinking water for pupils and staff.' },
+    { icon: Store, title: 'Shops & kiosks', text: 'Stock Epilux water for your customers.' },
+];
+
+const STEPS = [
+    { icon: MessagesSquare, title: 'Tell us what you need', text: 'Quantity, how often, and where it should go.' },
+    { icon: CalendarDays, title: 'We agree the details', text: 'Our team confirms pricing and delivery dates with you.' },
+    { icon: Truck, title: 'We deliver', text: 'Your order arrives on the agreed day, every time.' },
+];
+
+function LivePrices() {
+    const { data, isLoading } = useQuery({ queryKey: ['products', 'bulk'], queryFn: () => productsAPI.getProducts({ limit: 12 }) });
+    const products: Product[] = ((data as { products?: Product[] } | undefined)?.products || []).slice(0, 6);
+    if (!isLoading && products.length === 0) return null;
+    return (
+        <Panel className="overflow-hidden">
+            <PanelHeader title="Current prices" description="Standard per-unit prices. Volume pricing is agreed with our team." />
+            <ul className="divide-y divide-border/60">
+                {isLoading
+                    ? [0, 1, 2].map((i) => <li key={i} className="p-4"><div className="skeleton-shimmer h-10 rounded-xl" /></li>)
+                    : products.map((p) => (
+                        <li key={p._id} className="flex items-center gap-3 px-5 py-3 sm:px-6">
+                            <img src={productImageUrl(p)} onError={handleImageError} alt="" className="size-11 rounded-xl bg-muted object-contain p-1" />
+                            <span className="min-w-0 flex-1">
+                                <span className="block truncate font-semibold">{p.name}</span>
+                                {p.category && <span className="block text-xs capitalize text-muted-foreground">{p.category}</span>}
+                            </span>
+                            <span className="font-bold tabular-nums">{formatNaira(p.price)}</span>
+                        </li>
+                    ))}
+            </ul>
+        </Panel>
+    );
+}
 
 export default function BulkSalesPage() {
-    const [quantity, setQuantity] = useState('');
-    const [contactForm, setContactForm] = useState({
-        name: '',
-        email: '',
-        phone: '',
-        company: '',
-        message: '',
-        productType: '75cl',
-        estimatedQuantity: ''
-    });
-
-    const bulkOptions = [
-        {
-            minQuantity: 50,
-            maxQuantity: 199,
-            discount: '5%',
-            pricePerBottle: 45,
-            features: [
-                'Volume discount applied',
-                'Free delivery within Lagos',
-                'Quality assurance certificate',
-                'Custom packaging available'
-            ]
-        },
-        {
-            minQuantity: 200,
-            maxQuantity: 499,
-            discount: '10%',
-            pricePerBottle: 42,
-            features: [
-                'Enhanced volume discount',
-                'Free delivery within Lagos',
-                'Priority scheduling',
-                'Quality assurance certificate',
-                'Custom branding options',
-                'Dedicated account manager'
-            ]
-        },
-        {
-            minQuantity: 500,
-            maxQuantity: 999,
-            discount: '15%',
-            pricePerBottle: 38,
-            features: [
-                'Maximum volume discount',
-                'Free delivery nationwide',
-                'Express delivery options',
-                'Quality assurance certificate',
-                'Full custom branding',
-                'Dedicated account manager',
-                'Monthly billing options'
-            ]
-        },
-        {
-            minQuantity: 1000,
-            maxQuantity: 'Unlimited',
-            discount: '20%+',
-            pricePerBottle: 35,
-            features: [
-                'Premium volume discount',
-                'Free delivery nationwide',
-                'Express & scheduled delivery',
-                'Quality assurance certificate',
-                'Full custom branding & packaging',
-                'Dedicated account manager',
-                'Monthly/quarterly billing',
-                'Bulk storage solutions'
-            ]
-        }
-    ];
-
-    const testimonials = [
-        {
-            name: 'Chief Adebayo',
-            company: 'Adebayo Hotels & Suites',
-            quote: 'Epilux bulk water service has been reliable for our hotel operations. The quality is consistent and delivery is always on time.',
-            bottles: '200 bottles/month'
-        },
-        {
-            name: 'Mrs. Okon',
-            company: 'Okon Supermarket Chain',
-            quote: 'We switched to Epilux for our retail locations and our customers love the purity. The bulk pricing makes it very cost-effective.',
-            bottles: '500 bottles/month'
-        },
-        {
-            name: 'Mr. Johnson',
-            company: 'Johnson Construction Ltd',
-            quote: 'For our construction sites, having clean water delivered regularly is crucial. Epilux handles our large orders efficiently.',
-            bottles: '150 bottles/month'
-        }
-    ];
-
-    const handleContactSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        // Handle form submission
-        alert('Thank you for your inquiry! Our sales team will contact you within 24 hours.');
-        setContactForm({
-            name: '',
-            email: '',
-            phone: '',
-            company: '',
-            message: '',
-            productType: '75cl',
-            estimatedQuantity: ''
-        });
-    };
-
-    const calculatePrice = (qty: number) => {
-        if (qty >= 1000) return qty * 35;
-        if (qty >= 500) return qty * 38;
-        if (qty >= 200) return qty * 42;
-        if (qty >= 50) return qty * 45;
-        return qty * 50; // Regular price
-    };
-
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-            {/* Header */}
-            <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-16">
-                <div className="container mx-auto px-4 text-center">
-                    <h1 className="text-4xl md:text-5xl font-bold mb-4">
-                        Bulk Water Sales
-                    </h1>
-                    <p className="text-xl opacity-90 max-w-3xl mx-auto">
-                        Premium quality water for businesses, events, and large households.
-                        Competitive pricing with reliable delivery.
-                    </p>
-                </div>
-            </div>
+        <SiteShell>
+            <PageHero
+                eyebrow="Bulk orders"
+                title={<>Water for your <span className="bg-gradient-to-r from-brand-600 to-sky-500 bg-clip-text text-transparent">business or event</span></>}
+                description="Order large quantities for your office, shop, school or event, as a one-off or on a regular schedule."
+            >
+                <Button asChild size="xl" variant="brand" className="rounded-2xl"><a href="#enquire">Get a quote <ArrowRight /></a></Button>
+                <Button asChild size="xl" variant="outline" className="rounded-2xl"><Link href="/products">Order online now</Link></Button>
+            </PageHero>
 
-            <div className="container mx-auto px-4 py-16">
-                {/* Quick Calculator */}
-                <div className="bg-white rounded-2xl shadow-xl p-8 mb-16">
-                    <div className="text-center mb-8">
-                        <h2 className="text-3xl font-bold text-gray-800 mb-4">Quick Price Calculator</h2>
-                        <p className="text-gray-600">Get an instant quote for your bulk water needs</p>
-                    </div>
+            <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
+                <Stagger className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+                    {USES.map(({ icon: Icon, title, text }) => (
+                        <StaggerItem key={title}>
+                            <Panel className="h-full p-5">
+                                <span className="grid size-11 place-items-center rounded-2xl bg-accent text-primary"><Icon className="size-5" /></span>
+                                <p className="mt-4 font-bold">{title}</p>
+                                <p className="mt-1 text-sm text-muted-foreground">{text}</p>
+                            </Panel>
+                        </StaggerItem>
+                    ))}
+                </Stagger>
+            </section>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div>
-                            <Label htmlFor="quantity" className="text-lg font-semibold">Number of Bottles</Label>
-                            <Input
-                                id="quantity"
-                                type="number"
-                                placeholder="Enter quantity"
-                                value={quantity}
-                                onChange={(e) => setQuantity(e.target.value)}
-                                className="mt-2 text-lg"
-                            />
-                            <p className="text-sm text-gray-600 mt-2">
-                                Minimum order: 50 bottles. Price per bottle decreases with higher quantities.
-                            </p>
-                        </div>
-
-                        <div className="flex flex-col justify-center">
-                            {quantity && parseInt(quantity) >= 50 && (
-                                <div className="bg-blue-50 rounded-lg p-6">
-                                    <div className="text-center">
-                                        <p className="text-sm text-gray-600 mb-2">Estimated Total</p>
-                                        <p className="text-3xl font-bold text-blue-600">
-                                            ₦{calculatePrice(parseInt(quantity)).toLocaleString()}
-                                        </p>
-                                        <p className="text-sm text-gray-600 mt-2">
-                                            ₦{(calculatePrice(parseInt(quantity)) / parseInt(quantity)).toFixed(0)} per bottle
-                                        </p>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-
-                {/* Bulk Pricing Tiers */}
-                <div className="mb-16">
-                    <div className="text-center mb-12">
-                        <h2 className="text-3xl font-bold text-gray-800 mb-4">Bulk Pricing Tiers</h2>
-                        <p className="text-gray-600 max-w-2xl mx-auto">
-                            Higher quantities mean better prices. All prices are for 75cl bottles.
-                        </p>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                        {bulkOptions.map((option, index) => (
-                            <Card key={index} className="relative hover:shadow-lg transition-shadow">
-                                <CardHeader className="text-center">
-                                    <CardTitle className="text-xl font-bold text-gray-800">
-                                        {option.minQuantity}-{option.maxQuantity} bottles
-                                    </CardTitle>
-                                    <div className="mt-4">
-                                        <div className="text-3xl font-bold text-blue-600">₦{option.pricePerBottle}</div>
-                                        <div className="text-sm text-gray-600">per bottle</div>
-                                        <Badge className="mt-2 bg-green-100 text-green-800">
-                                            {option.discount} discount
-                                        </Badge>
-                                    </div>
-                                </CardHeader>
-
-                                <CardContent>
-                                    <ul className="space-y-2">
-                                        {option.features.map((feature, idx) => (
-                                            <li key={idx} className="flex items-start gap-2 text-sm">
-                                                <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                                                <span>{feature}</span>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </CardContent>
-                            </Card>
+            <section className="border-y border-border/60 bg-muted/40 py-14">
+                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                    <Reveal><h2 className="text-center text-3xl font-extrabold tracking-tight">How bulk orders work</h2></Reveal>
+                    <Stagger className="mt-10 grid gap-4 md:grid-cols-3">
+                        {STEPS.map(({ icon: Icon, title, text }, i) => (
+                            <StaggerItem key={title}>
+                                <Panel className="flex h-full flex-row items-start gap-4 p-5">
+                                    <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-gradient-brand text-white shadow-lift"><Icon className="size-5" /></span>
+                                    <span>
+                                        <span className="text-xs font-bold text-muted-foreground">STEP {i + 1}</span>
+                                        <span className="block font-bold">{title}</span>
+                                        <span className="block text-sm text-muted-foreground">{text}</span>
+                                    </span>
+                                </Panel>
+                            </StaggerItem>
                         ))}
+                    </Stagger>
+                </div>
+            </section>
+
+            <section id="enquire" className="mx-auto max-w-7xl scroll-mt-20 px-4 py-14 sm:px-6 lg:px-8">
+                <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start">
+                    <Reveal>
+                        <Panel>
+                            <PanelHeader title="Request a quote" description="Tell us what you need and we’ll come back with pricing and delivery dates." />
+                            <div className="p-5 sm:p-6">
+                                <InquiryForm
+                                    inquiryType="bulk"
+                                    subject="Bulk order enquiry"
+                                    extraFields={[
+                                        { key: 'organisation', label: 'Business or event name', type: 'text' },
+                                        { key: 'quantity', label: 'Roughly how many units', type: 'text', placeholder: 'e.g. 200 bags of sachet water', required: true },
+                                        { key: 'frequency', label: 'How often', type: 'select', options: ['One-off', 'For an event', 'Weekly', 'Every two weeks', 'Monthly'], required: true },
+                                        { key: 'area', label: 'Delivery area', type: 'text', placeholder: 'e.g. Ikeja, Lagos', required: true },
+                                    ]}
+                                    messageLabel="Anything else we should know?"
+                                    messagePlaceholder="Delivery date, product preference, access instructions…"
+                                    submitLabel="Request a quote"
+                                    successTitle="Thanks, we’ll be in touch"
+                                    successText="Our team will contact you with pricing and delivery options, usually within one working day."
+                                />
+                            </div>
+                        </Panel>
+                    </Reveal>
+                    <div className="space-y-4">
+                        <Reveal><LivePrices /></Reveal>
+                        <Reveal>
+                            <Panel className="p-5">
+                                <p className="flex items-center gap-2 font-bold"><Wallet className="size-4 text-primary" /> Earn while you stock up</p>
+                                <p className="mt-1 text-sm text-muted-foreground">Bulk orders placed through your Epilux account earn rewards like any other order, and delivery is free from {formatNaira(FREE_DELIVERY_THRESHOLD)}.</p>
+                            </Panel>
+                        </Reveal>
                     </div>
                 </div>
-
-                {/* Testimonials */}
-                <div className="mb-16">
-                    <div className="text-center mb-12">
-                        <h2 className="text-3xl font-bold text-gray-800 mb-4">Trusted by Businesses</h2>
-                        <p className="text-gray-600">See what our bulk customers say about our service</p>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                        {testimonials.map((testimonial, index) => (
-                            <Card key={index} className="p-6 hover:shadow-lg transition-shadow">
-                                <div className="mb-4">
-                                    <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-                                        <Building className="w-6 h-6 text-blue-600" />
-                                    </div>
-                                    <p className="text-gray-700 italic mb-4">"{testimonial.quote}"</p>
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <p className="font-semibold text-gray-800">{testimonial.name}</p>
-                                            <p className="text-sm text-gray-600">{testimonial.company}</p>
-                                        </div>
-                                        <Badge variant="outline">{testimonial.bottles}</Badge>
-                                    </div>
-                                </div>
-                            </Card>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Contact Form */}
-                <div className="bg-white rounded-2xl shadow-xl p-8">
-                    <div className="text-center mb-8">
-                        <h2 className="text-3xl font-bold text-gray-800 mb-4">Get Your Custom Quote</h2>
-                        <p className="text-gray-600 max-w-2xl mx-auto">
-                            Tell us about your needs and we'll provide a personalized quote with the best pricing and delivery options.
-                        </p>
-                    </div>
-
-                    <form onSubmit={handleContactSubmit} className="max-w-2xl mx-auto">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                            <div>
-                                <Label htmlFor="name">Full Name *</Label>
-                                <Input
-                                    id="name"
-                                    value={contactForm.name}
-                                    onChange={(e) => setContactForm({ ...contactForm, name: e.target.value })}
-                                    required
-                                />
-                            </div>
-                            <div>
-                                <Label htmlFor="email">Email Address *</Label>
-                                <Input
-                                    id="email"
-                                    type="email"
-                                    value={contactForm.email}
-                                    onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
-                                    required
-                                />
-                            </div>
-                            <div>
-                                <Label htmlFor="phone">Phone Number *</Label>
-                                <Input
-                                    id="phone"
-                                    type="tel"
-                                    value={contactForm.phone}
-                                    onChange={(e) => setContactForm({ ...contactForm, phone: e.target.value })}
-                                    required
-                                />
-                            </div>
-                            <div>
-                                <Label htmlFor="company">Company/Organization</Label>
-                                <Input
-                                    id="company"
-                                    value={contactForm.company}
-                                    onChange={(e) => setContactForm({ ...contactForm, company: e.target.value })}
-                                />
-                            </div>
-                            <div>
-                                <Label htmlFor="productType">Product Type</Label>
-                                <select
-                                    id="productType"
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                                    value={contactForm.productType}
-                                    onChange={(e) => setContactForm({ ...contactForm, productType: e.target.value })}
-                                >
-                                    <option value="75cl">75cl Bottles</option>
-                                    <option value="1L">1L Bottles</option>
-                                    <option value="5L">5L Dispensers</option>
-                                    <option value="20L">20L Containers</option>
-                                </select>
-                            </div>
-                            <div>
-                                <Label htmlFor="estimatedQuantity">Estimated Monthly Quantity</Label>
-                                <Input
-                                    id="estimatedQuantity"
-                                    placeholder="e.g., 200 bottles"
-                                    value={contactForm.estimatedQuantity}
-                                    onChange={(e) => setContactForm({ ...contactForm, estimatedQuantity: e.target.value })}
-                                />
-                            </div>
-                        </div>
-
-                        <div className="mb-6">
-                            <Label htmlFor="message">Additional Requirements</Label>
-                            <Textarea
-                                id="message"
-                                placeholder="Tell us about your specific needs, delivery preferences, etc."
-                                value={contactForm.message}
-                                onChange={(e) => setContactForm({ ...contactForm, message: e.target.value })}
-                                rows={4}
-                            />
-                        </div>
-
-                        <div className="text-center">
-                            <Button type="submit" size="lg" className="bg-blue-600 hover:bg-blue-700 text-white px-8">
-                                Request Quote
-                            </Button>
-                            <p className="text-sm text-gray-600 mt-4">
-                                We'll respond within 24 hours with a customized quote and delivery options.
-                            </p>
-                        </div>
-                    </form>
-                </div>
-
-                {/* Contact Information */}
-                <div className="mt-16 text-center">
-                    <h3 className="text-2xl font-bold text-gray-800 mb-4">Need Immediate Assistance?</h3>
-                    <p className="text-gray-600 mb-8">Our bulk sales team is ready to help with your large orders.</p>
-
-                    <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                        <Button asChild variant="outline" size="lg" className="flex items-center gap-2">
-                            <Link href="tel:+2341234567890">
-                                <Phone className="w-5 h-5" />
-                                Call +234 123 456 7890
-                            </Link>
-                        </Button>
-                        <Button asChild variant="outline" size="lg" className="flex items-center gap-2">
-                            <Link href="mailto:bulk@epiluxwater.com">
-                                <Mail className="w-5 h-5" />
-                                Email bulk@epiluxwater.com
-                            </Link>
-                        </Button>
-                    </div>
-                </div>
-            </div>
-        </div>
+            </section>
+        </SiteShell>
     );
 }

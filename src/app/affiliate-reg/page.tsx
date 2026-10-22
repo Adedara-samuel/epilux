@@ -3,8 +3,7 @@
 import Link from 'next/link';
 import { ArrowRight, CheckCircle2, Gift, Repeat, Share2, ShoppingBag, UserPlus, Wallet } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import SiteHeader from '@/Components/site/site-header';
-import Footer from '@/Components/site/site-footer';
+import SiteShell from '@/Components/site/site-shell';
 import { Button } from '@/Components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/Components/ui/accordion';
 import { Panel } from '@/Components/ui/kit';
@@ -35,9 +34,7 @@ export default function ReferAndEarnPage() {
     const cta = user ? { href: '/products/referrals', label: 'Get my invite link' } : { href: '/register', label: 'Create a free account' };
 
     return (
-        <div className="min-h-dvh bg-background">
-            <SiteHeader />
-
+        <SiteShell>
             <section className="aurora relative overflow-hidden text-white">
                 <span aria-hidden className="aurora-blob one" />
                 <span aria-hidden className="aurora-blob two" />
@@ -123,8 +120,6 @@ export default function ReferAndEarnPage() {
                     <Button asChild size="xl"><Link href={cta.href}>{cta.label} <ArrowRight /></Link></Button>
                 </div>
             </section>
-
-            <Footer />
-        </div>
+        </SiteShell>
     );
 }
