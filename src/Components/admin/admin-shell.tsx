@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
-    BadgePercent, Banknote, ExternalLink, LayoutDashboard, LogOut, Menu, MessageSquare, Package, ShieldAlert, ShoppingBag, Truck, Users,
+    BadgePercent, Banknote, ExternalLink, LayoutDashboard, LogOut, Menu, MessageSquare, Package, Settings, ShieldAlert, ShoppingBag, Truck, Users,
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTitle } from '@/Components/ui/sheet';
 import { Button } from '@/Components/ui/button';
@@ -41,6 +41,7 @@ function useNav(): Item[] {
         { label: 'Marketers', href: '/admin/marketers', icon: Truck },
         { label: 'Commissions', href: '/admin/commissions', icon: BadgePercent },
         { label: 'Messages', href: '/admin/notifications', icon: MessageSquare, badge: badges.messages },
+        { label: 'Settings', href: '/admin/settings', icon: Settings },
     ];
 }
 

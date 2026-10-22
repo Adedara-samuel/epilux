@@ -3,8 +3,10 @@
 // orderController.js, commissionAdminController.js, messageController.js, routes/contact.js).
 import { api } from './base';
 
+// 'user' is a customer. 'affiliate' only appears on old records; customers who
+// refer friends earn from them without a separate role.
 export type Role = 'user' | 'affiliate' | 'marketer' | 'admin';
-export type AssignableRole = Exclude<Role, 'admin'>;
+export type AssignableRole = 'user' | 'marketer';
 
 export interface AdminPerson {
   _id: string;
@@ -23,6 +25,7 @@ export interface AdminUser extends AdminPerson {
   referralCode?: string;
   assignedOrdersCount?: number;
   completedOrdersCount?: number;
+  referrals?: { user?: string; date?: string }[];
   createdAt: string;
   lastLogin?: string;
 }

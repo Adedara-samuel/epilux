@@ -6,7 +6,7 @@ export interface User {
   email: string;
   firstName: string;
   lastName: string;
-  role: 'user' | 'admin' | 'affiliate';
+  role: 'user' | 'admin' | 'marketer' | 'affiliate';
   isActive: boolean;
   isVerified: boolean;
   createdAt: string;

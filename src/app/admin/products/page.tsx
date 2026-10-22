@@ -1,526 +1,324 @@
-/* eslint-disable react/no-unescaped-entities */
 /* eslint-disable @next/next/no-img-element */
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unused-vars */
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Search, Filter, Plus, MoreHorizontal, Edit, Trash2, Book, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { toast } from 'sonner';
+import { ImagePlus, Pencil, Plus, Search, ShoppingBag, Star, Trash2, X } from 'lucide-react';
+import { useAdminCategories, useAdminProducts, useCreateProduct, useDeleteProduct, useUpdateProduct } from '@/hooks/useProducts';
+import { getErrorMessage } from '@/services/base';
+import { useDebounce } from '@/hooks/useDebounce';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/Components/ui/card';
-import { Badge } from '@/Components/ui/badge';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/Components/ui/dropdown-menu';
 import { Label } from '@/Components/ui/label';
 import { Textarea } from '@/Components/ui/textarea';
-import Link from 'next/link';
-import { useAdminProducts, useAdminProduct, useUpdateProduct, useDeleteProduct, useUploadProductImages } from '@/hooks/useProducts';
-import { useQueryClient } from '@tanstack/react-query';
-import { ImageUploadField } from '@/Components/ui/image-upload-field';
-import { API_BASE_URL } from '@/services/base';
+import { Switch } from '@/Components/ui/switch';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/Components/ui/sheet';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/Components/ui/table';
+import {
+    AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/Components/ui/alert-dialog';
+import { EmptyState, ErrorState, PageHeader, Panel, Pill } from '@/Components/ui/kit';
+import { cn } from '@/lib/utils';
+import { formatNaira } from '@/lib/format';
+import { handleImageError, productImageUrl, resolveImageUrl } from '@/lib/images';
 
-export default function AdminProductsPage() {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [viewOpen, setViewOpen] = useState(false);
-  const [editOpen, setEditOpen] = useState(false);
-  const [deleteOpen, setDeleteOpen] = useState(false);
-  const [imageViewerOpen, setImageViewerOpen] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<any>(null);
-  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
-  const [editForm, setEditForm] = useState({
-    name: '',
-    description: '',
-    price: '',
-    category: '',
-    stock: '',
-    images: [] as { url: string; alt: string; isPrimary: boolean }[],
-  });
+type ProductImage = { _id?: string; url: string; isPrimary?: boolean; publicId?: string; altText?: string };
+type Product = {
+    _id: string; name: string; description: string; price: number; stock: number; category: string; brand?: string;
+    isActive?: boolean; isFeatured?: boolean; images?: ProductImage[]; primaryImage?: string | null;
+};
 
-  // Add global animations
-  useEffect(() => {
-      const styleSheet = document.createElement('style');
-      styleSheet.textContent = `
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes scaleIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        @keyframes bounceIn { from { transform: scale(0.3); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+const LOW_STOCK = 10;
+const MAX_IMAGES = 5;
+const MAX_FILE_MB = 10;
 
-        .animate-fadeIn { animation: fadeIn 0.5s ease-out; }
-        .animate-scaleIn { animation: scaleIn 0.3s ease-out; }
-        .animate-slideUp { animation: slideUp 0.4s ease-out; }
-        .animate-bounceIn { animation: bounceIn 0.6s ease-out; }
-        .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+type Draft = { name: string; description: string; price: string; stock: string; category: string; brand: string; isActive: boolean; isFeatured: boolean };
+const emptyDraft: Draft = { name: '', description: '', price: '', stock: '', category: '', brand: '', isActive: true, isFeatured: false };
 
-        * { cursor: default; }
-        button, a, input, textarea, select { cursor: pointer; }
+function ProductEditor({ product, categories, onDone }: { product: Product | null; categories: string[]; onDone: () => void }) {
+    const create = useCreateProduct();
+    const update = useUpdateProduct();
+    const [draft, setDraft] = useState<Draft>(emptyDraft);
+    const [existing, setExisting] = useState<ProductImage[]>([]);
+    const [files, setFiles] = useState<{ file: File; preview: string }[]>([]);
+    const [primary, setPrimary] = useState<string>(''); // url of existing image or preview url
+    const fileInput = useRef<HTMLInputElement>(null);
 
-        .scroll-smooth { scroll-behavior: smooth; }
-        .transition-all { transition: all 0.3s ease; }
-        .hover-lift { transition: transform 0.2s ease; }
-        .hover-lift:hover { transform: translateY(-2px); }
-        .hover-glow { transition: box-shadow 0.3s ease; }
-        .hover-glow:hover { box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); }
-      `;
-      document.head.appendChild(styleSheet);
+    useEffect(() => {
+        setDraft(product ? {
+            name: product.name, description: product.description, price: String(product.price), stock: String(product.stock ?? 0),
+            category: product.category, brand: product.brand || '', isActive: product.isActive !== false, isFeatured: !!product.isFeatured,
+        } : emptyDraft);
+        setExisting(product?.images || []);
+        setPrimary(product?.images?.find((i) => i.isPrimary)?.url || product?.images?.[0]?.url || '');
+        setFiles([]);
+    }, [product]);
 
-      // Add smooth scrolling to body
-      document.body.classList.add('scroll-smooth');
+    // Free preview URLs when they're no longer shown
+    useEffect(() => () => files.forEach((f) => URL.revokeObjectURL(f.preview)), [files]);
 
-      return () => {
-        document.head.removeChild(styleSheet);
-        document.body.classList.remove('scroll-smooth');
-      };
-  }, []);
+    const total = existing.length + files.length;
+    const set = (k: keyof Draft) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setDraft((d) => ({ ...d, [k]: e.target.value }));
 
-  const queryClient = useQueryClient();
-
-  const { data: productsData, isLoading } = useAdminProducts({ limit: 100 });
-  const updateMutation = useUpdateProduct();
-  const deleteMutation = useDeleteProduct();
-  const uploadImagesMutation = useUploadProductImages();
-
-  // Deduplicate the products array based on 'id' or '_id' for unique keys.
-  // Assuming the unique identifier for mapping is 'id' OR '_id' if 'id' is missing.
-  const uniqueProducts = productsData?.products
-    ? Array.from(new Map(productsData.products.map((product: any) => [product.id || product._id, product])).values())
-    : [];
-
-  const products = uniqueProducts || [];
-
-  const handleViewProduct = (product: any) => {
-    setSelectedProduct(product);
-    setViewOpen(true);
-  };
-
-  const handleEditProduct = (product: any) => {
-    setSelectedProduct(product);
-    setEditForm({
-      name: product.name || '',
-      description: product.description || '',
-      price: product.price?.toString() || '',
-      category: product.category || '',
-      stock: product.stock?.toString() || '',
-      images: product.images || [],
-    });
-    setEditOpen(true);
-  };
-
-  const handleDeleteProduct = (product: any) => {
-    setSelectedProduct(product);
-    setDeleteOpen(true);
-  };
-
-  const handleViewImages = (product: any, startIndex: number = 0) => {
-    setSelectedProduct(product);
-    setSelectedImageIndex(startIndex);
-    setImageViewerOpen(true);
-  };
-
-  const handlePrevImage = () => {
-    if (selectedProduct?.images?.length > 0) {
-      setSelectedImageIndex((prev) =>
-        prev > 0 ? prev - 1 : selectedProduct.images.length - 1
-      );
-    }
-  };
-
-  const handleNextImage = () => {
-    if (selectedProduct?.images?.length > 0) {
-      setSelectedImageIndex((prev) =>
-        prev < selectedProduct.images.length - 1 ? prev + 1 : 0
-      );
-    }
-  };
-
-  const handleUpdateProduct = async () => {
-    // Generate unique SKU if not present
-    const generateSKU = () => {
-      const timestamp = Date.now().toString(36);
-      const random = Math.random().toString(36).substring(2, 8);
-      return `SKU-${timestamp}-${random}`.toUpperCase();
+    const addFiles = (list: FileList | null) => {
+        if (!list) return;
+        const picked = Array.from(list);
+        const tooBig = picked.find((f) => f.size > MAX_FILE_MB * 1024 * 1024);
+        if (tooBig) return toast.error(`${tooBig.name} is larger than ${MAX_FILE_MB}MB`);
+        const room = MAX_IMAGES - total;
+        if (room <= 0) return toast.error(`A product can have up to ${MAX_IMAGES} images`);
+        const next = picked.slice(0, room).map((file) => ({ file, preview: URL.createObjectURL(file) }));
+        if (picked.length > room) toast.message(`Only the first ${room} image${room === 1 ? '' : 's'} were added (max ${MAX_IMAGES})`);
+        setFiles((f) => [...f, ...next]);
+        if (!primary && next[0]) setPrimary(next[0].preview);
     };
 
-    // Update product details
-    updateMutation.mutate(
-      {
-        // FIX: Use selectedProduct._id to get the unique identifier,
-        // and pass it as 'id' as the backend service expects.
-        id: selectedProduct._id,
-        data: {
-          name: editForm.name,
-          description: editForm.description,
-          price: parseFloat(editForm.price),
-          category: editForm.category,
-          inventory: { quantity: parseInt(editForm.stock) },
-          images: editForm.images,
-          sku: selectedProduct.sku || generateSKU(), // Add unique SKU
-        } as any,
-      },
-      {
-        onSuccess: () => {
-          setEditOpen(false);
-          queryClient.invalidateQueries({ queryKey: ['admin', 'products'] });
-        },
-      }
+    const save = (e: React.FormEvent) => {
+        e.preventDefault();
+        const price = Number(draft.price);
+        const stock = Number(draft.stock || 0);
+        if (draft.name.trim().length < 2) return toast.error('Give the product a name');
+        if (draft.description.trim().length < 5) return toast.error('Add a short description');
+        if (!draft.category.trim()) return toast.error('Choose or type a category');
+        if (!Number.isFinite(price) || price <= 0) return toast.error('Enter a price above ₦0');
+        if (!Number.isInteger(stock) || stock < 0) return toast.error('Stock must be a whole number');
+
+        const form = new FormData();
+        form.append('name', draft.name.trim());
+        form.append('description', draft.description.trim());
+        form.append('price', String(price));
+        form.append('stock', String(stock));
+        form.append('category', draft.category.trim().toLowerCase());
+        form.append('brand', draft.brand.trim());
+        form.append('isFeatured', String(draft.isFeatured));
+        if (product) form.append('isActive', String(draft.isActive));
+        // Existing images to keep (JSON) plus new files; the server appends uploads after the kept images
+        const mainUpload = files.findIndex((f) => f.preview === primary);
+        form.append('images', JSON.stringify(existing.map((img) => ({ ...img, isPrimary: mainUpload < 0 && img.url === primary }))));
+        files.forEach((f) => form.append('images', f.file));
+        if (mainUpload >= 0) form.append('primaryUploadIndex', String(mainUpload));
+
+        const onError = (err: unknown) => toast.error(getErrorMessage(err, 'Could not save the product'));
+        if (product) {
+            update.mutate({ id: product._id, data: form }, { onSuccess: () => { toast.success('Product updated'); onDone(); }, onError });
+        } else {
+            create.mutate(form, { onSuccess: () => { toast.success('Product added'); onDone(); }, onError });
+        }
+    };
+
+    const saving = create.isPending || update.isPending;
+
+    return (
+        <form onSubmit={save} className="flex h-full flex-col">
+            <SheetHeader className="border-b border-border/60 px-5 py-4 sm:px-6">
+                <SheetTitle>{product ? 'Edit product' : 'Add a product'}</SheetTitle>
+                <SheetDescription>{product ? 'Changes show in the shop straight away.' : 'New products appear in the shop as soon as you save.'}</SheetDescription>
+            </SheetHeader>
+
+            <div className="flex-1 space-y-4 overflow-y-auto px-5 py-5 sm:px-6">
+                <div className="space-y-1.5"><Label htmlFor="p-name">Name</Label><Input id="p-name" value={draft.name} onChange={set('name')} className="h-11 rounded-xl" placeholder="e.g. Epilux sachet water (bag of 20)" /></div>
+                <div className="space-y-1.5"><Label htmlFor="p-desc">Description</Label><Textarea id="p-desc" rows={3} value={draft.description} onChange={set('description')} className="rounded-xl" /></div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-1.5"><Label htmlFor="p-price">Price (₦ per unit)</Label><Input id="p-price" inputMode="decimal" value={draft.price} onChange={set('price')} className="h-11 rounded-xl" placeholder="230" /></div>
+                    <div className="space-y-1.5"><Label htmlFor="p-stock">Units in stock</Label><Input id="p-stock" inputMode="numeric" value={draft.stock} onChange={set('stock')} className="h-11 rounded-xl" placeholder="0" /></div>
+                    <div className="space-y-1.5">
+                        <Label htmlFor="p-cat">Category</Label>
+                        <Input id="p-cat" list="product-categories" value={draft.category} onChange={set('category')} className="h-11 rounded-xl" placeholder="sachet, bottled…" />
+                        <datalist id="product-categories">{categories.map((c) => <option key={c} value={c} />)}</datalist>
+                    </div>
+                    <div className="space-y-1.5"><Label htmlFor="p-brand">Brand (optional)</Label><Input id="p-brand" value={draft.brand} onChange={set('brand')} className="h-11 rounded-xl" placeholder="Epilux" /></div>
+                </div>
+
+                <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                        <Label>Images</Label>
+                        <span className="text-xs text-muted-foreground">{total}/{MAX_IMAGES} · tap one to make it the main image</span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
+                        {existing.map((img) => (
+                            <div key={img.url} className={cn('group relative aspect-square overflow-hidden rounded-xl border-2', primary === img.url ? 'border-primary' : 'border-transparent')}>
+                                <button type="button" onClick={() => setPrimary(img.url)} className="size-full" aria-label="Make main image">
+                                    <img src={resolveImageUrl(img.url)} onError={handleImageError} alt="" className="size-full bg-muted object-cover" />
+                                </button>
+                                {primary === img.url && <span className="absolute bottom-1 left-1 rounded-md bg-primary px-1.5 text-[10px] font-bold text-primary-foreground">Main</span>}
+                                <button type="button" onClick={() => { setExisting((x) => x.filter((i) => i.url !== img.url)); if (primary === img.url) setPrimary(''); }}
+                                    className="absolute right-1 top-1 grid size-6 place-items-center rounded-full bg-black/60 text-white opacity-90 hover:bg-black/80" aria-label="Remove image">
+                                    <X className="size-3.5" />
+                                </button>
+                            </div>
+                        ))}
+                        {files.map((f) => (
+                            <div key={f.preview} className={cn('relative aspect-square overflow-hidden rounded-xl border-2', primary === f.preview ? 'border-primary' : 'border-dashed border-border')}>
+                                <button type="button" onClick={() => setPrimary(f.preview)} className="size-full" aria-label="Make main image">
+                                    <img src={f.preview} alt="" className="size-full object-cover" />
+                                </button>
+                                {primary === f.preview && <span className="absolute bottom-1 left-1 rounded-md bg-primary px-1.5 text-[10px] font-bold text-primary-foreground">Main</span>}
+                                <span className="absolute left-1 top-1 rounded-md bg-amber-500 px-1.5 text-[10px] font-bold text-white">New</span>
+                                <button type="button" onClick={() => { setFiles((x) => x.filter((i) => i.preview !== f.preview)); if (primary === f.preview) setPrimary(''); }}
+                                    className="absolute right-1 top-1 grid size-6 place-items-center rounded-full bg-black/60 text-white hover:bg-black/80" aria-label="Remove image">
+                                    <X className="size-3.5" />
+                                </button>
+                            </div>
+                        ))}
+                        {total < MAX_IMAGES && (
+                            <button type="button" onClick={() => fileInput.current?.click()}
+                                className="grid aspect-square place-items-center rounded-xl border-2 border-dashed border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary">
+                                <span className="flex flex-col items-center gap-1 text-xs font-medium"><ImagePlus className="size-5" /> Add</span>
+                            </button>
+                        )}
+                    </div>
+                    <input ref={fileInput} type="file" accept="image/jpeg,image/png,image/webp" multiple hidden onChange={(e) => { addFiles(e.target.files); e.target.value = ''; }} />
+                    <p className="text-xs text-muted-foreground">JPG, PNG or WebP, up to {MAX_FILE_MB}MB each.</p>
+                </div>
+
+                <div className="space-y-3 rounded-2xl border border-border/70 p-4">
+                    <label className="flex items-center justify-between gap-4">
+                        <span><span className="block text-sm font-semibold">Featured</span><span className="block text-xs text-muted-foreground">Highlighted at the top of the shop</span></span>
+                        <Switch checked={draft.isFeatured} onCheckedChange={(v) => setDraft((d) => ({ ...d, isFeatured: v }))} />
+                    </label>
+                    {product && (
+                        <label className="flex items-center justify-between gap-4">
+                            <span><span className="block text-sm font-semibold">Visible in the shop</span><span className="block text-xs text-muted-foreground">Turn off to hide it without deleting</span></span>
+                            <Switch checked={draft.isActive} onCheckedChange={(v) => setDraft((d) => ({ ...d, isActive: v }))} />
+                        </label>
+                    )}
+                </div>
+            </div>
+
+            <div className="flex gap-2 border-t border-border/60 bg-muted/30 px-5 py-4 sm:px-6">
+                <Button type="button" variant="ghost" onClick={onDone} disabled={saving}>Cancel</Button>
+                <Button type="submit" className="ml-auto" loading={saving}>{product ? 'Save changes' : 'Add product'}</Button>
+            </div>
+        </form>
     );
-  };
+}
 
-  const handleConfirmDelete = () => {
-    // Also ensuring delete uses the correct _id, though you only mentioned update.
-    deleteMutation.mutate(selectedProduct._id, { 
-      onSuccess: () => {
-        setDeleteOpen(false);
-        queryClient.invalidateQueries({ queryKey: ['admin', 'products'] });
-      },
-    });
-  };
+function ProductsContent() {
+    const router = useRouter();
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
+    const [search, setSearch] = useState('');
+    const debounced = useDebounce(search.trim(), 350);
+    const { data, isLoading, isError, refetch } = useAdminProducts({ limit: 200, search: debounced || undefined });
+    const { data: categoryData } = useAdminCategories();
+    const update = useUpdateProduct();
+    const remove = useDeleteProduct();
+    const [toDelete, setToDelete] = useState<Product | null>(null);
 
-  const filteredProducts = products.filter((product: any) =>
-    product.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    product.category?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+    const products: Product[] = useMemo(() => (data as { products?: Product[] } | undefined)?.products || [], [data]);
+    const categories: string[] = (categoryData as { categories?: string[] } | undefined)?.categories || [];
+    const editing = searchParams.get('edit');
+    const editingProduct = editing && editing !== 'new' ? products.find((p) => p._id === editing) || null : null;
+    const lowStock = products.filter((p) => (p.stock ?? 0) < LOW_STOCK).length;
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'active':
-        return <Badge className="bg-green-100 text-green-800">Active</Badge>;
-      case 'low_stock':
-        return <Badge className="bg-yellow-100 text-yellow-800">Low Stock</Badge>;
-      case 'out_of_stock':
-        return <Badge variant="destructive">Out of Stock</Badge>;
-      default:
-        return <Badge variant="secondary">{status}</Badge>;
-    }
-  };
+    const openEditor = (id: string | null) => {
+        const next = new URLSearchParams(searchParams.toString());
+        if (id) next.set('edit', id); else next.delete('edit');
+        router.replace(`${pathname}${next.toString() ? `?${next}` : ''}`, { scroll: false });
+    };
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-      {/* Header */}
-      <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-40">
-        <div className="container mx-auto px-6 py-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent animate-bounceIn">
-                Products Management
-              </h1>
-              <p className="text-gray-600 mt-1 animate-fadeIn animation-delay-300">Manage your product catalog and inventory</p>
+    const toggle = (p: Product, field: 'isActive' | 'isFeatured', value: boolean) =>
+        update.mutate({ id: p._id, data: { [field]: value } }, {
+            onSuccess: () => toast.success(field === 'isActive' ? (value ? `${p.name} is visible in the shop` : `${p.name} is hidden from the shop`) : value ? 'Marked as featured' : 'No longer featured'),
+            onError: (err) => toast.error(getErrorMessage(err, 'Could not update the product')),
+        });
+
+    return (
+        <div>
+            <PageHeader
+                title="Products"
+                description={lowStock ? `${lowStock} product${lowStock === 1 ? ' is' : 's are'} running low on stock.` : 'Manage what customers can order.'}
+                actions={<Button onClick={() => openEditor('new')}><Plus /> Add product</Button>}
+            />
+
+            <div className="relative mb-4 max-w-sm">
+                <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search products" className="h-10 rounded-xl pl-10" aria-label="Search products" />
             </div>
-            <Button asChild className="bg-blue-600 hover:bg-blue-700 text-white px-4 sm:px-6 py-2 rounded-lg shadow-md hover:shadow-lg transition-all hover-lift animate-fadeIn animation-delay-500 w-full sm:w-auto">
-              <Link href="/admin/products/new">
-                <Plus className="w-4 h-4 mr-2" />
-                Add Product
-              </Link>
-            </Button>
-          </div>
+
+            <Panel className="overflow-hidden">
+                {isLoading ? (
+                    <div className="space-y-2 p-5">{[0, 1, 2, 3].map((i) => <div key={i} className="skeleton-shimmer h-14 rounded-xl" />)}</div>
+                ) : isError ? (
+                    <ErrorState onRetry={() => refetch()} />
+                ) : products.length === 0 ? (
+                    <EmptyState icon={ShoppingBag} title={debounced ? 'No matching products' : 'No products yet'} action={debounced ? undefined : { label: 'Add your first product', onClick: () => openEditor('new') }} />
+                ) : (
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead className="pl-5 sm:pl-6">Product</TableHead>
+                                <TableHead>Price</TableHead>
+                                <TableHead>Stock</TableHead>
+                                <TableHead className="hidden md:table-cell">Visible</TableHead>
+                                <TableHead className="pr-5 text-right sm:pr-6"><span className="sr-only">Actions</span></TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {products.map((p) => (
+                                <TableRow key={p._id} className={p.isActive === false ? 'opacity-60' : undefined}>
+                                    <TableCell className="pl-5 sm:pl-6">
+                                        <div className="flex items-center gap-3">
+                                            <img src={productImageUrl(p)} onError={handleImageError} alt="" className="size-11 shrink-0 rounded-xl bg-muted object-cover" />
+                                            <div className="min-w-0">
+                                                <p className="flex items-center gap-1.5 truncate font-semibold">{p.name}{p.isFeatured && <Star className="size-3.5 fill-amber-400 text-amber-400" aria-label="Featured" />}</p>
+                                                <p className="text-xs capitalize text-muted-foreground">{p.category}{p.brand ? ` · ${p.brand}` : ''}</p>
+                                            </div>
+                                        </div>
+                                    </TableCell>
+                                    <TableCell className="tabular-nums">{formatNaira(p.price)}</TableCell>
+                                    <TableCell>
+                                        {(p.stock ?? 0) === 0 ? <Pill tone="danger">Out of stock</Pill> : (p.stock ?? 0) < LOW_STOCK ? <Pill tone="warning">{p.stock} left</Pill> : <span className="tabular-nums">{p.stock}</span>}
+                                    </TableCell>
+                                    <TableCell className="hidden md:table-cell">
+                                        <Switch checked={p.isActive !== false} onCheckedChange={(v) => toggle(p, 'isActive', v)} aria-label={`Show ${p.name} in the shop`} />
+                                    </TableCell>
+                                    <TableCell className="pr-5 text-right sm:pr-6">
+                                        <div className="flex justify-end gap-1">
+                                            <Button variant="ghost" size="icon-sm" onClick={() => openEditor(p._id)} aria-label={`Edit ${p.name}`}><Pencil /></Button>
+                                            <Button variant="ghost" size="icon-sm" className="text-muted-foreground hover:text-destructive" onClick={() => setToDelete(p)} aria-label={`Delete ${p.name}`}><Trash2 /></Button>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                )}
+            </Panel>
+
+            <Sheet open={!!editing} onOpenChange={(o) => !o && openEditor(null)}>
+                <SheetContent side="right" className="w-full gap-0 p-0 sm:max-w-lg">
+                    {editing && <ProductEditor product={editingProduct} categories={categories} onDone={() => openEditor(null)} />}
+                </SheetContent>
+            </Sheet>
+
+            <AlertDialog open={!!toDelete} onOpenChange={(o) => !o && !remove.isPending && setToDelete(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete {toDelete?.name}?</AlertDialogTitle>
+                        <AlertDialogDescription>It is removed from the shop and its images are deleted. Past orders keep their details. To stop selling it for now, hide it instead.</AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={remove.isPending}>Keep it</AlertDialogCancel>
+                        {toDelete?.isActive !== false && (
+                            <Button variant="outline" onClick={() => { if (toDelete) toggle(toDelete, 'isActive', false); setToDelete(null); }}>Hide instead</Button>
+                        )}
+                        <Button variant="destructive" loading={remove.isPending} onClick={() => toDelete && remove.mutate(toDelete._id, {
+                            onSuccess: () => { toast.success('Product deleted'); setToDelete(null); },
+                            onError: (err) => toast.error(getErrorMessage(err, 'Could not delete the product')),
+                        })}>Delete</Button>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
-      </div>
+    );
+}
 
-      <div className="container mx-auto px-6 py-8">
-
-        {/* Filters and Search */}
-        <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl mb-6 animate-fadeIn animation-delay-700">
-          <CardContent className="p-6">
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <Input
-                  placeholder="Search products..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 bg-white/50 border-gray-200"
-                />
-              </div>
-              <Button variant="outline" className="flex items-center gap-2 hover-lift">
-                <Filter className="w-4 h-4" />
-                Filter
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Products Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 animate-fadeIn animation-delay-900">
-        {filteredProducts.map((product: any) => (
-          // Using product.id || product._id for the key ensures a unique key is used.
-          <Card key={product.id || product._id} className="overflow-hidden hover:shadow-lg transition-shadow">
-            <div className="aspect-square bg-gray-100 relative cursor-pointer hover:opacity-80 transition-opacity" onClick={() => handleViewImages(product, 0)}>
-              {product.images?.[0] ? (
-                <img
-                  src={product.images[0].absoluteUrl || `${API_BASE_URL}${product.images[0].url}` || product.images[0]}
-                  alt={product.name}
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    if (e.currentTarget.src !== '/images/placeholder.jpg') {
-                      e.currentTarget.src = '/images/placeholder.jpg';
-                    }
-                  }}
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center bg-gray-200">
-                  <span className="text-gray-500 text-sm">No Image</span>
-                </div>
-              )}
-              <div className="absolute top-2 right-2">
-                {getStatusBadge(product.stock > 0 ? 'active' : 'out_of_stock')}
-              </div>
-            </div>
-            <CardContent className="p-4">
-              <div className="space-y-2">
-                <h3 className="font-semibold text-gray-900 line-clamp-2">{product.name}</h3>
-                <div className="flex items-center justify-between">
-                  <span className="text-lg font-bold text-blue-600">
-                    ₦{product.price?.toLocaleString()}
-                  </span>
-                  <span className="text-sm text-gray-600">
-                    Stock: {product.stock}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between pt-2">
-                  <Badge variant="outline" className="capitalize">
-                    {product.category}
-                  </Badge>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm" className='cursor-pointer'>
-                        <MoreHorizontal className="w-4 h-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem className='cursor-pointer' onClick={() => handleEditProduct(product)}>
-                        <Edit className="w-4 h-4 mr-2" />
-                        Edit Product
-                      </DropdownMenuItem>
-                      <DropdownMenuItem className='cursor-pointer' onClick={() => handleViewProduct(product)}>
-                        <Book className="w-4 h-4 mr-2" />
-                        View Details
-                      </DropdownMenuItem>
-                      <DropdownMenuItem className="text-red-600 cursor-pointer" onClick={() => handleDeleteProduct(product)}>
-                        <Trash2 className="w-4 h-4 mr-2" />
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-        {filteredProducts.length === 0 && (
-          <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl animate-fadeIn animation-delay-1100">
-            <CardContent className="p-12 text-center">
-              <div className="text-gray-400 mb-4">
-                <Search className="w-12 h-12 mx-auto" />
-              </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No products found</h3>
-              <p className="text-gray-600 mb-4">
-                {searchTerm ? 'Try adjusting your search terms.' : 'Get started by adding your first product.'}
-              </p>
-              <Button asChild className="cursor-pointer hover-lift">
-                <Link href="/admin/products/new">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Product
-                </Link>
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-
-      {/* View Product Dialog */}
-      {viewOpen && selectedProduct && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md animate-in fade-in duration-300 p-4" onClick={() => setViewOpen(false)}>
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-auto max-h-[90vh] overflow-y-auto animate-scaleIn" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold mb-4">Product Details</h3>
-            <div className="space-y-2">
-              <p><strong>Name:</strong> {selectedProduct.name}</p>
-              <p><strong>Description:</strong> {selectedProduct.description}</p>
-              <p><strong>Price:</strong> ₦{selectedProduct.price?.toLocaleString()}</p>
-              <p><strong>Category:</strong> {selectedProduct.category}</p>
-              <p><strong>Stock:</strong> {selectedProduct.stock}</p>
-              <p><strong>Created:</strong> {new Date(selectedProduct.createdAt).toLocaleDateString()}</p>
-            </div>
-            <div className="flex justify-end mt-4">
-              <Button onClick={() => setViewOpen(false)} className="cursor-pointer">Close</Button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Edit Product Dialog */}
-      {editOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md animate-in fade-in duration-300 p-4" onClick={() => setEditOpen(false)}>
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-auto max-h-[90vh] overflow-y-auto animate-scaleIn" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold mb-4">Edit Product</h3>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="name">Name</Label>
-                <Input
-                  id="name"
-                  value={editForm.name}
-                  onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  value={editForm.description}
-                  onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label htmlFor="price">Price</Label>
-                <Input
-                  id="price"
-                  type="number"
-                  value={editForm.price}
-                  onChange={(e) => setEditForm({ ...editForm, price: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label htmlFor="category">Category</Label>
-                <Input
-                  id="category"
-                  value={editForm.category}
-                  onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label htmlFor="stock">Stock</Label>
-                <Input
-                  id="stock"
-                  type="number"
-                  value={editForm.stock}
-                  onChange={(e) => setEditForm({ ...editForm, stock: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label htmlFor="images">Images</Label>
-                <ImageUploadField
-                  value={editForm.images}
-                  onChange={(images) => setEditForm({ ...editForm, images })}
-                />
-              </div>
-            </div>
-            <div className="flex justify-end gap-2 mt-4">
-              <Button variant="outline" onClick={() => setEditOpen(false)} className="cursor-pointer">Cancel</Button>
-              <Button onClick={handleUpdateProduct} disabled={updateMutation.isPending} className="cursor-pointer">
-                {updateMutation.isPending ? 'Updating...' : 'Update Product'}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Delete Confirmation Dialog */}
-      {deleteOpen && selectedProduct && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md animate-in fade-in duration-300 p-4" onClick={() => setDeleteOpen(false)}>
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-auto animate-scaleIn" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold mb-4">Delete Product</h3>
-            <p>Are you sure you want to delete "{selectedProduct.name}"? This action cannot be undone.</p>
-            <div className="flex justify-end gap-2 mt-4">
-              <Button variant="outline" onClick={() => setDeleteOpen(false)} className="cursor-pointer">Cancel</Button>
-              <Button variant="destructive" onClick={handleConfirmDelete} disabled={deleteMutation.isPending} className="cursor-pointer">
-                {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Image Viewer Modal */}
-      {imageViewerOpen && selectedProduct && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md animate-in fade-in duration-300 p-4" onClick={() => setImageViewerOpen(false)}>
-          <div className="relative max-w-4xl max-h-full animate-scaleIn" onClick={(e) => e.stopPropagation()}>
-            {/* Close button */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setImageViewerOpen(false)}
-              className="absolute top-4 right-4 z-10 text-white hover:bg-white/20"
-            >
-              <X className="w-6 h-6" />
-            </Button>
-
-            {/* Main image */}
-            <div className="relative">
-              {selectedProduct.images?.[selectedImageIndex] && (
-                <img
-                  src={selectedProduct.images[selectedImageIndex].absoluteUrl || `${API_BASE_URL}${selectedProduct.images[selectedImageIndex].url}` || selectedProduct.images[selectedImageIndex]}
-                  alt={selectedProduct.images[selectedImageIndex].alt || selectedProduct.name}
-                  className="max-w-full max-h-[80vh] object-contain"
-                  onError={(e) => {
-                    if (e.currentTarget.src !== '/images/placeholder.jpg') {
-                      e.currentTarget.src = '/images/placeholder.jpg';
-                    }
-                  }}
-                />
-              )}
-
-              {/* Navigation buttons */}
-              {selectedProduct.images?.length > 1 && (
-                <>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handlePrevImage}
-                    className="absolute left-4 top-1/2 transform -translate-y-1/2 text-white hover:bg-white/20"
-                  >
-                    <ChevronLeft className="w-8 h-8" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleNextImage}
-                    className="absolute right-4 top-1/2 transform -translate-y-1/2 text-white hover:bg-white/20"
-                  >
-                    <ChevronRight className="w-8 h-8" />
-                  </Button>
-                </>
-              )}
-            </div>
-
-            {/* Image counter and thumbnails */}
-            {selectedProduct.images?.length > 1 && (
-              <div className="mt-4 flex flex-col items-center">
-                <div className="text-white text-sm mb-2">
-                  {selectedImageIndex + 1} of {selectedProduct.images.length}
-                </div>
-                <div className="flex gap-2 overflow-x-auto max-w-full">
-                  {selectedProduct.images.map((image: any, index: number) => (
-                    <button
-                      key={index}
-                      onClick={() => setSelectedImageIndex(index)}
-                      className={`flex-shrink-0 w-16 h-16 rounded border-2 overflow-hidden ${
-                        index === selectedImageIndex ? 'border-blue-500' : 'border-gray-400'
-                      }`}
-                    >
-                      <img
-                        src={image.absoluteUrl || `${API_BASE_URL}${image.url}` || image}
-                        alt={`Thumbnail ${index + 1}`}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          if ((e.target as HTMLImageElement).src !== '/images/placeholder.jpg') {
-                            (e.target as HTMLImageElement).src = '/images/placeholder.jpg';
-                          }
-                        }}
-                      />
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  </div>
-);
+export default function AdminProductsPage() {
+    return (
+        <Suspense fallback={null}>
+            <ProductsContent />
+        </Suspense>
+    );
 }

@@ -28,7 +28,9 @@ export const useCreateProduct = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
       queryClient.invalidateQueries({ queryKey: ['admin', 'products'] });
-      queryClient.invalidateQueries({ queryKey: ['admin', 'dashboard', 'stats'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'stats'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'categories'] });
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
     },
   });
 };
@@ -43,7 +45,11 @@ export const useUpdateProduct = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
       queryClient.invalidateQueries({ queryKey: ['admin', 'products'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'product'] });
       queryClient.invalidateQueries({ queryKey: ['product'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'stats'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'categories'] });
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
     },
   });
 };
@@ -57,6 +63,7 @@ export const useDeleteProduct = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
       queryClient.invalidateQueries({ queryKey: ['admin', 'products'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'stats'] });
     },
   });
 };
@@ -78,7 +85,7 @@ export const useCategories = () => {
 };
 
 // Hook for getting admin products
-export const useAdminProducts = (params?: { limit?: number }) => {
+export const useAdminProducts = (params?: { limit?: number; search?: string; category?: string }) => {
   return useQuery({
     queryKey: ['admin', 'products', params],
     queryFn: () => adminProductsAPI.getProducts(params),

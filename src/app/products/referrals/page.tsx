@@ -16,7 +16,7 @@ type Referral = { id: string; name: string; joinDate: string; isActive: boolean;
 const steps = [
     { icon: Share2, title: 'Share your link', text: 'Send your invite link to friends and family.' },
     { icon: UserPlus, title: 'They sign up and order', text: 'Your referral is applied automatically when they register.' },
-    { icon: Gift, title: 'You both earn', text: 'When they confirm a delivery, they keep 60% of the reward and you get 40%.' },
+    { icon: Gift, title: 'You both earn', text: 'When they confirm a delivery, they keep 60% of the reward and you get 40%. Invite as many friends as you like, and they can invite their own friends too.' },
 ];
 
 export default function ReferralsPage() {

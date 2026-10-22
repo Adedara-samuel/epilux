@@ -10,4 +10,3 @@ export { supportAPI } from './support';
 export { healthAPI } from './health';
 export { marketerAPI } from './marketer';
 export { paymentAPI } from './payment';
-export * from "./messageService";

@@ -1,338 +1,178 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useAuth } from '@/hooks/useAuth';
-import { useRouter } from 'next/navigation';
-import { usePendingWithdrawals, useProcessWithdrawal } from '@/hooks/useWallet';
-import {
-  CheckCircle,
-  XCircle,
-  Clock,
-  DollarSign,
-  User,
-  CreditCard,
-  MessageSquare,
-  Eye
-} from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/Components/ui/card';
-import { Badge } from '@/Components/ui/badge';
-import { Button } from '@/Components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/Components/ui/dialog';
-import { Textarea } from '@/Components/ui/textarea';
+import { useState } from 'react';
 import { toast } from 'sonner';
+import { Banknote, Check, CheckCircle2, Clock, Copy, Landmark, Mail, Phone, XCircle } from 'lucide-react';
+import { useAdminWithdrawals, useUpdateWithdrawal } from '@/hooks/useAdmin';
+import type { AdminWithdrawal } from '@/services/admin';
+import { getErrorMessage } from '@/services/base';
+import { Button } from '@/Components/ui/button';
+import { Label } from '@/Components/ui/label';
+import { Textarea } from '@/Components/ui/textarea';
+import { Tabs, TabsList, TabsTrigger } from '@/Components/ui/tabs';
+import {
+    AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/Components/ui/alert-dialog';
+import { EmptyState, ErrorState, PageHeader, Panel, Pill, StatTile } from '@/Components/ui/kit';
+import { Stagger, StaggerItem } from '@/Components/motion';
+import { formatDateTime, formatNaira, fullName, timeAgo } from '@/lib/format';
+
+const TABS = [
+    { value: 'pending', label: 'To pay' },
+    { value: 'paid', label: 'Paid' },
+    { value: 'rejected', label: 'Rejected' },
+    { value: 'all', label: 'All' },
+] as const;
+
+const STATUS_PILL = {
+    pending: { tone: 'warning', label: 'Waiting' },
+    paid: { tone: 'success', label: 'Paid' },
+    rejected: { tone: 'danger', label: 'Rejected' },
+} as const;
+
+function CopyValue({ value, label }: { value?: string; label: string }) {
+    const [copied, setCopied] = useState(false);
+    if (!value) return <span className="text-muted-foreground">—</span>;
+    return (
+        <button
+            type="button"
+            onClick={async () => {
+                try { await navigator.clipboard.writeText(value); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch { toast.error('Could not copy'); }
+            }}
+            className="group inline-flex items-center gap-1.5 rounded-lg font-mono font-semibold tracking-wide hover:text-primary"
+            aria-label={`Copy ${label}`}
+        >
+            {value}
+            {copied ? <Check className="size-3.5 text-emerald-600" /> : <Copy className="size-3.5 text-muted-foreground opacity-60 group-hover:opacity-100" />}
+        </button>
+    );
+}
+
+function WithdrawalCard({ w, onAction }: { w: AdminWithdrawal; onAction: (w: AdminWithdrawal, action: 'paid' | 'rejected') => void }) {
+    const pill = STATUS_PILL[w.status] || STATUS_PILL.pending;
+    return (
+        <Panel className="overflow-hidden">
+            <div className="grid gap-4 p-5 md:grid-cols-[1fr_1.2fr_auto] md:items-center">
+                <div className="min-w-0">
+                    <p className="text-2xl font-extrabold tabular-nums">{formatNaira(w.amount)}</p>
+                    <p className="mt-0.5 font-semibold">{fullName(w.user) || 'Unknown customer'}</p>
+                    <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                        {w.user?.email && <span className="flex items-center gap-1"><Mail className="size-3" />{w.user.email}</span>}
+                        {w.user?.phone && <a href={`tel:${w.user.phone}`} className="flex items-center gap-1 hover:text-primary"><Phone className="size-3" />{w.user.phone}</a>}
+                    </div>
+                </div>
+
+                <div className="rounded-2xl bg-muted/50 p-4 text-sm">
+                    <p className="flex items-center gap-2 font-semibold"><Landmark className="size-4 text-muted-foreground" />{w.bankName || 'Bank not given'}</p>
+                    <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
+                        <dt className="text-muted-foreground">Account</dt>
+                        <dd><CopyValue value={w.accountNumber} label="account number" /></dd>
+                        <dt className="text-muted-foreground">Name</dt>
+                        <dd className="truncate font-medium">{w.accountName || '—'}</dd>
+                    </dl>
+                </div>
+
+                <div className="flex flex-row items-center justify-between gap-3 md:flex-col md:items-end">
+                    <Pill tone={pill.tone} dot>{pill.label}</Pill>
+                    <p className="text-xs text-muted-foreground" title={formatDateTime(w.requestedAt)}>Requested {timeAgo(w.requestedAt)}</p>
+                </div>
+            </div>
+
+            {w.status === 'pending' ? (
+                <div className="flex flex-col-reverse gap-2 border-t border-border/60 bg-muted/30 px-5 py-3 sm:flex-row sm:items-center sm:justify-end">
+                    <Button variant="ghost" className="text-muted-foreground hover:text-destructive" onClick={() => onAction(w, 'rejected')}><XCircle /> Reject</Button>
+                    <Button variant="success" onClick={() => onAction(w, 'paid')}><CheckCircle2 /> Mark as paid</Button>
+                </div>
+            ) : (w.adminNote || w.processedAt) && (
+                <div className="border-t border-border/60 bg-muted/30 px-5 py-3 text-xs text-muted-foreground">
+                    {w.processedAt && <>Processed {formatDateTime(w.processedAt)}</>}{w.adminNote && <> · {w.adminNote}</>}
+                </div>
+            )}
+        </Panel>
+    );
+}
 
 export default function AdminWithdrawalsPage() {
-  const { user } = useAuth();
-  const router = useRouter();
-  const [selectedWithdrawal, setSelectedWithdrawal] = useState<any>(null);
-  const [adminNote, setAdminNote] = useState('');
-  const [isProcessingModalOpen, setIsProcessingModalOpen] = useState(false);
+    const [tab, setTab] = useState<(typeof TABS)[number]['value']>('pending');
+    const { data, isLoading, isError, refetch } = useAdminWithdrawals(tab === 'all' ? undefined : tab);
+    const update = useUpdateWithdrawal();
+    const [pending, setPending] = useState<{ w: AdminWithdrawal; action: 'paid' | 'rejected' } | null>(null);
+    const [note, setNote] = useState('');
 
-  const { data: withdrawalsData, isLoading } = usePendingWithdrawals();
-  const processWithdrawalMutation = useProcessWithdrawal();
+    const summary = data?.summary;
+    const list = data?.withdrawals || [];
 
-  const withdrawals = withdrawalsData?.withdrawals || [];
-
-  // Add global animations
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    const styleSheet = document.createElement('style');
-    styleSheet.textContent = `
-      @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-      @keyframes scaleIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-      @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-      @keyframes bounceIn { from { transform: scale(0.3); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-      @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-      @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-10px); } }
-      @keyframes shimmer { 0% { background-position: -200px 0; } 100% { background-position: calc(200px + 100%) 0; } }
-
-      .animate-fadeIn { animation: fadeIn 0.5s ease-out; }
-      .animate-scaleIn { animation: scaleIn 0.3s ease-out; }
-      .animate-slideUp { animation: slideUp 0.4s ease-out; }
-      .animate-bounceIn { animation: bounceIn 0.6s ease-out; }
-      .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
-      .animate-float { animation: float 3s ease-in-out infinite; }
-      .animate-shimmer { animation: shimmer 2s infinite linear; }
-
-      * { cursor: default; }
-      button, a, input, textarea, select { cursor: pointer; }
-
-      .scroll-smooth { scroll-behavior: smooth; }
-      .transition-all { transition: all 0.3s ease; }
-      .hover-lift { transition: transform 0.2s ease; }
-      .hover-lift:hover { transform: translateY(-2px); }
-      .hover-glow { transition: box-shadow 0.3s ease; }
-      .hover-glow:hover { box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); }
-    `;
-    document.head.appendChild(styleSheet);
-
-    // Add smooth scrolling to body
-    document.body.classList.add('scroll-smooth');
-
-    return () => {
-      document.head.removeChild(styleSheet);
-      document.body.classList.remove('scroll-smooth');
+    const confirm = () => {
+        if (!pending) return;
+        if (pending.action === 'rejected' && note.trim().length < 3) return toast.error('Tell the customer why it was rejected');
+        update.mutate({ id: pending.w._id, status: pending.action, note: note.trim() || undefined }, {
+            onSuccess: (res) => { toast.success(res.message); setPending(null); setNote(''); },
+            onError: (err) => toast.error(getErrorMessage(err, 'Could not update the withdrawal')),
+        });
     };
-  }, []);
 
-  if (!user) {
-    router.push('/login');
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
+        <div>
+            <PageHeader title="Withdrawals" description="Pay out customer wallet balances to their bank accounts." />
 
-  if (user.role !== 'admin') {
-    router.push('/');
-    return null;
-  }
+            <Stagger immediate className="grid gap-4 sm:grid-cols-3">
+                <StaggerItem><StatTile label="Waiting to be paid" value={summary ? formatNaira(summary.pending?.amount) : '…'} icon={Clock} tone="warning" hint={`${summary?.pending?.count ?? 0} requests`} /></StaggerItem>
+                <StaggerItem><StatTile label="Paid out" value={summary ? formatNaira(summary.paid?.amount) : '…'} icon={Banknote} tone="success" hint={`${summary?.paid?.count ?? 0} payouts`} /></StaggerItem>
+                <StaggerItem><StatTile label="Rejected" value={summary ? formatNaira(summary.rejected?.amount) : '…'} icon={XCircle} tone="danger" hint={`${summary?.rejected?.count ?? 0} returned to wallets`} /></StaggerItem>
+            </Stagger>
 
-  const handleProcessWithdrawal = async (action: 'approve' | 'reject') => {
-    if (!selectedWithdrawal) return;
+            <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)} className="mt-6">
+                <TabsList className="grid w-full grid-cols-4 sm:inline-flex sm:w-fit">
+                    {TABS.map((t) => (
+                        <TabsTrigger key={t.value} value={t.value}>
+                            {t.label}
+                            {t.value === 'pending' && !!summary?.pending?.count && <span className="ml-1 rounded-full bg-primary/10 px-1.5 text-[11px] font-bold text-primary">{summary.pending.count}</span>}
+                        </TabsTrigger>
+                    ))}
+                </TabsList>
+            </Tabs>
 
-    try {
-      await processWithdrawalMutation.mutateAsync({
-        id: selectedWithdrawal.id,
-        action,
-        adminNote: adminNote.trim() || undefined,
-      });
-
-      setIsProcessingModalOpen(false);
-      setSelectedWithdrawal(null);
-      setAdminNote('');
-      toast.success(`Withdrawal ${action}d successfully`);
-    } catch (error) {
-      // Error handled by mutation
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'approved': return 'bg-green-100 text-green-800';
-      case 'rejected': return 'bg-red-100 text-red-800';
-      case 'processed': return 'bg-blue-100 text-blue-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-      {/* Header */}
-      <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-40">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent animate-bounceIn">
-                Withdrawal Management
-              </h1>
-              <p className="text-gray-600 mt-1 animate-fadeIn animation-delay-300">Review and process affiliate withdrawal requests</p>
+            <div className="mt-4">
+                {isLoading ? (
+                    <div className="space-y-3">{[0, 1].map((i) => <div key={i} className="skeleton-shimmer h-40 rounded-3xl" />)}</div>
+                ) : isError ? (
+                    <Panel><ErrorState onRetry={() => refetch()} /></Panel>
+                ) : list.length === 0 ? (
+                    <Panel><EmptyState icon={Banknote} title={tab === 'pending' ? 'Nothing to pay right now' : 'No withdrawals here'} description={tab === 'pending' ? 'Customers can request withdrawals during the monthly withdrawal window.' : undefined} /></Panel>
+                ) : (
+                    <Stagger immediate className="space-y-3">
+                        {list.map((w) => <StaggerItem key={w._id}><WithdrawalCard w={w} onAction={(x, action) => { setNote(''); setPending({ w: x, action }); }} /></StaggerItem>)}
+                    </Stagger>
+                )}
             </div>
-          </div>
-        </div>
-      </div>
 
-      <div className="container mx-auto px-6 py-8">
-        <div className="animate-fadeIn animation-delay-600">
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <Card className="bg-white border border-gray-200 shadow-sm">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
-                    <Clock className="w-5 h-5 text-yellow-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Pending</p>
-                    <p className="text-xl font-bold text-gray-900">
-                      {withdrawals.filter(w => w.status === 'pending').length}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-white border border-gray-200 shadow-sm">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                    <CheckCircle className="w-5 h-5 text-green-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Approved</p>
-                    <p className="text-xl font-bold text-gray-900">
-                      {withdrawals.filter(w => w.status === 'approved').length}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-white border border-gray-200 shadow-sm">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-                    <XCircle className="w-5 h-5 text-red-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Rejected</p>
-                    <p className="text-xl font-bold text-gray-900">
-                      {withdrawals.filter(w => w.status === 'rejected').length}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-white border border-gray-200 shadow-sm">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                    <DollarSign className="w-5 h-5 text-blue-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Total Amount</p>
-                    <p className="text-xl font-bold text-gray-900">
-                      ₦{withdrawals.reduce((sum, w) => sum + w.amount, 0).toLocaleString()}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Withdrawals List */}
-          <Card className="bg-white border border-gray-200 shadow-sm">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <CreditCard className="w-5 h-5 text-blue-500" />
-                Withdrawal Requests
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-600 mx-auto mb-3"></div>
-                  <p className="text-gray-600">Loading withdrawals...</p>
-                </div>
-              ) : withdrawals.length > 0 ? (
-                <div className="space-y-4">
-                  {withdrawals.map((withdrawal) => (
-                    <div key={withdrawal.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-all">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold">
-                            {withdrawal.accountName.charAt(0).toUpperCase()}
-                          </div>
-                          <div>
-                            <h4 className="font-semibold text-gray-900">{withdrawal.accountName}</h4>
-                            <p className="text-sm text-gray-600">{withdrawal.bankName} - {withdrawal.accountNumber}</p>
-                            <p className="text-xs text-gray-500">
-                              Requested {new Date(withdrawal.requestedAt).toLocaleDateString()}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-lg font-bold text-green-600">₦{withdrawal.amount.toLocaleString()}</p>
-                          <Badge className={`mb-2 ${getStatusColor(withdrawal.status)}`}>
-                            {withdrawal.status}
-                          </Badge>
-                          {withdrawal.status === 'pending' && (
-                            <div className="flex gap-2">
-                              <Button
-                                size="sm"
-                                onClick={() => {
-                                  setSelectedWithdrawal(withdrawal);
-                                  setIsProcessingModalOpen(true);
-                                }}
-                                className="bg-green-600 hover:bg-green-700"
-                              >
-                                <Eye className="w-4 h-4 mr-1" />
-                                Review
-                              </Button>
+            <AlertDialog open={!!pending} onOpenChange={(o) => !o && !update.isPending && setPending(null)}>
+                <AlertDialogContent>
+                    {pending && (
+                        <>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>{pending.action === 'paid' ? `Mark ${formatNaira(pending.w.amount)} as paid?` : 'Reject this withdrawal?'}</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    {pending.action === 'paid'
+                                        ? `Only do this after you've sent the money to ${pending.w.accountName || 'the customer'} (${pending.w.bankName || 'bank'} ${pending.w.accountNumber || ''}).`
+                                        : `${formatNaira(pending.w.amount)} goes back into ${fullName(pending.w.user) || 'the customer'}'s wallet so they can try again.`}
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="withdrawal-note">{pending.action === 'paid' ? 'Transfer reference (optional)' : 'Reason'}</Label>
+                                <Textarea id="withdrawal-note" rows={2} value={note} onChange={(e) => setNote(e.target.value)} maxLength={300} className="rounded-xl"
+                                    placeholder={pending.action === 'paid' ? 'e.g. bank transfer reference' : 'e.g. The account name does not match'} />
                             </div>
-                          )}
-                        </div>
-                      </div>
-                      {withdrawal.adminNote && (
-                        <div className="mt-3 p-3 bg-gray-50 rounded-lg">
-                          <p className="text-sm text-gray-700">
-                            <strong>Admin Note:</strong> {withdrawal.adminNote}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <CreditCard className="w-8 h-8 text-gray-400" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No withdrawal requests</h3>
-                  <p className="text-gray-600 text-sm">
-                    All withdrawal requests have been processed
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel disabled={update.isPending}>Back</AlertDialogCancel>
+                                <Button variant={pending.action === 'paid' ? 'success' : 'destructive'} onClick={confirm} loading={update.isPending}>
+                                    {pending.action === 'paid' ? "Yes, I've paid" : 'Reject and refund'}
+                                </Button>
+                            </AlertDialogFooter>
+                        </>
+                    )}
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
-      </div>
-
-      {/* Processing Modal */}
-      <Dialog open={isProcessingModalOpen} onOpenChange={setIsProcessingModalOpen}>
-        <DialogContent className="sm:max-w-md animate-scaleIn">
-          <DialogHeader>
-            <DialogTitle>Process Withdrawal Request</DialogTitle>
-          </DialogHeader>
-          {selectedWithdrawal && (
-            <div className="space-y-4">
-              <div className="p-4 bg-gray-50 rounded-lg">
-                <h4 className="font-semibold mb-2">Withdrawal Details</h4>
-                <div className="space-y-1 text-sm">
-                  <p><strong>Amount:</strong> ₦{selectedWithdrawal.amount.toLocaleString()}</p>
-                  <p><strong>Bank:</strong> {selectedWithdrawal.bankName}</p>
-                  <p><strong>Account:</strong> {selectedWithdrawal.accountNumber}</p>
-                  <p><strong>Name:</strong> {selectedWithdrawal.accountName}</p>
-                  <p><strong>Requested:</strong> {new Date(selectedWithdrawal.requestedAt).toLocaleDateString()}</p>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-2">Admin Note (Optional)</label>
-                <Textarea
-                  placeholder="Add a note for the affiliate..."
-                  value={adminNote}
-                  onChange={(e) => setAdminNote(e.target.value)}
-                  rows={3}
-                />
-              </div>
-
-              <div className="flex gap-3">
-                <Button
-                  onClick={() => handleProcessWithdrawal('reject')}
-                  disabled={processWithdrawalMutation.isPending}
-                  variant="destructive"
-                  className="flex-1"
-                >
-                  {processWithdrawalMutation.isPending ? 'Processing...' : 'Reject'}
-                </Button>
-                <Button
-                  onClick={() => handleProcessWithdrawal('approve')}
-                  disabled={processWithdrawalMutation.isPending}
-                  className="flex-1 bg-green-600 hover:bg-green-700"
-                >
-                  {processWithdrawalMutation.isPending ? 'Processing...' : 'Approve'}
-                </Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
+    );
 }

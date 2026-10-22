@@ -1,290 +1,103 @@
 'use client';
 
-import { useState } from 'react';
-import {
-    MapPin, Package, Truck, CheckCircle, Clock, Navigation, Phone,
-    MessageSquare, Search, Filter, User, RefreshCw, LogOut, LayoutDashboard,
-    TrendingUp, Calendar, Star, Bell, ChevronRight, Map as MapIcon
-} from 'lucide-react';
+import { useMemo, useState } from 'react';
+import Link from 'next/link';
+import { CheckCircle2, Mail, Phone, Truck, UserPlus } from 'lucide-react';
+import { useAdminMarketers, useAdminOrders } from '@/hooks/useAdmin';
+import type { AdminPerson } from '@/services/admin';
+import { AddUserDialog } from '@/Components/admin/add-user-dialog';
 import { Button } from '@/Components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/Components/ui/card';
-import { Badge } from '@/Components/ui/badge';
-import { Input } from '@/Components/ui/input';
-import { useAuth } from '@/hooks/useAuth';
-import { useMarketerOrders, useMarketerStats, useUpdateOrderStatus } from '@/hooks/useMarketer';
-import GoogleMap from '@/Components/GoogleMap';
-import { Order } from '@/services/marketer';
+import { EmptyState, ErrorState, PageHeader, Panel, Pill, StatTile } from '@/Components/ui/kit';
+import { Stagger, StaggerItem } from '@/Components/motion';
+import { formatDate, fullName, initials } from '@/lib/format';
 
-export default function MarketerPage() {
-    const { user, logout } = useAuth();
-    const [activeTab, setActiveTab] = useState<'dashboard' | 'orders' | 'profile'>('dashboard');
-    const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-    const [showMap, setShowMap] = useState(false);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [statusFilter, setStatusFilter] = useState<string>('all');
+const idOf = (p: AdminPerson | string | null | undefined) => (p && typeof p === 'object' ? p._id : p || '');
 
-    // API Hooks
-    const { data: statsData, isLoading: statsLoading } = useMarketerStats();
+export default function AdminMarketersPage() {
+    const { data: marketers = [], isLoading, isError, refetch } = useAdminMarketers();
+    // Live workload from the orders themselves (the stored counters can drift on old data)
+    const { data: active } = useAdminOrders({ status: 'assigned,in_transit,delivered', limit: 200 });
+    const { data: waiting } = useAdminOrders({ unassigned: 'true', limit: 1 });
+    const [adding, setAdding] = useState(false);
 
-    // Only calls API when activeTab is 'orders'
-    const {
-        data: ordersData,
-        isLoading: ordersLoading,
-        refetch: refetchOrders
-    } = useMarketerOrders({
-        search: searchTerm || undefined,
-        status: statusFilter !== 'all' ? statusFilter : undefined,
-    }, activeTab === 'orders');
+    const workload = useMemo(() => {
+        const map = new Map<string, { delivering: number; awaiting: number }>();
+        (active?.orders || []).forEach((o) => {
+            const id = idOf(o.marketer);
+            if (!id) return;
+            const row = map.get(id) || { delivering: 0, awaiting: 0 };
+            if (o.status === 'delivered') row.awaiting += 1; else row.delivering += 1;
+            map.set(id, row);
+        });
+        return map;
+    }, [active]);
 
-    const updateStatusMutation = useUpdateOrderStatus();
-
-    const orders: Order[] = ordersData?.orders || [];
-
-    const handleStatusUpdate = async (orderId: string, newStatus: Order['status']) => {
-        try {
-            await updateStatusMutation.mutateAsync({ id: orderId, status: newStatus });
-        } catch (error) {
-            console.error('Failed to update status', error);
-        }
-    };
-
-    const getStatusColor = (status: string) => {
-        switch (status) {
-            case 'delivered': return 'bg-green-100 text-green-700 border-green-200';
-            case 'in_transit': return 'bg-blue-100 text-blue-700 border-blue-200';
-            default: return 'bg-amber-100 text-amber-700 border-amber-200';
-        }
-    };
-
-    if (!user) return null;
+    const available = marketers.filter((m) => !m.suspended && m.isActive !== false).length;
+    const delivering = [...workload.values()].reduce((n, w) => n + w.delivering, 0);
 
     return (
-        <div className="min-h-screen bg-slate-50 flex flex-col pb-20 md:pb-0">
-            {/* Header */}
-            <header className="bg-white border-b sticky top-0 z-10 px-4 py-3">
-                <div className="max-w-7xl mx-auto flex justify-between items-center">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-200">
-                            <Package className="text-white w-6 h-6" />
-                        </div>
-                        <div>
-                            <h1 className="font-bold text-slate-900 leading-none">Marketer Portal</h1>
-                            <p className="text-xs text-slate-500 mt-1">Welcome back, {user.firstName}</p>
-                        </div>
-                    </div>
-                    <Button variant="ghost" size="icon" className="relative text-slate-600">
-                        <Bell className="w-5 h-5" />
-                        <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
-                    </Button>
-                </div>
-            </header>
+        <div>
+            <PageHeader title="Marketers" description="Paid orders go automatically to the available marketer with the fewest active deliveries." actions={<Button onClick={() => setAdding(true)}><UserPlus /> Add marketer</Button>} />
 
-            <main className="flex-1 max-w-7xl mx-auto w-full p-4 md:p-6">
-                {/* Dashboard Tab */}
-                {activeTab === 'dashboard' && (
-                    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                            <Card className="border-0 shadow-sm bg-gradient-to-br from-blue-500 to-blue-600 text-white">
-                                <CardContent className="p-4">
-                                    <p className="text-blue-100 text-xs font-medium uppercase tracking-wider">Total Tasks</p>
-                                    <h3 className="text-2xl font-bold mt-1">{statsData?.totalOrders || 0}</h3>
-                                    <TrendingUp className="w-4 h-4 mt-2 text-blue-200" />
-                                </CardContent>
-                            </Card>
-                            <Card className="border-0 shadow-sm bg-white">
-                                <CardContent className="p-4">
-                                    <p className="text-slate-500 text-xs font-medium uppercase tracking-wider">Pending</p>
-                                    <h3 className="text-2xl font-bold mt-1 text-slate-900">{statsData?.pendingOrders || 0}</h3>
-                                    <Clock className="w-4 h-4 mt-2 text-amber-500" />
-                                </CardContent>
-                            </Card>
-                        </div>
+            <Stagger immediate className="grid gap-4 sm:grid-cols-3">
+                <StaggerItem><StatTile label="Available marketers" value={isLoading ? '…' : `${available} of ${marketers.length}`} icon={Truck} /></StaggerItem>
+                <StaggerItem><StatTile label="Deliveries in progress" value={active ? delivering : '…'} icon={Truck} tone="info" /></StaggerItem>
+                <StaggerItem>
+                    <Link href="/admin/orders?view=unassigned" className="block">
+                        <StatTile label="Paid orders waiting" value={waiting ? waiting.total : '…'} icon={CheckCircle2} tone={waiting?.total ? 'warning' : 'success'} hint={waiting?.total ? 'Open orders to assign them' : 'Every paid order has a marketer'} />
+                    </Link>
+                </StaggerItem>
+            </Stagger>
 
-                        <section>
-                            <div className="flex justify-between items-center mb-4">
-                                <h2 className="font-bold text-slate-800 text-lg">Quick Actions</h2>
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <Button
-                                    onClick={() => setActiveTab('orders')}
-                                    className="h-24 bg-white hover:bg-slate-50 border-0 shadow-sm text-slate-900 flex flex-col gap-2 group transition-all"
-                                >
-                                    <div className="p-2 bg-blue-100 rounded-lg group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                                        <Package className="w-5 h-5" />
-                                    </div>
-                                    <span>View My Orders</span>
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    className="h-24 bg-white border-0 shadow-sm text-slate-900 flex flex-col gap-2"
-                                    onClick={() => setShowMap(!showMap)}
-                                >
-                                    <div className="p-2 bg-green-100 text-green-600 rounded-lg">
-                                        <Navigation className="w-5 h-5" />
-                                    </div>
-                                    <span>Delivery Map</span>
-                                </Button>
-                            </div>
-                        </section>
-                    </div>
-                )}
-
-                {/* Orders Tab */}
-                {activeTab === 'orders' && (
-                    <div className="space-y-4 animate-in fade-in duration-500">
-                        <div className="flex flex-col gap-4 sticky top-16 bg-slate-50/95 backdrop-blur-sm pb-4 z-[5]">
-                            <div className="relative">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
-                                <Input
-                                    placeholder="Search by order ID or customer..."
-                                    className="pl-10 bg-white border-0 shadow-sm focus-visible:ring-blue-500"
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                />
-                            </div>
-                            <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
-                                {['all', 'pending', 'in_transit', 'delivered'].map((f) => (
-                                    <Button
-                                        key={f}
-                                        variant={statusFilter === f ? 'default' : 'secondary'}
-                                        size="sm"
-                                        className="capitalize rounded-full px-4"
-                                        onClick={() => setStatusFilter(f)}
-                                    >
-                                        {f.replace('_', ' ')}
-                                    </Button>
-                                ))}
-                            </div>
-                        </div>
-
-                        <div className="space-y-3">
-                            {ordersLoading ? (
-                                <div className="flex flex-col items-center justify-center py-12 text-slate-400">
-                                    <RefreshCw className="w-8 h-8 animate-spin mb-2" />
-                                    <p>Fetching your orders...</p>
-                                </div>
-                            ) : orders.length > 0 ? (
-                                orders.map((order: Order) => (
-                                    <Card key={order._id} className="border-0 shadow-sm overflow-hidden active:scale-[0.98] transition-transform">
-                                        <CardContent className="p-0">
-                                            <div className="p-4 border-b border-slate-50 flex justify-between items-start">
-                                                <div>
-                                                    <p className="text-[10px] font-bold text-blue-600 uppercase tracking-tight mb-1">Order #{order.orderNumber}</p>
-                                                    <h4 className="font-bold text-slate-900">{order.customer?.firstName && order.customer?.lastName ? `${order.customer.firstName} ${order.customer.lastName}` : order.customerPhone || 'N/A'}</h4>
-                                                    <p className="text-xs text-slate-500 flex items-center gap-1 mt-1">
-                                                        <MapPin className="w-3 h-3" /> {order.address}
-                                                    </p>
-                                                </div>
-                                                <Badge variant="outline" className={getStatusColor(order.status)}>
-                                                    {order.status.replace('_', ' ')}
-                                                </Badge>
+            <div className="mt-6">
+                {isLoading ? (
+                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{[0, 1, 2].map((i) => <div key={i} className="skeleton-shimmer h-48 rounded-3xl" />)}</div>
+                ) : isError ? (
+                    <Panel><ErrorState onRetry={() => refetch()} /></Panel>
+                ) : marketers.length === 0 ? (
+                    <Panel><EmptyState icon={Truck} title="No marketers yet" description="Paid orders can't be delivered until you add at least one marketer." action={{ label: 'Add a marketer', onClick: () => setAdding(true) }} /></Panel>
+                ) : (
+                    <Stagger immediate className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                        {marketers.map((m) => {
+                            const w = workload.get(m._id) || { delivering: 0, awaiting: 0 };
+                            const off = m.suspended || m.isActive === false;
+                            return (
+                                <StaggerItem key={m._id}>
+                                    <Panel className={`h-full p-5 ${off ? 'opacity-70' : ''}`}>
+                                        <div className="flex items-start gap-3">
+                                            <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-gradient-brand font-bold text-white">{initials(m.firstName, m.lastName, m.email)}</span>
+                                            <div className="min-w-0 flex-1">
+                                                <p className="truncate font-bold">{fullName(m)}</p>
+                                                <p className="text-xs text-muted-foreground">Since {formatDate(m.createdAt)}</p>
                                             </div>
-                                            <div className="p-3 bg-slate-50/50 flex justify-between items-center">
-                                                <div className="flex items-center gap-3">
-                                                    <Button
-                                                        size="sm"
-                                                        variant="ghost"
-                                                        className="text-blue-600 h-8 px-2"
-                                                        onClick={() => window.open(`tel:${order.customerPhone}`)}
-                                                    >
-                                                        <Phone className="w-4 h-4 mr-1" /> Call
-                                                    </Button>
-                                                </div>
-                                                {order.status === 'pending' && (
-                                                    <Button
-                                                        size="sm"
-                                                        className="bg-blue-600 hover:bg-blue-700"
-                                                        onClick={() => handleStatusUpdate(order._id, 'in_transit')}
-                                                    >
-                                                        Start Delivery
-                                                    </Button>
-                                                )}
-                                                {order.status === 'in_transit' && (
-                                                    <Button
-                                                        size="sm"
-                                                        className="bg-green-600 hover:bg-green-700"
-                                                        onClick={() => handleStatusUpdate(order._id, 'delivered')}
-                                                    >
-                                                        Mark Delivered
-                                                    </Button>
-                                                )}
-                                            </div>
-                                        </CardContent>
-                                    </Card>
-                                ))
-                            ) : (
-                                <div className="text-center py-12 bg-white rounded-2xl border border-dashed border-slate-200">
-                                    <Package className="w-12 h-12 text-slate-200 mx-auto mb-3" />
-                                    <p className="text-slate-500">No orders found</p>
-                                </div>
-                            )}
-                        </div>
-                    </div>
+                                            <Pill tone={off ? 'danger' : w.delivering ? 'info' : 'success'} dot>{off ? 'Suspended' : w.delivering ? 'Busy' : 'Available'}</Pill>
+                                        </div>
+
+                                        <dl className="mt-4 grid grid-cols-3 gap-2 rounded-2xl bg-muted/50 p-3 text-center">
+                                            <div><dt className="text-[11px] text-muted-foreground">Delivering</dt><dd className="text-lg font-extrabold tabular-nums">{w.delivering}</dd></div>
+                                            <div><dt className="text-[11px] text-muted-foreground">Awaiting</dt><dd className="text-lg font-extrabold tabular-nums">{w.awaiting}</dd></div>
+                                            <div><dt className="text-[11px] text-muted-foreground">Completed</dt><dd className="text-lg font-extrabold tabular-nums">{m.completedOrdersCount || 0}</dd></div>
+                                        </dl>
+
+                                        <div className="mt-4 flex flex-wrap gap-2">
+                                            {m.profile?.phone ? (
+                                                <Button asChild size="sm" variant="outline"><a href={`tel:${m.profile.phone}`}><Phone /> {m.profile.phone}</a></Button>
+                                            ) : (
+                                                <span className="text-xs text-amber-600">No phone number on file</span>
+                                            )}
+                                            {m.email && <Button asChild size="sm" variant="ghost"><a href={`mailto:${m.email}`}><Mail /> Email</a></Button>}
+                                        </div>
+                                    </Panel>
+                                </StaggerItem>
+                            );
+                        })}
+                    </Stagger>
                 )}
+            </div>
 
-                {/* Profile Tab */}
-                {activeTab === 'profile' && (
-                    <div className="space-y-6 animate-in fade-in duration-500">
-                        <Card className="border-0 shadow-sm overflow-hidden">
-                            <div className="h-24 bg-gradient-to-r from-blue-600 to-indigo-600" />
-                            <CardContent className="relative pt-12 pb-6 px-6">
-                                <div className="absolute -top-10 left-6 w-20 h-20 rounded-2xl bg-white p-1 shadow-lg">
-                                    <div className="w-full h-full bg-slate-100 rounded-xl flex items-center justify-center">
-                                        <User className="w-10 h-10 text-slate-400" />
-                                    </div>
-                                </div>
-                                <div>
-                                    <h2 className="text-xl font-bold text-slate-900">{user.firstName} {user.lastName}</h2>
-                                    <p className="text-sm text-slate-500">{user.email}</p>
-                                    <Badge className="mt-2 bg-blue-50 text-blue-600 border-blue-100 capitalize">{user.role}</Badge>
-                                </div>
-                            </CardContent>
-                        </Card>
+            <p className="mt-6 text-xs text-muted-foreground">To suspend a marketer or change their role, use <Link href="/admin/users?role=marketer" className="font-semibold text-primary hover:underline">Users</Link>.</p>
 
-                        <Button
-                            variant="destructive"
-                            className="w-full h-12 rounded-xl shadow-lg shadow-red-100"
-                            onClick={logout}
-                        >
-                            <LogOut className="w-4 h-4 mr-2" /> Sign Out
-                        </Button>
-                    </div>
-                )}
-            </main>
-
-            {/* Navigation Dock (Mobile optimized) */}
-            <nav className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-lg border-t px-6 py-3 flex justify-between items-center z-20">
-                {[
-                    { id: 'dashboard', icon: LayoutDashboard, label: 'Home' },
-                    { id: 'orders', icon: Package, label: 'Orders' },
-                    { id: 'profile', icon: User, label: 'Account' }
-                ].map((item) => (
-                    <button
-                        key={item.id}
-                        onClick={() => setActiveTab(item.id as any)}
-                        className={`flex flex-col items-center gap-1 transition-colors ${activeTab === item.id ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'
-                            }`}
-                    >
-                        <item.icon className={`w-6 h-6 ${activeTab === item.id ? 'animate-bounce-short' : ''}`} />
-                        <span className="text-[10px] font-medium">{item.label}</span>
-                    </button>
-                ))}
-            </nav>
-
-            {/* Map Overlay */}
-            {showMap && (
-                <div className="fixed inset-0 z-[50] bg-white animate-in slide-in-from-right duration-300">
-                    <div className="absolute top-4 left-4 right-4 z-10 flex justify-between">
-                        <Button size="icon" variant="secondary" className="rounded-full shadow-lg" onClick={() => setShowMap(false)}>
-                            <ChevronRight className="rotate-180 w-5 h-5" />
-                        </Button>
-                    </div>
-                    <GoogleMap
-                        orders={orders}
-                        selectedOrder={selectedOrder}
-                    />
-                </div>
-            )}
+            <AddUserDialog open={adding} onOpenChange={setAdding} defaultRole="marketer" />
         </div>
     );
 }

@@ -209,7 +209,7 @@ export default function ContactUsPage() {
                                                 <option value="orders">Order Support</option>
                                                 <option value="subscriptions">Subscription Help</option>
                                                 <option value="bulk">Bulk Orders</option>
-                                                <option value="affiliate">Affiliate Program</option>
+                                                <option value="affiliate">Refer & earn</option>
                                                 <option value="technical">Technical Support</option>
                                             </select>
                                             <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none transition-transform duration-200" />

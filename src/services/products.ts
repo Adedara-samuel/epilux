@@ -100,11 +100,11 @@ export const productsAPI = {
 // Admin Products API functions
 export const adminProductsAPI = {
     // Get all products (admin)
-    getProducts: async (params?: { limit?: number }) => {
+    getProducts: async (params?: { limit?: number; search?: string; category?: string }) => {
         const queryParams: Record<string, string> = {};
-        if (params?.limit) {
-            queryParams.limit = params.limit.toString();
-        }
+        if (params?.limit) queryParams.limit = params.limit.toString();
+        if (params?.search) queryParams.search = params.search;
+        if (params?.category) queryParams.category = params.category;
         const response = await api.get('/api/admin/products', { params: queryParams });
         return response.data;
     },

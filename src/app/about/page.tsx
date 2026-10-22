@@ -279,7 +279,7 @@ export default function AboutPage() {
                 <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-8 md:p-12 text-white text-center">
                     <h2 className="text-3xl font-bold mb-4">Join the Epilux Family</h2>
                     <p className="text-blue-100 mb-8 max-w-2xl mx-auto">
-                        Whether you're looking for premium water delivery or an opportunity to earn through our affiliate program,
+                        Whether you're looking for premium water delivery or a way to earn by inviting friends,
                         we're here to serve you with excellence.
                     </p>
                     <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -287,7 +287,7 @@ export default function AboutPage() {
                             <Link href="/products">Shop Our Products</Link>
                         </Button>
                         <Button asChild size="lg" variant="outline" className="bg-transparent text-white border-white hover:bg-white/10">
-                            <Link href="/affiliate">Become an Affiliate</Link>
+                            <Link href="/affiliate-reg">Refer & earn</Link>
                         </Button>
                     </div>
                 </div>
