@@ -84,11 +84,12 @@ function FeaturedProducts() {
                 </div>
                 <Button asChild variant="outline"><Link href="/products">See everything <ArrowRight /></Link></Button>
             </Reveal>
-            <Stagger className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {/* Phones: a swipeable row; larger screens: a grid */}
+            <Stagger className="-mx-4 mt-10 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-2 no-scrollbar sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-5 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-3">
                 {isLoading
-                    ? [0, 1, 2].map((i) => <div key={i} className="skeleton-shimmer h-96 rounded-3xl" />)
+                    ? [0, 1, 2].map((i) => <div key={i} className="skeleton-shimmer h-80 w-[78%] shrink-0 rounded-3xl sm:h-96 sm:w-auto" />)
                     : products.map((p) => (
-                        <StaggerItem key={p._id}>
+                        <StaggerItem key={p._id} className="w-[78%] shrink-0 snap-start sm:w-auto">
                             <Link href={`/products/${p._id}`} className="group block h-full">
                                 <Panel className="h-full overflow-hidden transition-all duration-500 group-hover:-translate-y-1 group-hover:shadow-lift">
                                     <div className="relative aspect-[4/3] overflow-hidden bg-gradient-to-b from-sky-50 to-white dark:from-sky-950/30 dark:to-transparent">
@@ -129,7 +130,7 @@ export default function HomePage() {
                         <div className="absolute -top-40 right-[-10%] size-[38rem] rounded-full bg-sky-200/50 blur-3xl dark:bg-sky-500/10" />
                         <div className="absolute -bottom-40 left-[-10%] size-[30rem] rounded-full bg-brand-200/40 blur-3xl dark:bg-brand-500/10" />
                     </div>
-                    <div className="relative mx-auto grid max-w-7xl items-center gap-14 px-4 pb-20 pt-10 sm:px-6 lg:grid-cols-[1.05fr_1fr] lg:gap-10 lg:px-8 lg:pb-28 lg:pt-16">
+                    <div className="relative mx-auto grid max-w-7xl grid-cols-[minmax(0,1fr)] items-center gap-14 px-4 pb-20 pt-10 sm:px-6 lg:grid-cols-[1.05fr_1fr] lg:gap-10 lg:px-8 lg:pb-28 lg:pt-16">
                         <div>
                             <p className="animate-fade-in inline-flex items-center gap-2 rounded-full border border-border/80 bg-card/80 px-3 py-1.5 text-sm font-medium shadow-soft backdrop-blur">
                                 <span className="relative flex size-2"><span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-75" /><span className="relative inline-flex size-2 rounded-full bg-emerald-500" /></span>
@@ -146,13 +147,13 @@ export default function HomePage() {
                                 <Button asChild size="xl" variant="brand" className="rounded-2xl"><Link href={primary.href}>{primary.label} <ArrowRight /></Link></Button>
                                 <Button asChild size="xl" variant="outline" className="rounded-2xl"><Link href="#how-it-works">How it works</Link></Button>
                             </div>
-                            <ul className="animate-fade-in mt-10 grid max-w-xl gap-3 text-sm sm:grid-cols-3" style={{ animationDelay: '320ms' }}>
+                            <ul className="animate-fade-in mt-8 flex max-w-xl flex-wrap gap-x-5 gap-y-2 text-sm sm:mt-10" style={{ animationDelay: '320ms' }}>
                                 {[
                                     { icon: ShieldCheck, text: 'Secure payments' },
                                     { icon: Truck, text: 'Local delivery' },
                                     { icon: Gift, text: 'Earn as you buy' },
                                 ].map(({ icon: Icon, text }) => (
-                                    <li key={text} className="flex items-center gap-2 font-medium text-foreground/80"><Icon className="size-4 text-primary" />{text}</li>
+                                    <li key={text} className="flex items-center gap-1.5 font-medium text-foreground/80"><Icon className="size-4 text-primary" />{text}</li>
                                 ))}
                             </ul>
                         </div>
@@ -190,13 +191,15 @@ export default function HomePage() {
                             <div aria-hidden className="absolute left-[12%] right-[12%] top-10 hidden h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent lg:block" />
                             {STEPS.map(({ icon: Icon, title, text }, i) => (
                                 <StaggerItem key={title}>
-                                    <Panel className="relative h-full p-6 text-center">
-                                        <span className="relative mx-auto grid size-14 place-items-center rounded-2xl bg-gradient-brand text-white shadow-lift">
-                                            <Icon className="size-6" />
+                                    <Panel className="relative flex h-full flex-row items-start gap-4 p-5 sm:block sm:p-6 sm:text-center">
+                                        <span className="relative grid size-12 shrink-0 place-items-center rounded-2xl bg-gradient-brand text-white shadow-lift sm:mx-auto sm:size-14">
+                                            <Icon className="size-5 sm:size-6" />
                                             <span className="absolute -right-2 -top-2 grid size-6 place-items-center rounded-full bg-card text-xs font-bold text-primary ring-2 ring-primary/20">{i + 1}</span>
                                         </span>
-                                        <h3 className="mt-5 text-lg font-bold">{title}</h3>
-                                        <p className="mt-1.5 text-sm text-muted-foreground">{text}</p>
+                                        <div className="min-w-0">
+                                            <h3 className="text-base font-bold sm:mt-5 sm:text-lg">{title}</h3>
+                                            <p className="mt-1 text-sm text-muted-foreground sm:mt-1.5">{text}</p>
+                                        </div>
                                     </Panel>
                                 </StaggerItem>
                             ))}
@@ -209,7 +212,7 @@ export default function HomePage() {
                     <div className="aurora relative mx-auto max-w-7xl overflow-hidden rounded-[2.5rem] px-6 py-14 text-white sm:px-12 lg:py-20">
                         <span aria-hidden className="aurora-blob one" />
                         <span aria-hidden className="aurora-blob three" />
-                        <div className="relative grid gap-12 lg:grid-cols-2 lg:items-center">
+                        <div className="relative grid grid-cols-[minmax(0,1fr)] gap-12 lg:grid-cols-2 lg:items-center">
                             <Reveal>
                                 <p className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-sm font-medium ring-1 ring-white/20"><Sparkles className="size-4 text-amber-200" /> Rewards</p>
                                 <h2 className="mt-5 text-3xl font-extrabold tracking-tight text-white sm:text-5xl">Water that pays you back.</h2>
@@ -254,7 +257,7 @@ export default function HomePage() {
 
                 {/* Business */}
                 <section className="mx-auto max-w-7xl px-4 pb-20 sm:px-6 lg:px-8">
-                    <div className="grid gap-5 lg:grid-cols-2">
+                    <div className="grid grid-cols-[minmax(0,1fr)] gap-5 lg:grid-cols-2">
                         <Reveal>
                             <Panel className="group relative h-full overflow-hidden p-8">
                                 <img src="/images/Hydration.jpeg" alt="" className="absolute inset-0 size-full object-cover opacity-20 transition-transform duration-700 group-hover:scale-105 dark:opacity-10" />
