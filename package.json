@@ -1,4 +1,4 @@
-{
+﻿{
   "name": "epilux",
   "version": "0.1.0",
   "private": true,
@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "eslint ."
   },
   "dependencies": {
     "@googlemaps/js-api-loader": "^1.16.2",

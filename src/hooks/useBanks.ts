@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { banksAPI, NigerianBank } from '@/services/banks';
+import { banksAPI } from '@/services/banks';
 import { useQuery } from '@tanstack/react-query';
 
 export const useNigerianBanks = () => {

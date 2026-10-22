@@ -26,6 +26,8 @@ export function BankPicker({ value, onChange, id }: { value: { name: string; cod
                     type="button"
                     role="combobox"
                     aria-expanded={open}
+                    aria-controls={`${id}-listbox`}
+                    aria-haspopup="listbox"
                     className="flex h-12 w-full items-center gap-3 rounded-xl border border-input bg-card px-3.5 text-left text-sm shadow-xs outline-none transition-[border-color,box-shadow] hover:border-brand-500/40 focus-visible:border-ring focus-visible:ring-4 focus-visible:ring-ring/20"
                 >
                     <Landmark className="size-[18px] shrink-0 text-muted-foreground" />
@@ -50,7 +52,7 @@ export function BankPicker({ value, onChange, id }: { value: { name: string; cod
                     ) : filtered.length === 0 ? (
                         <p className="p-3 text-sm text-muted-foreground">No bank matches “{query}”.</p>
                     ) : (
-                        <ul role="listbox" className="pr-2">
+                        <ul id={`${id}-listbox`} role="listbox" className="pr-2">
                             {filtered.map((bank) => {
                                 const selected = value?.code === bank.code || value?.name === bank.name;
                                 return (

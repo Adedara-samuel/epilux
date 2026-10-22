@@ -87,7 +87,7 @@ export const useUpdateMarketer = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) =>
+    mutationFn: ({ id, data }: { id: string; data: Parameters<typeof marketerAPI.updateMarketer>[1] }) =>
       marketerAPI.updateMarketer(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'marketers'] });

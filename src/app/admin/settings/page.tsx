@@ -88,7 +88,7 @@ export default function AdminSettingsPage() {
                             </div>
 
                             <fieldset>
-                                <legend className="text-sm font-semibold">Who doesn't earn rewards</legend>
+                                <legend className="text-sm font-semibold">Who doesn&apos;t earn rewards</legend>
                                 <div className="mt-2 grid gap-2 sm:grid-cols-2">
                                     {ROLES.map((r) => (
                                         <label key={r.value} className="flex items-center gap-3 rounded-xl border border-border/70 px-3 py-2.5 text-sm has-[:checked]:border-primary/40 has-[:checked]:bg-accent/50">
